@@ -1,0 +1,330 @@
+<script setup>
+import { ref, onMounted, watch } from 'vue'
+import { useAuth0 } from '@auth0/auth0-vue'
+import Button from 'primevue/button'
+
+const { isAuthenticated, isLoading, getAccessTokenSilently, loginWithRedirect } = useAuth0()
+
+// ✅ Utente caricato dal backend
+const backendUser = ref(null)
+const loadingBackend = ref(false)
+
+// ✅ Carica dettagli utente
+async function loadUser() {
+  if (!isAuthenticated.value) return
+  loadingBackend.value = true
+  try {
+    const token = await getAccessTokenSilently()
+    const res = await fetch("http://localhost:8000/users/me", {
+      headers: {
+        Authorization: `Bearer ${token}`
+      }
+    })
+    if (res.ok) {
+      backendUser.value = await res.json()
+    }
+  } catch (e) {
+    console.error("Errore loadUser:", e)
+  } finally {
+    loadingBackend.value = false
+  }
+}
+
+// ✅ Formatta data in formato italiano
+function formatDate(dateStr) {
+  if (!dateStr) return '-'
+  try {
+    const d = new Date(dateStr)
+    return d.toLocaleDateString('it-IT', { day: '2-digit', month: '2-digit', year: 'numeric' })
+  } catch (e) {
+    return dateStr
+  }
+}
+
+// ✅ Monitora l'autenticazione Auth0
+watch(isAuthenticated, (newVal) => {
+  if (newVal) {
+    loadUser()
+  }
+})
+
+onMounted(() => {
+  if (isAuthenticated.value) {
+    loadUser()
+  }
+})
+</script>
+
+<template>
+  <!-- ⏳ Stato Caricamento -->
+  <div v-if="isLoading || (isAuthenticated && loadingBackend)" class="flex flex-column align-items-center justify-content-center min-h-30rem gap-3">
+    <i class="pi pi-spin pi-spinner text-4xl text-primary"></i>
+    <span class="text-color-secondary text-sm">Caricamento in corso...</span>
+  </div>
+
+  <div v-else class="home-container py-5 px-3">
+    
+    <!-- 🟢 CASO 1: UTENTE NON LOGGATO (Landing Page Pubblica) -->
+    <div v-if="!isAuthenticated">
+      
+      <!-- Hero Banner -->
+      <div class="hero-section text-center py-6 px-4 mb-5 border-round-3xl shadow-1 relative overflow-hidden">
+        <h1 class="text-1xl md:text-2xl font-bold mb-3 mt-0 text-primary-gradient">Associazione SalvaiciclistiRoma.it</h1>
+        <p class="text-lg md:text-xl text-color-secondary mb-5 max-w-30rem mx-auto line-height-3">
+          Entra a far parte della nostra comunità. Compila il modulo digitale e sostieni i nostri progetti di promozione sociale.
+        </p>
+        <Button label="Registrati / Accedi"  severity="info"  icon="pi pi-user-plus" size="large" class="p-button-raised p-button-lg" @click="loginWithRedirect" />
+      </div>
+
+      <!-- Sezione Come Funziona -->
+      <div class="mb-6">
+        <h2 class="text-2xl md:text-3xl font-bold text-center mb-5">Come funziona l'iscrizione</h2>
+        
+        <div class="grid row-gap-4 column-gap-3 justify-content-center">
+          <div class="col-12 md:col-3">
+            <div class="step-card p-4 border-round-xl border-1 border-light surface-card text-left h-full">
+              <span class="step-num text-3xl font-bold text-primary opacity-50 block mb-3">01</span>
+              <h3 class="font-semibold text-base mb-2">Accesso & Profilo</h3>
+              <p class="text-sm text-color-secondary m-0">Accedi con Google o registrati per creare la tua area riservata.</p>
+            </div>
+          </div>
+          <div class="col-12 md:col-3">
+            <div class="step-card p-4 border-round-xl border-1 border-light surface-card text-left h-full">
+              <span class="step-num text-3xl font-bold text-primary opacity-50 block mb-3">02</span>
+              <h3 class="font-semibold text-base mb-2">Dati & Documento</h3>
+              <p class="text-sm text-color-secondary m-0">Compila l'anagrafica nel wizard, inserendo dati personali e documento valido.</p>
+            </div>
+          </div>
+          <div class="col-12 md:col-3">
+            <div class="step-card p-4 border-round-xl border-1 border-light surface-card text-left h-full">
+              <span class="step-num text-3xl font-bold text-primary opacity-50 block mb-3">03</span>
+              <h3 class="font-semibold text-base mb-2">Quota & Conferma</h3>
+              <p class="text-sm text-color-secondary m-0">Indica il metodo di pagamento ed invia la richiesta. Avrai validità per 12 mesi.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Sezione Vantaggi -->
+      <div>
+        <h2 class="text-2xl md:text-3xl font-bold text-center mb-5">I vantaggi per i nostri soci</h2>
+        <div class="grid row-gap-3 column-gap-3 justify-content-center">
+          <div class="col-12 md:col-3">
+            <div class="benefit-card p-4 border-round-xl border-1 border-light surface-card h-full text-left shadow-1">
+              <i class="pi pi-compass text-3xl text-primary mb-3 block"></i>
+              <h3 class="font-bold text-lg mb-2">Accesso Risorse</h3>
+              <p class="text-sm text-color-secondary m-0 leading-relaxed">
+                Ottieni accesso immediato a tutti gli strumenti, materiali didattici e servizi messi a disposizione dall'associazione.
+              </p>
+            </div>
+          </div>
+          <div class="col-12 md:col-3">
+            <div class="benefit-card p-4 border-round-xl border-1 border-light surface-card h-full text-left shadow-1">
+              <i class="pi pi-users text-3xl text-primary mb-3 block"></i>
+              <h3 class="font-bold text-lg mb-2">Community Attiva</h3>
+              <p class="text-sm text-color-secondary m-0 leading-relaxed">
+                Partecipa ad eventi riservati, assemblee, workshop formativi e attività sociali di gruppo insieme ad altri appassionati.
+              </p>
+            </div>
+          </div>
+          <div class="col-12 md:col-3">
+            <div class="benefit-card p-4 border-round-xl border-1 border-light surface-card h-full text-left shadow-1">
+              <i class="pi pi-heart text-3xl text-primary mb-3 block"></i>
+              <h3 class="font-bold text-lg mb-2">Sostegno Sociale</h3>
+              <p class="text-sm text-color-secondary m-0 leading-relaxed">
+                Partecipa attivamente proponendo iniziative e regalandoci il tuo supporto per progetti di volontariato sul territorio.
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- 🟡 CASO 2: UTENTE LOGGATO CON STATO "INCOMPLETE" -->
+    <div v-else-if="backendUser?.status === 'INCOMPLETE'" class="flex justify-content-center py-5">
+      <div class="card p-5 text-center shadow-3 border-round-xl border-top-3 border-warning max-w-30rem surface-card">
+        <i class="pi pi-user-plus text-5xl text-warning mb-3 block"></i>
+        <h2 class="text-2xl font-bold mb-2">Profilo da completare</h2>
+        <p class="text-color-secondary mb-4 line-height-3">
+          Benvenuto! Per inoltrare la tua candidatura ed ottenere la tessera socio, devi completare i passaggi del modulo di iscrizione.
+        </p>
+        <router-link to="/wizard">
+          <Button label="Inizia l'Iscrizione Socio" icon="pi pi-arrow-right" iconPos="right" size="large" class="w-full" />
+        </router-link>
+      </div>
+    </div>
+
+    <!-- 🔵 CASO 3: UTENTE LOGGATO CON STATO "PENDING" -->
+    <div v-else-if="backendUser?.status === 'PENDING'" class="flex justify-content-center py-5">
+      <div class="card p-5 text-center shadow-3 border-round-xl border-top-3 border-info max-w-30rem surface-card">
+        <i class="pi pi-hourglass text-5xl text-info mb-3 block"></i>
+        <h2 class="text-2xl font-bold mb-2">Richiesta in elaborazione</h2>
+        <p class="text-color-secondary mb-3">
+          Grazie per aver inviato la tua richiesta, <strong>{{ backendUser.first_name }}</strong>!
+        </p>
+        <p class="text-color-secondary mb-4 text-sm line-height-3">
+          La tua iscrizione è in attesa di verifica del pagamento e dell'approvazione formale da parte del consiglio direttivo. Riceverai una mail di notifica ad approvazione completata.
+        </p>
+        
+        <div class="surface-ground p-3 border-round text-left mb-4 border-1 border-light">
+          <div class="flex justify-content-between py-2 border-bottom-1 border-light">
+            <span class="text-xs text-color-secondary font-medium uppercase">Metodo scelto:</span>
+            <span class="font-semibold text-xs">{{ backendUser.payment_method }}</span>
+          </div>
+          <div class="flex justify-content-between py-2">
+            <span class="text-xs text-color-secondary font-medium uppercase">Stato:</span>
+            <span class="font-semibold text-xs text-info uppercase">In Verifica</span>
+          </div>
+        </div>
+
+        <router-link to="/wizard">
+          <Button label="Modifica dati anagrafici" icon="pi pi-pencil" severity="secondary" outlined class="w-full" />
+        </router-link>
+      </div>
+    </div>
+
+    <!-- 🏆 CASO 4: UTENTE APPROVATO (Socio Attivo con Tessera) -->
+    <div v-else-if="backendUser?.status === 'APPROVED'" class="flex flex-column align-items-center py-4">
+      
+      <div class="max-w-28rem w-full">
+        <!-- Tessera Socio Digitale (Premium Glassmorphism Effect) -->
+        <div class="membership-card p-4 text-white border-round-2xl shadow-4 relative overflow-hidden mb-4">
+          <div class="card-glow"></div>
+          
+          <div class="flex justify-content-between align-items-center mb-5">
+            <div class="flex align-items-center gap-2">
+              <i class="pi pi-crown text-2xl"></i>
+              <span class="font-bold tracking-wider text-xs uppercase">Tessera Socio SalvaiciclistiRoma</span>
+            </div>
+            <span class="bg-blue-500 text-white text-xxs px-2.5 py-1 font-bold border-round-lg uppercase shadow-1">SOCIO ATTIVO</span>
+          </div>
+
+          <div class="mb-5">
+            <h3 class="text-2xl font-bold m-0 letter-spacing-1" style="color: black !important;">{{ backendUser.first_name }} {{ backendUser.last_name }}</h3>
+            <p class="text-xxs text-white-alpha-70 m-0 mt-1 uppercase font-semibold">Socio {{ backendUser.member_type || 'Ordinario' }}</p>
+          </div>
+
+          <div class="flex justify-content-between border-top-1 border-white-alpha-20 pt-3">
+            <div class="flex flex-column text-left">
+              <span class="text-xxs text-white-alpha-50 uppercase">Tessera N.</span>
+              <span class="text-lg font-bold text-white">{{ backendUser.membership_number }}</span>
+            </div>
+            <div class="flex flex-column text-right">
+              <span class="text-xxs text-white-alpha-50 uppercase">Valida fino al</span>
+              <span class="text-lg font-bold text-white">{{ formatDate(backendUser.end_date) }}</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Box Riepilogo Dati Iscrizione -->
+        <div class="card p-4 shadow-2 border-round-xl surface-card text-left">
+          <h4 class="font-bold text-base mb-3 text-color uppercase tracking-wide">Dettagli Iscrizione</h4>
+          
+          <div class="flex flex-column gap-3">
+            <div class="flex align-items-center gap-3">
+              <i class="pi pi-calendar text-primary text-lg"></i>
+              <div>
+                <p class="text-xxs text-color-secondary m-0 uppercase font-semibold">Data Emissione</p>
+                <p class="text-sm font-semibold m-0 text-color">{{ formatDate(backendUser.start_date) }}</p>
+              </div>
+            </div>
+            <div class="flex align-items-center gap-3">
+              <i class="pi pi-wallet text-primary text-lg"></i>
+              <div>
+                <p class="text-xxs text-color-secondary m-0 uppercase font-semibold">Metodo Pagamento</p>
+                <p class="text-sm font-semibold m-0 text-color">{{ backendUser.payment_method }}</p>
+              </div>
+            </div>
+            <div class="flex align-items-center gap-3">
+              <i class="pi pi-id-card text-primary text-lg"></i>
+              <div>
+                <p class="text-xxs text-color-secondary m-0 uppercase font-semibold">Codice Fiscale</p>
+                <p class="text-sm font-semibold m-0 text-color uppercase">{{ backendUser.tax_code }}</p>
+              </div>
+            </div>
+          </div>
+
+          <div class="mt-4 pt-3 border-top-1 border-light flex justify-content-between align-items-center">
+            <span class="text-xs text-color-secondary">Hai bisogno di aggiornare i tuoi dati?</span>
+            <router-link to="/wizard">
+              <Button label="Modifica dati" icon="pi pi-pencil" size="small" severity="secondary" outlined />
+            </router-link>
+          </div>
+        </div>
+
+      </div>
+
+    </div>
+
+  </div>
+</template>
+
+<style scoped>
+.home-container {
+  max-width: 900px;
+  margin: 0 auto;
+}
+
+.hero-section {
+  background: linear-gradient(135deg, rgba(59, 154, 255, 0.04) 0%, rgba(79, 195, 247, 0.04) 100%);
+  border: 1px solid var(--border);
+}
+
+.text-primary-gradient {
+ background: #ef7b14;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.benefit-card, .step-card {
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+  border-color: var(--border) !important;
+}
+
+.benefit-card:hover {
+  transform: translateY(-5px);
+  box-shadow: var(--shadow);
+}
+
+/* 🏆 Premium Membership Card CSS */
+.membership-card {
+  background: linear-gradient(0deg, #ec8e5b 20%,  #ea580c 100%);
+  border-radius: 20px;
+  position: relative;
+  overflow: hidden;
+  box-shadow: 0 15px 30px rgba(124, 58, 237, 0.25);
+  min-height: 220px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
+
+.card-glow {
+  position: absolute;
+  top: -50%;
+  left: -30%;
+  width: 200%;
+  height: 200%;
+  background: radial-gradient(circle, rgba(255, 255, 255, 0.18) 0%, rgba(255, 255, 255, 0) 70%);
+  transform: rotate(-30deg);
+  pointer-events: none;
+}
+
+.text-xxs {
+  font-size: 0.65rem;
+  letter-spacing: 1.2px;
+}
+
+.border-light {
+  border-color: var(--border) !important;
+}
+
+.surface-ground {
+  background-color: var(--code-bg);
+}
+
+.text-muted {
+  color: var(--text);
+}
+</style>
