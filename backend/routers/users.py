@@ -43,13 +43,19 @@ def me(current_user=Depends(get_current_user), db: Session = Depends(get_db)):
     # Fetch member details if present
     member = db.query(Member).filter_by(user_id=current_user.id).first()
     if member:
-        user_dict["membership_number"] = member.membership_number
         membership = db.query(Membership).filter_by(member_id=member.id).order_by(Membership.end_date.desc()).first()
         if membership:
+            user_dict["membership_number"] = membership.card_number
             user_dict["start_date"] = membership.start_date.isoformat() if membership.start_date else None
             user_dict["end_date"] = membership.end_date.isoformat() if membership.end_date else None
             user_dict["is_paid"] = membership.is_paid
             user_dict["reference_year"] = membership.reference_year
+            user_dict["is_renewal_pending"] = not membership.is_paid
+        else:
+            user_dict["membership_number"] = member.membership_number
+            user_dict["is_renewal_pending"] = False
+    else:
+        user_dict["is_renewal_pending"] = False
 
     return user_dict
 
@@ -84,6 +90,48 @@ def update_me(
     db.refresh(user)
     
     return user
+
+from pydantic import BaseModel
+class RenewRequest(BaseModel):
+    payment_method: str
+
+@router.post("/me/request-renew")
+def request_renew(
+    payload: RenewRequest,
+    current_user=Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    member = db.query(Member).filter_by(user_id=current_user.id).first()
+    if not member:
+        raise HTTPException(status_code=400, detail="Not a member yet")
+
+    latest_membership = db.query(Membership).filter_by(member_id=member.id).order_by(Membership.end_date.desc()).first()
+    if latest_membership and not latest_membership.is_paid:
+        raise HTTPException(status_code=400, detail="Renewal already pending")
+
+    # Update payment method
+    current_user.payment_method = payload.payment_method
+    db.commit()
+
+    today = date.today()
+    start, end = calculate_membership_period(today)
+    ref_year = calculate_reference_year(today)
+
+    new_membership = Membership(
+        member_id=member.id,
+        start_date=start,
+        end_date=end,
+        reference_year=ref_year,
+        card_number=None, # Non ancora assegnato
+        payment_method=payload.payment_method,
+        is_paid=False,
+        is_renewal=True
+    )
+
+    db.add(new_membership)
+    db.commit()
+    db.refresh(new_membership)
+    return new_membership
 
 @router.get("/dashboard")
 def dashboard(
@@ -126,9 +174,11 @@ def dashboard(
 
         # ✅ UTENTE CON MEMBERSHIP
         elif latest_membership:
-            membership_end = latest_membersship_end = latest_membership.end_date
+            membership_end = latest_membership.end_date
 
-            if latest_membership.end_date >= today:
+            if not latest_membership.is_paid:
+                membership_status = "RENEWAL_PENDING"
+            elif latest_membership.end_date >= today:
                 membership_status = "ACTIVE"
             else:
                 membership_status = "EXPIRED"
@@ -190,39 +240,42 @@ def reject_user(
     return {"status": "rejected"}
 
 
-# RINNOVO ISCRIZIONE (CREA NUOVA MEMBERSHIP)
+# CONFERMA RINNOVO (APPROVA LA MEMBERSHIP PENDENTE)
 @router.post("/{id}/renew")
+@router.put("/{id}/renew")
 def renew_member(
     id: int,
     user=Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
 
-    if user.role != "TREASURER":
-        raise HTTPException(status_code=403, detail="Only treasurer can renew")
+    if user.role != "TREASURER" and "TREASURER" not in user.roles and "ADMIN" not in user.roles:
+        raise HTTPException(status_code=403, detail="Only treasurer or admin can renew")
 
-    member = db.query(Member).get(id)
+    member = db.query(Member).filter(Member.user_id == id).first()
 
     if not member:
         raise HTTPException(status_code=404, detail="Member not found")
 
-    today = date.today()
+    pending_membership = db.query(Membership).filter(
+        Membership.member_id == member.id,
+        Membership.is_paid == False,
+        Membership.is_renewal == True
+    ).order_by(Membership.id.desc()).first()
 
-    start, end = calculate_membership_period(today)
+    if not pending_membership:
+        raise HTTPException(status_code=404, detail="No pending renewal request found")
 
-    membership = Membership(
-        member_id=member.id,
-        start_date=start,
-        end_date=end,
-        reference_year=calculate_reference_year(today),
-        is_renewal=True
-    )
+    from services.membership_service import generate_card_number_for_year
+    
+    pending_membership.is_paid = True
+    pending_membership.payment_date = date.today()
+    pending_membership.card_number = generate_card_number_for_year(db, pending_membership.reference_year)
 
-    db.add(membership)
     db.commit()
-    db.refresh(membership)
+    db.refresh(pending_membership)
 
-    return membership
+    return pending_membership
 
 
 # DETTAGLIO UTENTE (self o admin/treasurer)

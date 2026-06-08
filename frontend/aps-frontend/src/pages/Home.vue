@@ -2,6 +2,8 @@
 import { ref, onMounted, watch } from 'vue'
 import { useAuth0 } from '@auth0/auth0-vue'
 import Button from 'primevue/button'
+import Select from 'primevue/select'
+
 
 const { isAuthenticated, isLoading, getAccessTokenSilently, loginWithRedirect } = useAuth0()
 
@@ -46,13 +48,48 @@ watch(isAuthenticated, (newVal) => {
   if (newVal) {
     loadUser()
   }
+  console.log(backendUser.value)
 })
 
 onMounted(() => {
   if (isAuthenticated.value) {
     loadUser()
   }
+
+  console.log(backendUser.value)
 })
+const paymentMethods = ref([
+  { label: "Bonifico Bancario", value: "Bonifico Bancario" },
+  { label: "PayPal", value: "PayPal" },
+  { label: "Satispay", value: "Satispay" },
+  { label: "Contanti", value: "Contanti" },
+  { label: "POS negli eventi", value: "POS" }
+])
+const selectedPaymentMethod = ref(null)
+const renewing = ref(false)
+
+async function requestRenewal() {
+  if (!selectedPaymentMethod.value) return;
+  renewing.value = true;
+  try {
+    const token = await getAccessTokenSilently()
+    const res = await fetch("http://localhost:8000/users/me/request-renew", {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${token}`,
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({ payment_method: selectedPaymentMethod.value })
+    })
+    if (res.ok) {
+      await loadUser()
+    }
+  } catch (e) {
+    console.error("Errore requestRenewal:", e)
+  } finally {
+    renewing.value = false;
+  }
+}
 </script>
 
 <template>
@@ -62,7 +99,7 @@ onMounted(() => {
     <span class="text-color-secondary text-sm">Caricamento in corso...</span>
   </div>
 
-  <div v-else class="home-container py-5 px-3">
+  <div v-else class="home-container py-5 px-2">
     
     <!-- 🟢 CASO 1: UTENTE NON LOGGATO (Landing Page Pubblica) -->
     <div v-if="!isAuthenticated">
@@ -77,29 +114,29 @@ onMounted(() => {
       </div>
 
       <!-- Sezione Come Funziona -->
-      <div class="mb-6">
+      <div class="mb-6" >
         <h2 class="text-2xl md:text-3xl font-bold text-center mb-5">Come funziona l'iscrizione</h2>
         
         <div class="grid row-gap-4 column-gap-3 justify-content-center">
           <div class="col-12 md:col-3">
-            <div class="step-card p-4 border-round-xl border-1 border-light surface-card text-left h-full">
+            <div class="step-card p-2 border-round-xl border-1 border-light surface-card text-left h-full">
               <span class="step-num text-3xl font-bold text-primary opacity-50 block mb-3">01</span>
               <h3 class="font-semibold text-base mb-2">Accesso & Profilo</h3>
               <p class="text-sm text-color-secondary m-0">Accedi con Google o registrati per creare la tua area riservata.</p>
             </div>
           </div>
           <div class="col-12 md:col-3">
-            <div class="step-card p-4 border-round-xl border-1 border-light surface-card text-left h-full">
+            <div class="step-card p-2 border-round-xl border-1 border-light surface-card text-left h-full">
               <span class="step-num text-3xl font-bold text-primary opacity-50 block mb-3">02</span>
               <h3 class="font-semibold text-base mb-2">Dati & Documento</h3>
               <p class="text-sm text-color-secondary m-0">Compila l'anagrafica nel wizard, inserendo dati personali e documento valido.</p>
             </div>
           </div>
           <div class="col-12 md:col-3">
-            <div class="step-card p-4 border-round-xl border-1 border-light surface-card text-left h-full">
+            <div class="step-card p-2 border-round-xl border-1 border-light surface-card text-left h-full">
               <span class="step-num text-3xl font-bold text-primary opacity-50 block mb-3">03</span>
               <h3 class="font-semibold text-base mb-2">Quota & Conferma</h3>
-              <p class="text-sm text-color-secondary m-0">Indica il metodo di pagamento ed invia la richiesta. Avrai validità per 12 mesi.</p>
+              <p class="text-sm text-color-secondary m-0">Paga la quota con i metodi di pagamento previsti e indica l'importo e metodo di pagamento nella richiesta. Validità per 12 mesi.</p>
             </div>
           </div>
         </div>
@@ -123,7 +160,7 @@ onMounted(() => {
               <i class="pi pi-users text-3xl text-primary mb-3 block"></i>
               <h3 class="font-bold text-lg mb-2">Community Attiva</h3>
               <p class="text-sm text-color-secondary m-0 leading-relaxed">
-                Partecipa ad eventi riservati, assemblee, workshop formativi e attività sociali di gruppo insieme ad altri appassionati.
+                Partecipa ad eventi, assemblee ed attività sociali di gruppo insieme ad altri appassionati.
               </p>
             </div>
           </div>
@@ -216,7 +253,28 @@ onMounted(() => {
             </div>
           </div>
         </div>
+        <!-- PENDING RENEWAL STATE -->
+        <div class="mb-5">
+          <div v-if="backendUser.is_renewal_pending" class="card p-4 shadow-2 border-round-xl surface-card text-center mt-4 border-top-3 border-info">
+            <i class="pi pi-hourglass text-4xl text-info mb-3 block"></i>
+            <h4 class="font-bold text-lg mb-2">Richiesta di rinnovo in elaborazione</h4>
+            <p class="text-sm text-color-secondary m-0">La tua richiesta di rinnovo è in attesa di verifica del pagamento da parte del tesoriere.</p>
+          </div>
 
+
+          <!-- RENEW REQUEST FORM -->
+          <div v-else-if="!backendUser.end_date || new Date(backendUser.end_date) < new Date()" class="card p-4 shadow-2 border-round-xl surface-card text-left mt-4 border-top-3 border-orange-500">
+            <h4 class="font-bold text-base mb-3 text-color uppercase tracking-wide">Rinnova la tua iscrizione</h4>
+            <p class="text-sm text-color-secondary mb-3">La tua iscrizione è scaduta o in scadenza. Scegli il metodo di pagamento e richiedi il rinnovo.</p>
+            <div class="flex flex-column gap-3">
+              <div class="flex flex-column gap-2">
+                <label for="paymentMethod" class="font-semibold text-sm">Metodo di Pagamento</label>
+                <Select id="paymentMethod" v-model="selectedPaymentMethod" :options="paymentMethods" optionLabel="label" optionValue="value" placeholder="Seleziona un metodo" class="w-full" />
+              </div>
+              <Button label="Richiedi Rinnovo" icon="pi pi-refresh" :loading="renewing" @click="requestRenewal" severity="warning" class="w-full mt-2" :disabled="!selectedPaymentMethod" />
+            </div>
+          </div>
+        </div>
         <!-- Box Riepilogo Dati Iscrizione -->
         <div class="card p-4 shadow-2 border-round-xl surface-card text-left">
           <h4 class="font-bold text-base mb-3 text-color uppercase tracking-wide">Dettagli Iscrizione</h4>
@@ -253,6 +311,8 @@ onMounted(() => {
           </div>
         </div>
 
+
+
       </div>
 
     </div>
@@ -262,7 +322,7 @@ onMounted(() => {
 
 <style scoped>
 .home-container {
-  max-width: 900px;
+  max-width: 1020px;
   margin: 0 auto;
 }
 

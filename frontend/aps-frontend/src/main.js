@@ -13,6 +13,9 @@ import InputText from 'primevue/inputtext';
 import Card from 'primevue/card';
 import FloatLabel from 'primevue/floatlabel';
 import Dropdown from 'primevue/dropdown';
+import ConfirmDialog from 'primevue/confirmdialog';
+import ConfirmationService from 'primevue/confirmationservice';
+import Select from 'primevue/select';
 
 
 import { createApp } from 'vue'
@@ -28,8 +31,11 @@ app.component('Column', Column)
 app.component('Button', Button)
 app.component('InputText', InputText)
 app.component('Card', Card)
-app.component('FloatLabel',FloatLabel)
+app.component('FloatLabel', FloatLabel)
 app.component('Dropdown', Dropdown)
+app.component('ConfirmDialog', ConfirmDialog);
+app.component('Select', Select)
+
 
 app.use(router)
 app.use(PrimeVue, {
@@ -37,6 +43,9 @@ app.use(PrimeVue, {
     preset: Aura
   }
 })
+
+
+app.use(ConfirmationService);
 
 app.use(
   createAuth0({

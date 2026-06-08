@@ -12,6 +12,7 @@ class Membership(Base):
     end_date = Column(Date)
 
     reference_year = Column(Integer)
+    card_number = Column(Integer, nullable=True)
 
     # pagamento
     payment_date = Column(Date, nullable=True)

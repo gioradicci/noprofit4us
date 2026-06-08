@@ -47,6 +47,7 @@ function doLogout() {
 </script>
 
 <template>
+  <ConfirmDialog />
   <div v-if="isLoading" class="flex align-items-center justify-content-center min-h-screen">
     <i class="pi pi-spin pi-spinner text-3xl text-primary"></i>
   </div>

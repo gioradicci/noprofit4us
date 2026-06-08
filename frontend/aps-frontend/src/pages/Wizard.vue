@@ -38,9 +38,10 @@ const documentTypes = ref([
 
 const paymentMethods = ref([
   { label: "Bonifico Bancario", value: "Bonifico Bancario" },
-  { label: "Carta di Credito", value: "Carta di Credito" },
   { label: "PayPal", value: "PayPal" },
-  { label: "Contanti", value: "Contanti" }
+  { label: "Satispay", value: "Satispay" },
+  { label: "Contanti", value: "Contanti" },
+  { label: "POS negli eventi", value: "POS" }
 ])
 
 // ✅ Carica dati utente
@@ -221,6 +222,9 @@ onMounted(() => {
           <StepPanel v-slot="{ activateCallback }" value="4">
             <div class="flex flex-column gap-4 py-3 text-left">
               <div class="flex flex-column gap-2">
+                <label for="payment_method" class="text-sm">Paga con bonifico, Satispay o Paypal. <a href="https://salvaiciclistiroma.it/lassociazione/diventa-socio/" target="_blank" >Qui trovi le coordinate.</a></label>
+                <label for="payment_method" class="text-sm">La quota di iscrizione annuale è di 10 euro per socio sostenitore, 30 euro per socio attivista</label> 
+
                 <label for="payment_method" class="font-semibold text-sm">Metodo di Pagamento *</label>
                 <Dropdown 
                   id="payment_method" 
@@ -231,6 +235,8 @@ onMounted(() => {
                   placeholder="Seleziona il metodo di pagamento" 
                   class="w-full" 
                 />
+
+                
               </div>
             </div>
             <div class="flex pt-4 justify-content-between border-top-1 border-light">

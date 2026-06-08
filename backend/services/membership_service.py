@@ -18,16 +18,24 @@ def generate_membership_number(db: Session):
     return last_member.membership_number + 1
 
 
+def generate_card_number_for_year(db: Session, reference_year: int) -> int:
+    last_membership = db.query(Membership).filter(Membership.reference_year == reference_year).order_by(Membership.card_number.desc()).first()
+    if not last_membership or not last_membership.card_number:
+        return 1
+    return last_membership.card_number + 1
+
 
 def create_membership(member: Member, user: User, db: Session, is_renewal=False):
 
     start_date, end_date = calculate_membership_period(date.today())
+    ref_year = start_date.year
 
     membership = Membership(
         member_id=member.id,
         start_date=start_date,
         end_date=end_date,
-        reference_year=start_date.year,
+        reference_year=ref_year,
+        card_number=generate_card_number_for_year(db, ref_year),
         payment_date=date.today(),
         amount=50,
         payment_method=user.payment_method,

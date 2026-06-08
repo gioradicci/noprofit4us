@@ -3,6 +3,7 @@ const { getAccessTokenSilently } = useAuth0()
 import { ref, onMounted, computed } from 'vue'
 import { useAuth0 } from '@auth0/auth0-vue'
 import { FilterMatchMode } from '@primevue/core/api'
+import { useConfirm } from 'primevue/useconfirm';
 
 const filters = ref({
   first_name: { value: null, matchMode: FilterMatchMode.CONTAINS },
@@ -19,11 +20,10 @@ const statusOptions = [
   { label: 'INCOMPLETE', value: 'INCOMPLETE' }
 ]
 
-
 const users = ref([])
 const roles = ref([])
 const filter = ref("ALL")  // ALL / PENDING / ACTIVE / EXPIRED
-
+const confirm = useConfirm();
 
 const filteredUsers = computed(() => {
 
@@ -31,7 +31,7 @@ const filteredUsers = computed(() => {
 
   // ✅ filtro stato
   if (filter.value === "PENDING") {
-    result = result.filter(u => u.status === "PENDING")
+    result = result.filter(u => u.status === "PENDING" || u.membership_status === "RENEWAL_PENDING")
   }
 
   if (filter.value === "ACTIVE") {
@@ -72,7 +72,7 @@ function canApprove() {
 const counts = computed(() => {
   return {
     total: users.value.length,
-    pending: users.value.filter(u => u.status === "PENDING").length,
+    pending: users.value.filter(u => u.status === "PENDING" || u.membership_status === "RENEWAL_PENDING").length,
     active: users.value.filter(u => u.membership_status === "ACTIVE").length,
     expired: users.value.filter(u => u.membership_status === "EXPIRED").length
   }
@@ -116,10 +116,61 @@ onMounted(() => {
   loadRoles()
 })
 
+//payAndApprove(slotProps.data.id)
+const showConfirmDialog  = (id_user_to_accept) => {
+    confirm.require({
+        message: 'Vuoi confermare il pagamento e accettare l\'iscrizione del socio?',
+        header: 'Conferm iscrizione socio',
+        acceptLabel: "Il socio ha pagato, accetta l'iscrizione",
+        icon: 'pi pi-exclamation-triangle',
+        rejectLabel: 'Annulla',
+         // Personalizza il bottone di conferma (es. Rosso/Pericolo)
+        acceptProps: {
+          severity: 'primary',
+          label: 'Il socio ha pagato, accetta l\'iscrizione' // Puoi definirlo anche qui
+        },
+        
+        // Personalizza il bottone di annullamento (es. Grigio/Secondario o Trasparente)
+        rejectProps: {
+          severity: 'secondary',
+          outlined: true
+        },
+        accept: () => {
+          payAndApprove(id_user_to_accept);
+          //toast.add({ severity: 'success', summary: 'Eliminato', detail: 'Elemento eliminato con successo', life: 3000 });
+        },
+    });
+};
+
+const showRenewConfirmDialog  = (id_user_to_accept) => {
+    confirm.require({
+        message: 'Vuoi confermare il pagamento e accettare il rinnovo del socio?',
+        header: 'Conferma rinnovo socio',
+        acceptLabel: "Il socio ha pagato, accetta il rinnovo",
+        icon: 'pi pi-exclamation-triangle',
+        rejectLabel: 'Annulla',
+        acceptProps: {
+          severity: 'primary',
+          label: 'Il socio ha pagato, accetta il rinnovo'
+        },
+        rejectProps: {
+          severity: 'secondary',
+          outlined: true
+        },
+        accept: () => {
+          renew(id_user_to_accept);
+        },
+    });
+};
+
 </script>
 <template>
-    <div>
-      <h2>Dashboard Soci</h2>
+    <div class="py-5 px-3">
+      <div class="text-center mb-5">
+        <h2 class="font-bold text-3xl mb-2">
+         Dashboard Soci
+        </h2>
+      </div>
 
       <div class="flex flex-wrap gap-4 justify-content-between mb-4">
         <div class="flex-1 min-w-12rem">
@@ -129,13 +180,22 @@ onMounted(() => {
                 <div class="text-2xl font-bold">
                   {{ counts.total }}
                 </div>
-                <div>Totali</div>
+                <div>Soci totali</div>
               </div>
             </template>
           </Card>
         </div>
-        <div class="flex-1 min-w-12rem pending">
-          <Card class="cursor-pointer shadow-2" @click="filter = 'PENDING'">
+        <div class="flex-1 min-w-12rem">
+          <Card 
+            :pt="{
+                root: { 
+                  class: [
+                    'cursor-pointer shadow-2 transition-colors duration-300', 
+                      filter === 'PENDING' ? 'border-orange-500 bg-orange-50' : 'border-surface-300 bg-surface-0'
+                  ] 
+                }
+              }"
+           @click="filter = 'PENDING'">
             <template #content>
               <div class="text-center">
                 <div class="text-2xl font-bold text-orange-500">
@@ -147,8 +207,17 @@ onMounted(() => {
           </Card>
         </div>
 
-        <div class="flex-1 min-w-12rem active">
-          <Card class="cursor-pointer shadow-2" @click="filter = 'ACTIVE'">
+        <div class="flex-1 min-w-12rem">
+          <Card 
+          :pt="{
+                root: { 
+                  class: [
+                    'cursor-pointer shadow-2 transition-colors duration-300', 
+                      filter === 'ACTIVE' ? 'border-green-500 bg-green-50' : 'border-surface-300 bg-surface-0'
+                  ] 
+                }
+              }"
+          @click="filter = 'ACTIVE'">
             <template #content>
               <div class="text-center">
                 <div class="text-2xl font-bold text-green-500">
@@ -159,9 +228,15 @@ onMounted(() => {
             </template>
           </Card>
         </div>
-
-        <div class="flex-1 min-w-12rem expired">
-          <Card class="cursor-pointer shadow-2" @click="filter = 'EXPIRED'">
+        <div class="flex-1 min-w-12rem">
+          <Card :pt="{
+                root: { 
+                  class: [
+                    'cursor-pointer shadow-2 transition-colors duration-300', 
+                      filter === 'EXPIRED' ? 'border-red-500 bg-red-50' : 'border-surface-300 bg-surface-0'
+                  ] 
+                }
+              }" @click="filter = 'EXPIRED'" >
             <template #content>
               <div class="text-center">
                 <div class="text-2xl font-bold text-red-500">
@@ -204,7 +279,7 @@ onMounted(() => {
       :value="filteredUsers"
       v-model:filters="filters"
       filterDisplay="row"
-      globalFilterFields="['first_name', 'last_name']"
+      :globalFilterFields="['first_name', 'last_name']"
       paginator
       :rows="10"
       responsiveLayout="scroll"
@@ -293,7 +368,7 @@ onMounted(() => {
         <template #filter="{ filterModel, filterCallback }">
           <Dropdown
             v-model="filterModel.value"
-            :options="['ACTIVE', 'EXPIRED', 'NONE']"
+            :options="['ACTIVE', 'EXPIRED', 'RENEWAL_PENDING', 'NONE']"
             placeholder="Filtra"
             class="w-full"
             @change="filterCallback()"
@@ -316,7 +391,7 @@ onMounted(() => {
             v-if="slotProps.data.status === 'PENDING' && canApprove()"
             label="Conferma Pagamento e registra socio"
             severity="success"
-            @click="payAndApprove(slotProps.data.id)"
+            @click="showConfirmDialog(slotProps.data.id)"
           >
           <div class="flex flex-column align-items-center">
               <span>Conferma Pagamento</span>
@@ -324,13 +399,16 @@ onMounted(() => {
             </div>
           </Button>
 
-          <Button
-            v-if="slotProps.data.membership_status === 'EXPIRED' && canApprove()"
-            label="Rinnova"
+          <Button class="multiline-btn"
+            v-if="slotProps.data.membership_status === 'RENEWAL_PENDING' && canApprove()"
             severity="warning"
-            icon="pi pi-refresh"
-            @click="renew(slotProps.data.id)"
-          />
+            @click="showRenewConfirmDialog(slotProps.data.id)"
+          >
+            <div class="flex flex-column align-items-center">
+              <span>Conferma Pagamento</span>
+              <span>e Rinnova</span>
+            </div>
+          </Button>
 
         </template>
       </Column>
@@ -364,6 +442,10 @@ onMounted(() => {
 
 .PENDING {
   background: orange;
+}
+
+.RENEWAL_PENDING {
+  background: darkorange;
 }
 
 .PAID {
@@ -403,11 +485,6 @@ onMounted(() => {
   font-size: 0.9rem;
   color: #666;
 }
-
-/* colori */
-.pending { border-top: 4px solid orange; border-radius: 15%;}
-.active { border-top: 4px solid green; border-radius: 15%;}
-.expired { border-top: 4px solid red; border-radius: 15%;}
 
 .selected {
   outline: 2px solid black;
