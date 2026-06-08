@@ -1,8 +1,45 @@
 <script setup>
+import { ref, computed, onMounted, watch } from 'vue'
 import { useAuth0 } from '@auth0/auth0-vue'
 import Button from 'primevue/button'
 
-const { isAuthenticated, isLoading, logout } = useAuth0()
+const { isAuthenticated, isLoading, getAccessTokenSilently, logout } = useAuth0()
+
+const backendUser = ref(null)
+
+async function loadBackendUser() {
+  if (!isAuthenticated.value) return
+  try {
+    const token = await getAccessTokenSilently()
+    const res = await fetch("http://localhost:8000/users/me", {
+      headers: {
+        Authorization: `Bearer ${token}`
+      }
+    })
+    if (res.ok) {
+      backendUser.value = await res.json()
+    }
+  } catch (e) {
+    console.error("Errore nel caricamento del ruolo da backend:", e)
+  }
+}
+
+const isAdminOrTreasurer = computed(() => {
+  const role = backendUser.value?.role
+  return role === 'ADMIN' || role === 'TREASURER'
+})
+
+watch(isAuthenticated, (newVal) => {
+  if (newVal) {
+    loadBackendUser()
+  }
+})
+
+onMounted(() => {
+  if (isAuthenticated.value) {
+    loadBackendUser()
+  }
+})
 
 function doLogout() {
   logout({ logoutParams: { returnTo: window.location.origin } })
@@ -22,6 +59,7 @@ function doLogout() {
         <nav class="flex gap-2">
           <router-link to="/" class="nav-link text-color-secondary no-underline font-medium text-sm">Home</router-link>
           <router-link to="/wizard" class="nav-link text-color-secondary no-underline font-medium text-sm">Iscrizione</router-link>
+          <router-link v-if="isAdminOrTreasurer" to="/dashboard" class="nav-link text-color-secondary no-underline font-medium text-sm">Dashboard</router-link>
         </nav>
       </div>
       <div>
