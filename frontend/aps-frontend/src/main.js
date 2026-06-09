@@ -16,6 +16,7 @@ import Dropdown from 'primevue/dropdown';
 import ConfirmDialog from 'primevue/confirmdialog';
 import ConfirmationService from 'primevue/confirmationservice';
 import Select from 'primevue/select';
+import Image from 'primevue/image'
 
 
 import { createApp } from 'vue'
@@ -35,6 +36,7 @@ app.component('FloatLabel', FloatLabel)
 app.component('Dropdown', Dropdown)
 app.component('ConfirmDialog', ConfirmDialog);
 app.component('Select', Select)
+app.component('Image', Image)
 
 
 app.use(router)

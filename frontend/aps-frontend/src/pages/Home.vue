@@ -48,15 +48,13 @@ watch(isAuthenticated, (newVal) => {
   if (newVal) {
     loadUser()
   }
-  console.log(backendUser.value)
+  
 })
 
 onMounted(() => {
   if (isAuthenticated.value) {
     loadUser()
   }
-
-  console.log(backendUser.value)
 })
 const paymentMethods = ref([
   { label: "Bonifico Bancario", value: "Bonifico Bancario" },
@@ -90,6 +88,14 @@ async function requestRenewal() {
     renewing.value = false;
   }
 }
+
+function memberNoActive() {
+  let retVal =  (!backendUser.value.end_date && new Date(backendUser.value.end_date) < new Date() ) || backendUser.value.is_renewal_pending
+  console.log(backendUser.value)
+  
+  return retVal
+};
+
 </script>
 
 <template>
@@ -101,12 +107,16 @@ async function requestRenewal() {
 
   <div v-else class="home-container py-5 px-2">
     
+
     <!-- 🟢 CASO 1: UTENTE NON LOGGATO (Landing Page Pubblica) -->
     <div v-if="!isAuthenticated">
       
       <!-- Hero Banner -->
-      <div class="hero-section text-center py-6 px-4 mb-5 border-round-3xl shadow-1 relative overflow-hidden">
-        <h1 class="text-1xl md:text-2xl font-bold mb-3 mt-0 text-primary-gradient">Associazione SalvaiciclistiRoma.it</h1>
+      <div class="hero-section text-center py-4 px-4 mb-5 border-round-3xl shadow-1 relative overflow-hidden">
+        <div class="mb-3 " >
+          <Image src="/logosic_roma.svg" alt="Logo" width="100" ></Image>
+        </div>
+        <h1 class="text-2xl md:text-3xl font-bold mb-3 mt-0 text-primary-gradient">Associazione SalvaiciclistiRoma.it</h1>
         <p class="text-lg md:text-xl text-color-secondary mb-5 max-w-30rem mx-auto line-height-3">
           Entra a far parte della nostra comunità. Compila il modulo digitale e sostieni i nostri progetti di promozione sociale.
         </p>
@@ -187,7 +197,7 @@ async function requestRenewal() {
           Benvenuto! Per inoltrare la tua candidatura ed ottenere la tessera socio, devi completare i passaggi del modulo di iscrizione.
         </p>
         <router-link to="/wizard">
-          <Button label="Inizia l'Iscrizione Socio" icon="pi pi-arrow-right" iconPos="right" size="large" class="w-full" />
+          <Button label="Inizia l'iscrizione" icon="pi pi-arrow-right" iconPos="right" size="large" class="w-full" />
         </router-link>
       </div>
     </div>
@@ -226,7 +236,9 @@ async function requestRenewal() {
       
       <div class="max-w-28rem w-full">
         <!-- Tessera Socio Digitale (Premium Glassmorphism Effect) -->
-        <div class="membership-card p-4 text-white border-round-2xl shadow-4 relative overflow-hidden mb-4">
+        <div class="p-4 text-white border-round-2xl shadow-4 relative overflow-hidden mb-4"
+          :class="[ memberNoActive() ? 'membership-card_inactive' : 'membership-card' ]"
+        >
           <div class="card-glow"></div>
           
           <div class="flex justify-content-between align-items-center mb-5">
@@ -234,7 +246,9 @@ async function requestRenewal() {
               <i class="pi pi-crown text-2xl"></i>
               <span class="font-bold tracking-wider text-xs uppercase">Tessera Socio SalvaiciclistiRoma</span>
             </div>
-            <span class="bg-blue-500 text-white text-xxs px-2.5 py-1 font-bold border-round-lg uppercase shadow-1">SOCIO ATTIVO</span>
+            <span v-if="memberNoActive()" class="bg-blue-500 text-white text-xxs px-2.5 py-1 font-bold border-round-lg uppercase shadow-1">Socio non attivo</span>
+            <span v-else class="bg-blue-500 text-white text-xxs px-2.5 py-1 font-bold border-round-lg uppercase shadow-1">Socio attivo</span>
+            
           </div>
 
           <div class="mb-5">
@@ -350,6 +364,30 @@ async function requestRenewal() {
 /* 🏆 Premium Membership Card CSS */
 .membership-card {
   background: linear-gradient(0deg, #ec8e5b 20%,  #ea580c 100%);
+  border-radius: 20px;
+  position: relative;
+  overflow: hidden;
+  box-shadow: 0 15px 30px rgba(124, 58, 237, 0.25);
+  min-height: 220px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
+
+.membership-card_pending {
+  background: linear-gradient(90deg, #ea580c 20%,  #5c5a59 100%);
+  border-radius: 20px;
+  position: relative;
+  overflow: hidden;
+  box-shadow: 0 15px 30px rgba(124, 58, 237, 0.25);
+  min-height: 220px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
+
+.membership-card_inactive {
+  background: linear-gradient(0deg, #adaba9 20%,  #5c5a59 100%);
   border-radius: 20px;
   position: relative;
   overflow: hidden;

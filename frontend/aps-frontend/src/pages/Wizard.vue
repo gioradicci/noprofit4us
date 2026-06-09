@@ -10,7 +10,7 @@ import StepPanels from 'primevue/steppanels'
 import StepPanel from 'primevue/steppanel'
 import InputText from 'primevue/inputtext'
 import Button from 'primevue/button'
-import Dropdown from 'primevue/dropdown'
+import Select from 'primevue/select'
 
 const { getAccessTokenSilently } = useAuth0()
 
@@ -29,7 +29,7 @@ const profile = ref({
   payment_method: ""
 })
 
-// ✅ Opzioni per Dropdown
+// ✅ Opzioni per Select
 const documentTypes = ref([
   { label: "Carta d'Identità", value: "Carta d'Identità" },
   { label: "Patente di Guida", value: "Patente di Guida" },
@@ -191,7 +191,7 @@ onMounted(() => {
             <div class="flex flex-column gap-4 py-3 text-left">
               <div class="flex flex-column gap-2">
                 <label for="document_type" class="font-semibold text-sm">Tipo Documento *</label>
-                <Dropdown 
+                <Select 
                   id="document_type" 
                   v-model="profile.document_type" 
                   :options="documentTypes" 
@@ -226,7 +226,7 @@ onMounted(() => {
                 <label for="payment_method" class="text-sm">La quota di iscrizione annuale è di 10 euro per socio sostenitore, 30 euro per socio attivista</label> 
 
                 <label for="payment_method" class="font-semibold text-sm">Metodo di Pagamento *</label>
-                <Dropdown 
+                <Select 
                   id="payment_method" 
                   v-model="profile.payment_method" 
                   :options="paymentMethods" 

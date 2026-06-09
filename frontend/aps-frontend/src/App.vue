@@ -56,7 +56,8 @@ function doLogout() {
     <!-- Navbar globale visibile solo ad utente autenticato -->
     <header v-if="isAuthenticated" class="navbar py-3 px-4 border-bottom-1 border-light flex justify-content-between align-items-center surface-card shadow-1">
       <div class="flex align-items-center gap-3">
-        <router-link to="/" class="font-bold text-lg text-color no-underline mr-3">Salvaiciclisti Roma</router-link>
+        
+        <router-link to="/" class="text-sm md:text-2xl font-bold text-lg text-color no-underline mr-3"><Image src="/logosic_roma.svg" alt="Logo" width="60"/></router-link>
         <nav class="flex gap-2">
           <router-link to="/" class="nav-link text-color-secondary no-underline font-medium text-sm">Home</router-link>
           <router-link to="/wizard" class="nav-link text-color-secondary no-underline font-medium text-sm">Iscrizione</router-link>
