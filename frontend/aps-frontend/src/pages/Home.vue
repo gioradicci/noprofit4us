@@ -90,7 +90,7 @@ async function requestRenewal() {
 }
 
 function memberNoActive() {
-  let retVal =  (!backendUser.value.end_date && new Date(backendUser.value.end_date) < new Date() ) || backendUser.value.is_renewal_pending
+  let retVal =  (!backendUser.value.end_date || new Date(backendUser.value.end_date) < new Date() ) || (backendUser.value.is_renewal_pending)
   console.log(backendUser.value)
   
   return retVal

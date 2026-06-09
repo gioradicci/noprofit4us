@@ -19,7 +19,6 @@ class Membership(Base):
     amount = Column(Integer, nullable=True) #10 per Ordinario, 30 per Sostenitore
     payment_method = Column(String, nullable=True)
 
-    membership_expiry_date = Column(Date)
     payment_amount = Column(Float)
 
     is_paid = Column(Boolean, default=False)

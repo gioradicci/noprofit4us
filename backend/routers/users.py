@@ -1,6 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from datetime import date, timedelta
+from pydantic import BaseModel
 
 
 from database.database import get_db
@@ -91,7 +92,6 @@ def update_me(
     
     return user
 
-from pydantic import BaseModel
 class RenewRequest(BaseModel):
     payment_method: str
 
@@ -323,27 +323,7 @@ def register_payment(
 
     return user
 
-    
-# APPROVA UTENTE → CREA MEMBER + MEMBERSHIP
-@router.put("/{id}/approve")
-def approve(
-    id: int,
-    current_user=Depends(get_current_user),
-    db: Session = Depends(get_db)
-):
-    
-    roles = current_user.roles
-
-    if "TREASURER" not in roles and "ADMIN" not in roles:
-        raise HTTPException(403, "Only Treasurer")
-
-    user = db.get(User, id)
-
-    if not user:
-        raise HTTPException(404, "User not found.")
-
-    return approve_user(user, db)
-
+   
 
 # PAGAMENTO E APPROVAZIONE SIMULTANEI (Transazionale e Atomico)
 @router.put("/{id}/pay-and-approve")
