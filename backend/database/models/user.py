@@ -47,8 +47,6 @@ class User(Base):
     # USER, MEMBER, TREASURER, ADMIN, 
     is_active = Column(Boolean, default=True)
 
-
-
     status = Column(String, default="INCOMPLETE")
     # INCOMPLETE → appena login Google
     # PENDING → ha compilato profilo

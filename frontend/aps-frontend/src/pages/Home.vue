@@ -105,6 +105,19 @@ function memberNoActive() {
   return retVal
 };
 
+function memberExpiring() {
+  if (memberNoActive()) return false;
+  if (!backendUser.value || !backendUser.value.end_date) return false;
+  
+  const today = new Date();
+  const endDate = new Date(backendUser.value.end_date);
+  
+  if (endDate.getFullYear() === today.getFullYear() && today.getMonth() >= 10) {
+    return true;
+  }
+  return false;
+}
+
 function getRoleIcon() {
   const role = backendUser.value?.role || 'USER';
   const roles = backendUser.value?.roles || [];
@@ -255,7 +268,7 @@ function getRoleIcon() {
       <div class="max-w-28rem w-full">
         <!-- Tessera Socio Digitale (Premium Glassmorphism Effect) -->
         <div class="p-4 text-white border-round-2xl shadow-4 relative overflow-hidden mb-4"
-          :class="[ memberNoActive() ? 'membership-card_inactive' : 'membership-card' ]"
+          :class="[ memberNoActive() ? 'membership-card_inactive' : (memberExpiring() ? 'membership-card_expiring' : 'membership-card') ]"
         >
           <div class="card-glow"></div>
           
@@ -265,6 +278,7 @@ function getRoleIcon() {
               <span class="font-bold tracking-wider text-xs uppercase">Tessera Socio SalvaiciclistiRoma</span>
             </div>
             <span v-if="memberNoActive()" class="bg-blue-500 text-white text-xxs px-2.5 py-1 font-bold border-round-lg uppercase shadow-1">Socio non attivo</span>
+            <span v-else-if="memberExpiring()" class="bg-blue-500 text-white text-xxs px-2.5 py-1 font-bold border-round-lg uppercase shadow-1">In scadenza</span>
             <span v-else class="bg-blue-500 text-white text-xxs px-2.5 py-1 font-bold border-round-lg uppercase shadow-1">Socio attivo</span>
             
           </div>
@@ -295,7 +309,7 @@ function getRoleIcon() {
 
 
           <!-- RENEW REQUEST FORM -->
-          <div v-else-if="!backendUser.end_date || new Date(backendUser.end_date) < new Date()" class="card p-4 shadow-2 border-round-xl surface-card text-left mt-4 border-top-3 border-orange-500">
+          <div v-else-if="!backendUser.end_date || new Date(backendUser.end_date) < new Date() || memberExpiring()" class="card p-4 shadow-2 border-round-xl surface-card text-left mt-4 border-top-3 border-orange-500">
             <h4 class="font-bold text-base mb-3 text-color uppercase tracking-wide">Rinnova la tua iscrizione</h4>
             <p class="text-sm text-color-secondary mb-3">La tua iscrizione è scaduta o in scadenza. Scegli il metodo di pagamento e richiedi il rinnovo.</p>
             <div class="flex flex-column gap-3">
@@ -330,13 +344,13 @@ function getRoleIcon() {
                 <p class="text-sm font-semibold m-0 text-color">{{ backendUser.payment_method }}</p>
               </div>
             </div>
-            <div class="flex align-items-center gap-3">
+            <!-- <div class="flex align-items-center gap-3">
               <i class="pi pi-id-card text-primary text-lg"></i>
               <div>
                 <p class="text-xxs text-color-secondary m-0 uppercase font-semibold">Codice Fiscale</p>
                 <p class="text-sm font-semibold m-0 text-color uppercase">{{ backendUser.tax_code }}</p>
               </div>
-            </div>
+            </div> -->
           </div>
 
           <div class="mt-4 pt-3 border-top-1 border-light flex justify-content-between align-items-center">
@@ -410,6 +424,18 @@ function getRoleIcon() {
 
 .membership-card_inactive {
   background: linear-gradient(0deg, #adaba9 20%,  #5c5a59 100%);
+  border-radius: 20px;
+  position: relative;
+  overflow: hidden;
+  box-shadow: 0 15px 30px rgba(124, 58, 237, 0.25);
+  min-height: 220px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
+
+.membership-card_expiring {
+  background: linear-gradient(0deg, #adaba9 20%,  #ea580c 100%);
   border-radius: 20px;
   position: relative;
   overflow: hidden;
