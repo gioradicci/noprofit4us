@@ -43,7 +43,7 @@ function formatDate(dateStr) {
   }
 }
 
-// ✅ Monitora l'autenticazione Auth0
+//  Monitora l'autenticazione Auth0
 watch(isAuthenticated, (newVal) => {
   if (newVal) {
     loadUser()
@@ -56,6 +56,12 @@ onMounted(() => {
     loadUser()
   }
 })
+const memberTypes = ref([
+  { label: "Socio Ordinario (10€)", value: "ORDINARIO" },
+  { label: "Socio Sostenitore (30€)", value: "SOSTENITORE" }
+])
+const selectedMemberType = ref(null)
+
 const paymentMethods = ref([
   { label: "Bonifico Bancario", value: "Bonifico Bancario" },
   { label: "PayPal", value: "PayPal" },
@@ -67,7 +73,7 @@ const selectedPaymentMethod = ref(null)
 const renewing = ref(false)
 
 async function requestRenewal() {
-  if (!selectedPaymentMethod.value) return;
+  if (!selectedPaymentMethod.value || !selectedMemberType.value) return;
   renewing.value = true;
   try {
     const token = await getAccessTokenSilently()
@@ -77,7 +83,7 @@ async function requestRenewal() {
         Authorization: `Bearer ${token}`,
         "Content-Type": "application/json"
       },
-      body: JSON.stringify({ payment_method: selectedPaymentMethod.value })
+      body: JSON.stringify({ payment_method: selectedPaymentMethod.value, member_type: selectedMemberType.value })
     })
     if (res.ok) {
       await loadUser()
@@ -90,6 +96,9 @@ async function requestRenewal() {
 }
 
 function memberNoActive() {
+  //da Nov è possibile rifare la tessera, quindi indichiamo al socio che mancano due mesi
+  //alla scadenza e cambiamo lo stile della tessera virtuale. Ad esempio se oggi è 10/11/2026
+  //si può rifare la tessera per il 2027, quindi consideriamo il socio come non attivo
   let retVal =  (!backendUser.value.end_date || new Date(backendUser.value.end_date) < new Date() ) || (backendUser.value.is_renewal_pending)
   console.log(backendUser.value)
   
@@ -291,10 +300,14 @@ function getRoleIcon() {
             <p class="text-sm text-color-secondary mb-3">La tua iscrizione è scaduta o in scadenza. Scegli il metodo di pagamento e richiedi il rinnovo.</p>
             <div class="flex flex-column gap-3">
               <div class="flex flex-column gap-2">
-                <label for="paymentMethod" class="font-semibold text-sm">Metodo di Pagamento</label>
+                <label for="memberType" class="font-semibold text-sm">Tipo di Quota *</label>
+                <Select id="memberType" v-model="selectedMemberType" :options="memberTypes" optionLabel="label" optionValue="value" placeholder="Seleziona la quota" class="w-full" />
+              </div>
+              <div class="flex flex-column gap-2">
+                <label for="paymentMethod" class="font-semibold text-sm">Metodo di Pagamento *</label>
                 <Select id="paymentMethod" v-model="selectedPaymentMethod" :options="paymentMethods" optionLabel="label" optionValue="value" placeholder="Seleziona un metodo" class="w-full" />
               </div>
-              <Button label="Richiedi Rinnovo" icon="pi pi-refresh" :loading="renewing" @click="requestRenewal" severity="warning" class="w-full mt-2" :disabled="!selectedPaymentMethod" />
+              <Button label="Richiedi Rinnovo" icon="pi pi-refresh" :loading="renewing" @click="requestRenewal" severity="warning" class="w-full mt-2" :disabled="!selectedPaymentMethod || !selectedMemberType" />
             </div>
           </div>
         </div>

@@ -114,6 +114,7 @@ def update_me(
 
 class RenewRequest(BaseModel):
     payment_method: str
+    member_type: str
 
 @router.post("/me/request-renew")
 def request_renew(
@@ -129,8 +130,9 @@ def request_renew(
     if latest_membership and not latest_membership.is_paid:
         raise HTTPException(status_code=400, detail="Renewal already pending")
 
-    # Update payment method
+    # Update payment method and member type
     current_user.payment_method = payload.payment_method
+    current_user.member_type = payload.member_type
     db.commit()
 
     today = date.today()
@@ -143,6 +145,7 @@ def request_renew(
         end_date=end,
         reference_year=ref_year,
         card_number=None, # Non ancora assegnato
+        amount=30 if payload.member_type == "SOSTENITORE" else 10,
         payment_method=payload.payment_method,
         is_paid=False,
         is_renewal=True

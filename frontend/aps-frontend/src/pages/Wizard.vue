@@ -1,5 +1,5 @@
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, computed } from 'vue'
 import { useAuth0 } from '@auth0/auth0-vue'
 
 // Import PrimeVue Stepper and custom components
@@ -18,6 +18,11 @@ const { getAccessTokenSilently } = useAuth0()
 
 // ✅ Utente backend
 const backendUser = ref(null)
+
+const isSocioAttivo = computed(() => {
+  if (!backendUser.value) return false;
+  return backendUser.value.status === 'APPROVED' && backendUser.value.end_date && new Date(backendUser.value.end_date) >= new Date();
+});
 
 // ✅ Form di profilo
 const profile = ref({
@@ -370,6 +375,7 @@ onMounted(() => {
                   optionValue="value" 
                   placeholder="Seleziona la quota" 
                   class="w-full" 
+                  :disabled="isSocioAttivo"
                 />
               </div>
 
@@ -384,7 +390,13 @@ onMounted(() => {
                   optionValue="value" 
                   placeholder="Seleziona il metodo di pagamento" 
                   class="w-full" 
+                  :disabled="isSocioAttivo"
                 />
+              </div>
+              
+              <div v-if="isSocioAttivo" class="p-3 bg-blue-50 text-blue-800 border-round flex align-items-center gap-2 border-1 border-blue-200 mt-2">
+                <i class="pi pi-info-circle text-lg"></i>
+                <span class="text-sm">Sei un socio attivo. Non puoi modificare la quota e il metodo di pagamento attuali.</span>
               </div>
             </div>
             <div class="flex pt-4 justify-content-between border-top-1 border-light">

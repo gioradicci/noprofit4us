@@ -37,7 +37,7 @@ def create_membership(member: Member, user: User, db: Session, is_renewal=False)
         reference_year=ref_year,
         card_number=generate_card_number_for_year(db, ref_year),
         payment_date=date.today(),
-        amount=50,
+        amount=30 if user.member_type == "SOSTENITORE" else 10,
         payment_method=user.payment_method,
         is_paid=True,
         is_renewal=is_renewal
