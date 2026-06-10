@@ -29,10 +29,11 @@ class User(Base):
     zip_code = Column(String)
     province = Column(String)
     municipality = Column(String)
+    municipio_roma = Column(String)
 
     profession = Column(String)
-    interests = Column(String)
-    association_group = Column(String)
+    usage_type = Column(String)
+    avg_km_per_day = Column(Integer)
 
     member_type = Column(String)
     payment_method = Column(String)

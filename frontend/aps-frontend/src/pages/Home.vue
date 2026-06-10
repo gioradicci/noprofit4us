@@ -96,6 +96,15 @@ function memberNoActive() {
   return retVal
 };
 
+function getRoleIcon() {
+  const role = backendUser.value?.role || 'USER';
+  const roles = backendUser.value?.roles || [];
+  
+  if (role === 'ADMIN' || roles.includes('ADMIN')) return 'pi-crown';
+  if (role === 'TREASURER' || roles.includes('TREASURER')) return 'pi-money-bill';
+  return 'pi-user';
+}
+
 </script>
 
 <template>
@@ -243,7 +252,7 @@ function memberNoActive() {
           
           <div class="flex justify-content-between align-items-center mb-5">
             <div class="flex align-items-center gap-2">
-              <i class="pi pi-crown text-2xl"></i>
+              <i :class="['pi', getRoleIcon(), 'text-2xl']"></i>
               <span class="font-bold tracking-wider text-xs uppercase">Tessera Socio SalvaiciclistiRoma</span>
             </div>
             <span v-if="memberNoActive()" class="bg-blue-500 text-white text-xxs px-2.5 py-1 font-bold border-round-lg uppercase shadow-1">Socio non attivo</span>

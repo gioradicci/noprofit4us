@@ -11,6 +11,8 @@ import StepPanel from 'primevue/steppanel'
 import InputText from 'primevue/inputtext'
 import Button from 'primevue/button'
 import Select from 'primevue/select'
+import DatePicker from 'primevue/datepicker'
+import InputNumber from 'primevue/inputnumber'
 
 const { getAccessTokenSilently } = useAuth0()
 
@@ -22,12 +24,32 @@ const profile = ref({
   first_name: "",
   last_name: "",
   tax_code: "",
+  birth_date: null,
+  birth_place: "",
   phone: "",
   address: "",
+  city: "",
+  zip_code: "",
+  province: "",
+  municipality: "",
   document_type: "",
   document_number: "",
-  payment_method: ""
+  document_expiry: null,
+  profession: "",
+  usage_type: "",
+  avg_km_per_day: null,
+  member_type: "",
+  payment_method: "",
+  municipio_roma: ""
 })
+
+const usageTypes = ref([
+  { label: "Casa/Lavoro", value: "casa/lavoro" },
+  { label: "Sport", value: "sport" },
+  { label: "Accompagnare figli", value: "accompagnare figli" },
+  { label: "Spesa", value: "spesa" },
+  { label: "Altro", value: "altro" }
+])
 
 // ✅ Opzioni per Select
 const documentTypes = ref([
@@ -42,6 +64,26 @@ const paymentMethods = ref([
   { label: "Satispay", value: "Satispay" },
   { label: "Contanti", value: "Contanti" },
   { label: "POS negli eventi", value: "POS" }
+])
+
+const memberTypes = ref([
+  { label: "Socio Ordinario (10€)", value: "ORDINARIO" },
+  { label: "Socio Sostenitore (30€)", value: "SOSTENITORE" }
+])
+
+const municipiRoma = ref([
+  { label: "I", value: "I" },
+  { label: "II", value: "II" },
+  { label: "III", value: "III" },
+  { label: "IV", value: "IV" },
+  { label: "V", value: "V" },
+  { label: "VI", value: "VI" },
+  { label: "VII", value: "VII" },
+  { label: "VIII", value: "VIII" },
+  { label: "IX", value: "IX" },
+  { label: "X", value: "X" },
+  { label: "XI", value: "XI" },
+  { label: "XII", value: "XII" }
 ])
 
 // ✅ Carica dati utente
@@ -62,11 +104,23 @@ async function loadUser() {
       first_name: backendUser.value.first_name || "",
       last_name: backendUser.value.last_name || "",
       tax_code: backendUser.value.tax_code || "",
+      birth_date: backendUser.value.birth_date ? new Date(backendUser.value.birth_date) : null,
+      birth_place: backendUser.value.birth_place || "",
       phone: backendUser.value.phone || "",
       address: backendUser.value.address || "",
+      city: backendUser.value.city || "",
+      zip_code: backendUser.value.zip_code || "",
+      province: backendUser.value.province || "",
+      municipality: backendUser.value.municipality || "",
       document_type: backendUser.value.document_type || "",
       document_number: backendUser.value.document_number || "",
-      payment_method: backendUser.value.payment_method || ""
+      document_expiry: backendUser.value.document_expiry ? new Date(backendUser.value.document_expiry) : null,
+      profession: backendUser.value.profession || "",
+      usage_type: backendUser.value.usage_type || "",
+      avg_km_per_day: backendUser.value.avg_km_per_day || null,
+      member_type: backendUser.value.member_type || "",
+      payment_method: backendUser.value.payment_method || "",
+      municipio_roma: backendUser.value.municipio_roma || ""
     }
 
   } catch (e) {
@@ -79,13 +133,22 @@ async function submit() {
   try {
     const token = await getAccessTokenSilently()
 
+    // Formatta date prima dell'invio
+    const payload = { ...profile.value }
+    if (payload.birth_date) {
+      payload.birth_date = payload.birth_date.toISOString().substring(0, 10)
+    }
+    if (payload.document_expiry) {
+      payload.document_expiry = payload.document_expiry.toISOString().substring(0, 10)
+    }
+
     const res = await fetch("http://localhost:8000/users/me", {
       method: "PUT",
       headers: {
         "Content-Type": "application/json",
         Authorization: `Bearer ${token}`
       },
-      body: JSON.stringify(profile.value)
+      body: JSON.stringify(payload)
     })
 
     const data = await res.json()
@@ -130,8 +193,9 @@ onMounted(() => {
           <Step value="1">Anagrafica</Step>
           <Step value="2">Contatti</Step>
           <Step value="3">Documento</Step>
-          <Step value="4">Pagamento</Step>
-          <Step value="5">Completa</Step>
+          <Step value="4">Profilo</Step>
+          <Step value="5">Pagamento</Step>
+          <Step value="6">Completa</Step>
         </StepList>
 
         <StepPanels>
@@ -150,13 +214,21 @@ onMounted(() => {
                 <label for="tax_code" class="font-semibold text-sm">Codice Fiscale *</label>
                 <InputText id="tax_code" v-model="profile.tax_code" placeholder="Inserisci il codice fiscale" class="w-full uppercase" />
               </div>
+              <div class="flex flex-column gap-2">
+                <label for="birth_date" class="font-semibold text-sm">Data di Nascita *</label>
+                <DatePicker id="birth_date" v-model="profile.birth_date" dateFormat="dd/mm/yy" class="w-full" />
+              </div>
+              <div class="flex flex-column gap-2">
+                <label for="birth_place" class="font-semibold text-sm">Luogo di Nascita *</label>
+                <InputText id="birth_place" v-model="profile.birth_place" placeholder="Città di nascita" class="w-full" />
+              </div>
             </div>
             <div class="flex pt-4 justify-content-end border-top-1 border-light">
               <Button 
                 label="Avanti" 
                 icon="pi pi-arrow-right" 
                 iconPos="right" 
-                :disabled="!profile.first_name || !profile.last_name || !profile.tax_code" 
+                :disabled="!profile.first_name || !profile.last_name || !profile.tax_code || !profile.birth_date || !profile.birth_place" 
                 @click="activateCallback('2')" 
               />
             </div>
@@ -171,7 +243,35 @@ onMounted(() => {
               </div>
               <div class="flex flex-column gap-2">
                 <label for="address" class="font-semibold text-sm">Indirizzo di Residenza *</label>
-                <InputText id="address" v-model="profile.address" placeholder="Via, Numero Civico, Città, CAP" class="w-full" />
+                <InputText id="address" v-model="profile.address" placeholder="Via e Numero Civico" class="w-full" />
+              </div>
+              <div class="flex flex-column gap-2">
+                <label for="city" class="font-semibold text-sm">Città *</label>
+                <InputText id="city" v-model="profile.city" placeholder="Città" class="w-full" />
+              </div>
+              <div class="flex flex-column gap-2">
+                <label for="zip_code" class="font-semibold text-sm">CAP *</label>
+                <InputText id="zip_code" v-model="profile.zip_code" placeholder="Codice Avviamento Postale" class="w-full" />
+              </div>
+              <div class="flex flex-column gap-2">
+                <label for="province" class="font-semibold text-sm">Provincia *</label>
+                <InputText id="province" v-model="profile.province" placeholder="Sigla Provincia (es. RM)" class="w-full uppercase" />
+              </div>
+              <div class="flex flex-column gap-2">
+                <label for="municipality" class="font-semibold text-sm">Comune *</label>
+                <InputText id="municipality" v-model="profile.municipality" placeholder="Comune" class="w-full" />
+              </div>
+              <div class="flex flex-column gap-2">
+                <label for="municipio_roma" class="font-semibold text-sm">Numero Municipio (I - XII) *</label>
+                <Select 
+                  id="municipio_roma" 
+                  v-model="profile.municipio_roma" 
+                  :options="municipiRoma" 
+                  optionLabel="label" 
+                  optionValue="value" 
+                  placeholder="Seleziona il Municipio" 
+                  class="w-full" 
+                />
               </div>
             </div>
             <div class="flex pt-4 justify-content-between border-top-1 border-light">
@@ -180,7 +280,7 @@ onMounted(() => {
                 label="Avanti" 
                 icon="pi pi-arrow-right" 
                 iconPos="right" 
-                :disabled="!profile.phone || !profile.address" 
+                :disabled="!profile.phone || !profile.address || !profile.city || !profile.zip_code || !profile.province || !profile.municipality || !profile.municipio_roma" 
                 @click="activateCallback('3')" 
               />
             </div>
@@ -205,6 +305,10 @@ onMounted(() => {
                 <label for="document_number" class="font-semibold text-sm">Numero Documento *</label>
                 <InputText id="document_number" v-model="profile.document_number" placeholder="Inserisci il numero del documento" class="w-full uppercase" />
               </div>
+              <div class="flex flex-column gap-2">
+                <label for="document_expiry" class="font-semibold text-sm">Scadenza Documento *</label>
+                <DatePicker id="document_expiry" v-model="profile.document_expiry" dateFormat="dd/mm/yy" class="w-full" />
+              </div>
             </div>
             <div class="flex pt-4 justify-content-between border-top-1 border-light">
               <Button label="Indietro" severity="secondary" icon="pi pi-arrow-left" @click="activateCallback('2')" />
@@ -212,20 +316,66 @@ onMounted(() => {
                 label="Avanti" 
                 icon="pi pi-arrow-right" 
                 iconPos="right" 
-                :disabled="!profile.document_type || !profile.document_number" 
+                :disabled="!profile.document_type || !profile.document_number || !profile.document_expiry" 
                 @click="activateCallback('4')" 
               />
             </div>
           </StepPanel>
 
-          <!-- 4️⃣ STEP: Pagamento -->
+          <!-- 4️⃣ STEP: Profilo Associativo -->
           <StepPanel v-slot="{ activateCallback }" value="4">
             <div class="flex flex-column gap-4 py-3 text-left">
               <div class="flex flex-column gap-2">
-                <label for="payment_method" class="text-sm">Paga con bonifico, Satispay o Paypal. <a href="https://salvaiciclistiroma.it/lassociazione/diventa-socio/" target="_blank" >Qui trovi le coordinate.</a></label>
-                <label for="payment_method" class="text-sm">La quota di iscrizione annuale è di 10 euro per socio sostenitore, 30 euro per socio attivista</label> 
+                <label for="profession" class="font-semibold text-sm">Professione</label>
+                <InputText id="profession" v-model="profile.profession" placeholder="La tua professione" class="w-full" />
+              </div>
+              <div class="flex flex-column gap-2">
+                <label for="usage_type" class="font-semibold text-sm">Tipo Uso</label>
+                <Select 
+                  id="usage_type" 
+                  v-model="profile.usage_type" 
+                  :options="usageTypes" 
+                  optionLabel="label" 
+                  optionValue="value" 
+                  placeholder="Seleziona il tipo di uso" 
+                  class="w-full" 
+                />
+              </div>
+              <div class="flex flex-column gap-2">
+                <label for="avg_km_per_day" class="font-semibold text-sm">Km media giorno</label>
+                <InputNumber id="avg_km_per_day" v-model="profile.avg_km_per_day" placeholder="Km media giorno" class="w-full" />
+              </div>
+            </div>
+            <div class="flex pt-4 justify-content-between border-top-1 border-light">
+              <Button label="Indietro" severity="secondary" icon="pi pi-arrow-left" @click="activateCallback('3')" />
+              <Button 
+                label="Avanti" 
+                icon="pi pi-arrow-right" 
+                iconPos="right" 
+                @click="activateCallback('5')" 
+              />
+            </div>
+          </StepPanel>
 
-                <label for="payment_method" class="font-semibold text-sm">Metodo di Pagamento *</label>
+          <!-- 5️⃣ STEP: Pagamento -->
+          <StepPanel v-slot="{ activateCallback }" value="5">
+            <div class="flex flex-column gap-4 py-3 text-left">
+              <div class="flex flex-column gap-2">
+                <label for="member_type" class="font-semibold text-sm">Tipo di Quota *</label>
+                <Select 
+                  id="member_type" 
+                  v-model="profile.member_type" 
+                  :options="memberTypes" 
+                  optionLabel="label" 
+                  optionValue="value" 
+                  placeholder="Seleziona la quota" 
+                  class="w-full" 
+                />
+              </div>
+
+              <div class="flex flex-column gap-2 mt-3">
+                <label for="payment_method" class="text-sm">Paga con bonifico, Satispay o Paypal. <a href="https://salvaiciclistiroma.it/lassociazione/diventa-socio/" target="_blank" >Qui trovi le coordinate.</a></label>
+                <label for="payment_method" class="font-semibold text-sm mt-2">Metodo di Pagamento *</label>
                 <Select 
                   id="payment_method" 
                   v-model="profile.payment_method" 
@@ -235,26 +385,24 @@ onMounted(() => {
                   placeholder="Seleziona il metodo di pagamento" 
                   class="w-full" 
                 />
-
-                
               </div>
             </div>
             <div class="flex pt-4 justify-content-between border-top-1 border-light">
-              <Button label="Indietro" severity="secondary" icon="pi pi-arrow-left" @click="activateCallback('3')" />
+              <Button label="Indietro" severity="secondary" icon="pi pi-arrow-left" @click="activateCallback('4')" />
               <Button 
                 label="Avanti" 
                 icon="pi pi-arrow-right" 
                 iconPos="right" 
-                :disabled="!profile.payment_method" 
-                @click="activateCallback('5')" 
+                :disabled="!profile.payment_method || !profile.member_type" 
+                @click="activateCallback('6')" 
               />
             </div>
           </StepPanel>
 
-          <!-- 5️⃣ STEP: Riepilogo e Completamento -->
-          <StepPanel v-slot="{ activateCallback }" value="5">
+          <!-- 6️⃣ STEP: Riepilogo e Completamento -->
+          <StepPanel v-slot="{ activateCallback }" value="6">
             <div class="py-3 text-left">
-              <h3 class="font-semibold text-lg mb-3">Riepilogo Dati Inseriti</h3>
+              <h3 class="font-semibold text-lg mb-3">Sintesi dati inseriti</h3>
               
               <div class="surface-ground p-4 border-round grid row-gap-3 column-gap-4">
                 <div class="col-12 md:col-5 flex flex-column gap-1">
@@ -266,20 +414,24 @@ onMounted(() => {
                   <span class="text-base text-900 font-medium uppercase">{{ profile.tax_code }}</span>
                 </div>
                 <div class="col-12 md:col-5 flex flex-column gap-1">
+                  <span class="text-xs font-semibold text-muted text-uppercase uppercase">Data e Luogo Nascita</span>
+                  <span class="text-base text-900 font-medium">{{ profile.birth_date ? profile.birth_date.toLocaleDateString() : '' }} - {{ profile.birth_place }}</span>
+                </div>
+                <div class="col-12 md:col-5 flex flex-column gap-1">
                   <span class="text-xs font-semibold text-muted text-uppercase uppercase">Telefono</span>
                   <span class="text-base text-900 font-medium">{{ profile.phone || '-' }}</span>
                 </div>
-                <div class="col-12 md:col-5 flex flex-column gap-1">
-                  <span class="text-xs font-semibold text-muted text-uppercase uppercase">Indirizzo</span>
-                  <span class="text-base text-900 font-medium">{{ profile.address || '-' }}</span>
+                <div class="col-12 md:col-10 flex flex-column gap-1">
+                  <span class="text-xs font-semibold text-muted text-uppercase uppercase">Residenza</span>
+                  <span class="text-base text-900 font-medium">{{ profile.address || '-' }}, {{ profile.city || '-' }} ({{ profile.province || '-' }}) - {{ profile.zip_code || '-' }}<template v-if="profile.municipio_roma"> - Municipio {{ profile.municipio_roma }}</template></span>
                 </div>
                 <div class="col-12 md:col-5 flex flex-column gap-1">
                   <span class="text-xs font-semibold text-muted text-uppercase uppercase">Documento</span>
-                  <span class="text-base text-900 font-medium">{{ profile.document_type }} - {{ profile.document_number }}</span>
+                  <span class="text-base text-900 font-medium">{{ profile.document_type }} - {{ profile.document_number }} (Scad: {{ profile.document_expiry ? profile.document_expiry.toLocaleDateString() : '' }})</span>
                 </div>
                 <div class="col-12 md:col-5 flex flex-column gap-1">
-                  <span class="text-xs font-semibold text-muted text-uppercase uppercase">Metodo di Pagamento</span>
-                  <span class="text-base text-900 font-medium">{{ profile.payment_method }}</span>
+                  <span class="text-xs font-semibold text-muted text-uppercase uppercase">Quota e Pagamento</span>
+                  <span class="text-base text-900 font-medium">{{ profile.member_type }} - {{ profile.payment_method }}</span>
                 </div>
               </div>
 
@@ -291,7 +443,7 @@ onMounted(() => {
             </div>
             
             <div class="flex pt-4 justify-content-between border-top-1 border-light">
-              <Button label="Indietro" severity="secondary" icon="pi pi-arrow-left" @click="activateCallback('4')" />
+              <Button label="Indietro" severity="secondary" icon="pi pi-arrow-left" @click="activateCallback('5')" />
               
               <Button 
                 v-if="backendUser?.status === 'INCOMPLETE'" 
@@ -317,7 +469,7 @@ onMounted(() => {
 
 <style scoped>
 .wizard-container {
-  max-width: 900px;
+  max-width: 1000px;
   margin: 0 auto;
 }
 

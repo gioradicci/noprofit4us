@@ -201,7 +201,7 @@ const showRenewConfirmDialog  = (id_user_to_accept) => {
                 <div class="text-2xl font-bold text-orange-500">
                   {{ counts.pending }}
                 </div>
-                <div>Attesa accettazione</div>
+                <div>Soci in attesa</div>
               </div>
             </template>
           </Card>

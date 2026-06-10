@@ -76,11 +76,31 @@ def update_me(
         "address",
         "document_type",
         "document_number",
-        "payment_method"
+        "payment_method",
+        "birth_date",
+        "birth_place",
+        "document_expiry",
+        "city",
+        "zip_code",
+        "province",
+        "municipality",
+        "profession",
+        "usage_type",
+        "avg_km_per_day",
+        "member_type",
+        "municipio_roma"
     ]
+
+    from datetime import datetime
 
     for key, value in payload.items():
         if key in allowed_fields:
+            if key in ["birth_date", "document_expiry"] and isinstance(value, str) and value:
+                try:
+                    # Assumes YYYY-MM-DD format from frontend input type="date"
+                    value = datetime.strptime(value[:10], "%Y-%m-%d").date()
+                except ValueError:
+                    pass
             setattr(user, key, value)
 
     # ✅ logica stato
