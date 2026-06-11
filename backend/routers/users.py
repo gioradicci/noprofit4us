@@ -44,14 +44,23 @@ def me(current_user=Depends(get_current_user), db: Session = Depends(get_db)):
     # Fetch member details if present
     member = db.query(Member).filter_by(user_id=current_user.id).first()
     if member:
-        membership = db.query(Membership).filter_by(member_id=member.id).order_by(Membership.end_date.desc()).first()
-        if membership:
+        from datetime import date
+        memberships = db.query(Membership).filter_by(member_id=member.id).order_by(Membership.end_date.desc()).all()
+        if memberships:
+            active_membership = next((m for m in memberships if m.is_paid and m.end_date >= date.today()), None)
+            pending_renewal = next((m for m in memberships if not m.is_paid and m.is_renewal), None)
+
+            membership = active_membership if active_membership else memberships[0]
+
             user_dict["membership_number"] = membership.card_number
             user_dict["start_date"] = membership.start_date.isoformat() if membership.start_date else None
             user_dict["end_date"] = membership.end_date.isoformat() if membership.end_date else None
             user_dict["is_paid"] = membership.is_paid
             user_dict["reference_year"] = membership.reference_year
-            user_dict["is_renewal_pending"] = not membership.is_paid
+            
+            user_dict["is_renewal_pending"] = pending_renewal is not None
+            if pending_renewal:
+                user_dict["pending_renewal_year"] = pending_renewal.reference_year
         else:
             user_dict["membership_number"] = member.membership_number
             user_dict["is_renewal_pending"] = False
@@ -136,8 +145,13 @@ def request_renew(
     db.commit()
 
     today = date.today()
-    start, end = calculate_membership_period(today)
-    ref_year = calculate_reference_year(today)
+    if latest_membership and latest_membership.end_date >= today:
+        ref_year = latest_membership.end_date.year + 1
+        start = date(ref_year, 1, 1)
+        end = date(ref_year, 12, 31)
+    else:
+        start, end = calculate_membership_period(today)
+        ref_year = calculate_reference_year(today)
 
     new_membership = Membership(
         member_id=member.id,

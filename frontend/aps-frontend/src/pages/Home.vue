@@ -10,6 +10,7 @@ const { isAuthenticated, isLoading, getAccessTokenSilently, loginWithRedirect } 
 // ✅ Utente caricato dal backend
 const backendUser = ref(null)
 const loadingBackend = ref(false)
+const mese_inizio_rinnovo_anticipato = 10 //Novembre  
 
 // ✅ Carica dettagli utente
 async function loadUser() {
@@ -96,12 +97,7 @@ async function requestRenewal() {
 }
 
 function memberNoActive() {
-  //da Nov è possibile rifare la tessera, quindi indichiamo al socio che mancano due mesi
-  //alla scadenza e cambiamo lo stile della tessera virtuale. Ad esempio se oggi è 10/11/2026
-  //si può rifare la tessera per il 2027, quindi consideriamo il socio come non attivo
-  let retVal =  (!backendUser.value.end_date || new Date(backendUser.value.end_date) < new Date() ) || (backendUser.value.is_renewal_pending)
-  console.log(backendUser.value)
-  
+  let retVal = (!backendUser.value.end_date || new Date(backendUser.value.end_date) < new Date());
   return retVal
 };
 
@@ -112,10 +108,20 @@ function memberExpiring() {
   const today = new Date();
   const endDate = new Date(backendUser.value.end_date);
   
-  if (endDate.getFullYear() === today.getFullYear() && today.getMonth() >= 10) {
+  if (endDate.getFullYear() === today.getFullYear() && today.getMonth() >= mese_inizio_rinnovo_anticipato) {
     return true;
   }
   return false;
+}
+
+function getRenewalYear() {
+  if (!backendUser.value || !backendUser.value.end_date) return new Date().getFullYear();
+  const endDate = new Date(backendUser.value.end_date);
+  const today = new Date();
+  if (endDate < today) {
+    return today.getFullYear();
+  }
+  return endDate.getFullYear() + 1;
 }
 
 function getRoleIcon() {
@@ -303,14 +309,16 @@ function getRoleIcon() {
         <div class="mb-5">
           <div v-if="backendUser.is_renewal_pending" class="card p-4 shadow-2 border-round-xl surface-card text-center mt-4 border-top-3 border-info">
             <i class="pi pi-hourglass text-4xl text-info mb-3 block"></i>
-            <h4 class="font-bold text-lg mb-2">Richiesta di rinnovo in elaborazione</h4>
+            <h4 class="font-bold text-lg mb-2">Richiesta di rinnovo in elaborazione per il {{ getRenewalYear() }}</h4>
             <p class="text-sm text-color-secondary m-0">La tua richiesta di rinnovo è in attesa di verifica del pagamento da parte del tesoriere.</p>
           </div>
 
 
           <!-- RENEW REQUEST FORM -->
           <div v-else-if="!backendUser.end_date || new Date(backendUser.end_date) < new Date() || memberExpiring()" class="card p-4 shadow-2 border-round-xl surface-card text-left mt-4 border-top-3 border-orange-500">
-            <h4 class="font-bold text-base mb-3 text-color uppercase tracking-wide">Rinnova la tua iscrizione</h4>
+            <h4 class="font-bold text-base mb-3 text-color uppercase tracking-wide">
+              {{ memberExpiring() ? 'RINNOVA LA TUA ISCRIZIONE anticipatamente' : 'Rinnova la tua iscrizione' }}
+            </h4>
             <p class="text-sm text-color-secondary mb-3">La tua iscrizione è scaduta o in scadenza. Scegli il metodo di pagamento e richiedi il rinnovo.</p>
             <div class="flex flex-column gap-3">
               <div class="flex flex-column gap-2">
