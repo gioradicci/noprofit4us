@@ -5,6 +5,8 @@ import Button from 'primevue/button'
 
 const { isAuthenticated, isLoading, getAccessTokenSilently, logout } = useAuth0()
 
+import Menubar from 'primevue/menubar'
+
 const backendUser = ref(null)
 
 async function loadBackendUser() {
@@ -27,6 +29,17 @@ async function loadBackendUser() {
 const isAdminOrTreasurer = computed(() => {
   const role = backendUser.value?.role
   return role === 'ADMIN' || role === 'TREASURER'
+})
+
+const items = computed(() => {
+  const menu = [
+    { label: 'Home', icon: 'pi pi-home', route: '/' },
+    { label: 'Iscrizione', icon: 'pi pi-id-card', route: '/wizard' }
+  ]
+  if (isAdminOrTreasurer.value) {
+    menu.push({ label: 'Dashboard', icon: 'pi pi-chart-bar', route: '/dashboard' })
+  }
+  return menu
 })
 
 watch(isAuthenticated, (newVal) => {
@@ -54,20 +67,29 @@ function doLogout() {
   
   <div v-else class="app-layout">
     <!-- Navbar globale visibile solo ad utente autenticato -->
-    <header v-if="isAuthenticated" class="navbar py-3 px-4 border-bottom-1 border-light flex justify-content-between align-items-center surface-card shadow-1">
-      <div class="flex align-items-center gap-3">
-        
-        <router-link to="/" class="text-sm md:text-2xl font-bold text-lg text-color no-underline mr-3"><Image src="/logosic_roma.svg" alt="Logo" width="60"/></router-link>
-        <nav class="flex gap-2">
-          <router-link to="/" class="nav-link text-color-secondary no-underline font-medium text-sm">Home</router-link>
-          <router-link to="/wizard" class="nav-link text-color-secondary no-underline font-medium text-sm">Iscrizione</router-link>
-          <router-link v-if="isAdminOrTreasurer" to="/dashboard" class="nav-link text-color-secondary no-underline font-medium text-sm">Dashboard</router-link>
-        </nav>
-      </div>
-      <div>
+    <Menubar v-if="isAuthenticated" :model="items" class="py-2 px-4 border-none border-bottom-1 border-light border-round-none shadow-1 mb-0">
+      <template #start>
+        <router-link to="/" class="mr-4 flex align-items-center">
+          <Image src="/logosic_roma.svg" alt="Logo" width="50" />
+        </router-link>
+      </template>
+      <template #item="{ item, props, hasSubmenu }">
+        <router-link v-if="item.route" v-slot="{ href, navigate }" :to="item.route" custom>
+            <a :href="href" v-bind="props.action" @click="navigate">
+                <span :class="item.icon" />
+                <span class="ml-2">{{ item.label }}</span>
+            </a>
+        </router-link>
+        <a v-else :href="item.url" :target="item.target" v-bind="props.action">
+            <span :class="item.icon" />
+            <span class="ml-2">{{ item.label }}</span>
+            <span v-if="hasSubmenu" class="pi pi-angle-down ml-auto" />
+        </a>
+      </template>
+      <template #end>
         <Button label="Logout" icon="pi pi-sign-out" severity="danger" size="small" outlined @click="doLogout" />
-      </div>
-    </header>
+      </template>
+    </Menubar>
 
     <!-- ✅ CONTENUTO PAGINE -->
     <main class="content">
