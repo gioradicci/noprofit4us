@@ -32,6 +32,7 @@ ENV/
 *.sqlite
 *.sqlite3
 backend/app.db
+*.sbpro
 
 # Editor / IDE directories and files
 .vscode/
