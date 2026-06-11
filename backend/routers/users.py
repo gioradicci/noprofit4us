@@ -31,6 +31,11 @@ def me(current_user=Depends(get_current_user), db: Session = Depends(get_db)):
         user_dict["birth_date"] = user_dict["birth_date"].isoformat()
     if user_dict.get("document_expiry"):
         user_dict["document_expiry"] = user_dict["document_expiry"].isoformat()
+
+    if user_dict.get("usage_type"):
+        user_dict["usage_type"] = [u.strip() for u in user_dict["usage_type"].split(",") if u.strip()]
+    else:
+        user_dict["usage_type"] = []
         
     user_dict["roles"] = getattr(current_user, "roles", [])
     
@@ -110,6 +115,8 @@ def update_me(
                     value = datetime.strptime(value[:10], "%Y-%m-%d").date()
                 except ValueError:
                     pass
+            elif key == "usage_type" and isinstance(value, list):
+                value = ",".join(value)
             setattr(user, key, value)
 
     # ✅ logica stato

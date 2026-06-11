@@ -11,6 +11,7 @@ import StepPanel from 'primevue/steppanel'
 import InputText from 'primevue/inputtext'
 import Button from 'primevue/button'
 import Select from 'primevue/select'
+import MultiSelect from 'primevue/multiselect'
 import DatePicker from 'primevue/datepicker'
 import InputNumber from 'primevue/inputnumber'
 
@@ -41,7 +42,7 @@ const profile = ref({
   document_number: "",
   document_expiry: null,
   profession: "",
-  usage_type: "",
+  usage_type: [],
   avg_km_per_day: null,
   member_type: "",
   payment_method: "",
@@ -49,11 +50,12 @@ const profile = ref({
 })
 
 const usageTypes = ref([
-  { label: "Casa/Lavoro", value: "casa/lavoro" },
+  { label: "Casa/Lavoro", value: "casa-lavoro" },
+  { label: "Viaggio", value: "viaggio" },
   { label: "Sport", value: "sport" },
   { label: "Accompagnare figli", value: "accompagnare figli" },
   { label: "Spesa", value: "spesa" },
-  { label: "Altro", value: "altro" }
+  { label: "Strumento Lavoro", value: "strumento lavoro" }
 ])
 
 // ✅ Opzioni per Select
@@ -121,7 +123,7 @@ async function loadUser() {
       document_number: backendUser.value.document_number || "",
       document_expiry: backendUser.value.document_expiry ? new Date(backendUser.value.document_expiry) : null,
       profession: backendUser.value.profession || "",
-      usage_type: backendUser.value.usage_type || "",
+      usage_type: backendUser.value.usage_type || [],
       avg_km_per_day: backendUser.value.avg_km_per_day || null,
       member_type: backendUser.value.member_type || "",
       payment_method: backendUser.value.payment_method || "",
@@ -336,14 +338,15 @@ onMounted(() => {
               </div>
               <div class="flex flex-column gap-2">
                 <label for="usage_type" class="font-semibold text-sm">Tipo Uso</label>
-                <Select 
+                <MultiSelect 
                   id="usage_type" 
                   v-model="profile.usage_type" 
                   :options="usageTypes" 
                   optionLabel="label" 
                   optionValue="value" 
-                  placeholder="Seleziona il tipo di uso" 
+                  placeholder="Seleziona i tipi di uso" 
                   class="w-full" 
+                  display="chip"
                 />
               </div>
               <div class="flex flex-column gap-2">
