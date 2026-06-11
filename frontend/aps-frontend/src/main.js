@@ -17,6 +17,8 @@ import ConfirmDialog from 'primevue/confirmdialog';
 import ConfirmationService from 'primevue/confirmationservice';
 import Select from 'primevue/select';
 import Image from 'primevue/image'
+import Toast from 'primevue/toast';
+import ToastService from 'primevue/toastservice';
 
 
 import { createApp } from 'vue'
@@ -37,6 +39,7 @@ app.component('Dropdown', Dropdown)
 app.component('ConfirmDialog', ConfirmDialog);
 app.component('Select', Select)
 app.component('Image', Image)
+app.component('Toast', Toast)
 
 
 app.use(router)
@@ -48,6 +51,7 @@ app.use(PrimeVue, {
 
 
 app.use(ConfirmationService);
+app.use(ToastService);
 
 app.use(
   createAuth0({

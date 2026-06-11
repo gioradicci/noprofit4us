@@ -1,6 +1,7 @@
 <script setup>
 import { ref, onMounted, computed } from 'vue'
 import { useAuth0 } from '@auth0/auth0-vue'
+import { useToast } from 'primevue/usetoast'
 
 // Import PrimeVue Stepper and custom components
 import Stepper from 'primevue/stepper'
@@ -16,9 +17,13 @@ import DatePicker from 'primevue/datepicker'
 import InputNumber from 'primevue/inputnumber'
 
 const { getAccessTokenSilently } = useAuth0()
+const toast = useToast()
 
 // ✅ Utente backend
 const backendUser = ref(null)
+
+const initialDate = new Date(new Date().getFullYear() -18, 0, 1);
+
 
 const isSocioAttivo = computed(() => {
   if (!backendUser.value) return false;
@@ -90,7 +95,10 @@ const municipiRoma = ref([
   { label: "IX", value: "IX" },
   { label: "X", value: "X" },
   { label: "XI", value: "XI" },
-  { label: "XII", value: "XII" }
+  { label: "XII", value: "XII" },
+  { label: "XIII", value: "XIII" },
+  { label: "XIV", value: "XIV" },
+  { label: "XV", value: "XV" }
 ])
 
 // ✅ Carica dati utente
@@ -158,12 +166,19 @@ async function submit() {
       body: JSON.stringify(payload)
     })
 
+    if (!res.ok) {
+      throw new Error(`Errore salvataggio: ${res.status}`);
+    }
+
     const data = await res.json()
     backendUser.value = data
     console.log("SAVED:", data)
+    
+    toast.add({ severity: 'success', summary: 'Successo', detail: 'Dati salvati correttamente', life: 3000 });
 
   } catch (e) {
     console.error("Errore submit:", e)
+    toast.add({ severity: 'error',  summary: 'Errore', detail: 'Si è verificato un errore durante il salvataggio', life: 3000 });
   }
 }
 
@@ -223,7 +238,20 @@ onMounted(() => {
               </div>
               <div class="flex flex-column gap-2">
                 <label for="birth_date" class="font-semibold text-sm">Data di Nascita *</label>
-                <DatePicker id="birth_date" v-model="profile.birth_date" dateFormat="dd/mm/yy" class="w-full" />
+                <DatePicker 
+                  id="birth_date" 
+                  v-model="profile.birth_date" 
+                  dateFormat="dd/mm/yy" 
+                  class="w-full" 
+                  :pt="{
+                    root: ({ state, props }) => {
+                      if (!props.modelValue && state.currentYear === new Date().getFullYear()) {
+                        state.currentYear = initialDate.getFullYear();
+                        state.currentMonth = initialDate.getMonth();
+                      }
+                    }
+                  }"
+                />
               </div>
               <div class="flex flex-column gap-2">
                 <label for="birth_place" class="font-semibold text-sm">Luogo di Nascita *</label>
@@ -399,7 +427,7 @@ onMounted(() => {
               
               <div v-if="isSocioAttivo" class="p-3 bg-blue-50 text-blue-800 border-round flex align-items-center gap-2 border-1 border-blue-200 mt-2">
                 <i class="pi pi-info-circle text-lg"></i>
-                <span class="text-sm">Sei un socio attivo. Non puoi modificare la quota e il metodo di pagamento attuali.</span>
+                <span class="text-sm">Sei un socio attivo. Puoi modificare la quota e il metodo di pagamento solo in fase di iscrizione o rinnovo.</span>
               </div>
             </div>
             <div class="flex pt-4 justify-content-between border-top-1 border-light">

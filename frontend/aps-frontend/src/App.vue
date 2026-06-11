@@ -34,7 +34,7 @@ const isAdminOrTreasurer = computed(() => {
 const items = computed(() => {
   const menu = [
     { label: 'Home', icon: 'pi pi-home', route: '/' },
-    { label: 'Iscrizione', icon: 'pi pi-id-card', route: '/wizard' }
+    { label: 'Profilo', icon: 'pi pi-id-card', route: '/wizard' }
   ]
   if (isAdminOrTreasurer.value) {
     menu.push({ label: 'Dashboard', icon: 'pi pi-chart-bar', route: '/dashboard' })
@@ -60,6 +60,7 @@ function doLogout() {
 </script>
 
 <template>
+  <Toast position="top-center" />
   <ConfirmDialog />
   <div v-if="isLoading" class="flex align-items-center justify-content-center min-h-screen">
     <i class="pi pi-spin pi-spinner text-3xl text-primary"></i>
