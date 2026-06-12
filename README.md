@@ -1,5 +1,3 @@
-# NoProfit4Us Application
-
 Questo è un progetto web per la gestione di un'associazione no-profit (APS), composto da:
 - **Frontend**: Vue.js 3 + Vite + Javascript (con PrimeVue).
 - **Backend**: Python + FastAPI + SQLAlchemy + SQLite.
