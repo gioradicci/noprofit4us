@@ -43,3 +43,4 @@ backend/app.db
 *.njsproj
 *.sln
 *.sw?
+backend/app.sqbpro

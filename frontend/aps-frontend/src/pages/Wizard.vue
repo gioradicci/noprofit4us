@@ -210,7 +210,7 @@ onMounted(() => {
 
     <!-- ✅ Contenitore Stepper -->
     <div class="card p-4 shadow-2 border-round surface-card">
-      <Stepper value="1">
+      <Stepper value="1" >
         <StepList class="mb-4">
           <Step value="1">Anagrafica</Step>
           <Step value="2">Contatti</Step>
@@ -220,13 +220,13 @@ onMounted(() => {
           <Step value="6">Completa</Step>
         </StepList>
 
-        <StepPanels>
+        <StepPanels >
           <!-- 1️⃣ STEP: Dati Anagrafici -->
-          <StepPanel v-slot="{ activateCallback }" value="1">
-            <div class="flex flex-column gap-4 py-3 text-left">
+          <StepPanel v-slot="{ activateCallback }" value="1" >
+            <div class="flex flex-column gap-4 py-3 text-left" >
               <div class="flex flex-column gap-2">
                 <label for="first_name" class="font-semibold text-sm">Nome *</label>
-                <InputText id="first_name" v-model="profile.first_name" placeholder="Inserisci il tuo nome" class="w-full" />
+                <InputText  id="first_name" v-model="profile.first_name" placeholder="Inserisci il tuo nome" class="w-full" />
               </div>
               <div class="flex flex-column gap-2">
                 <label for="last_name" class="font-semibold text-sm">Cognome *</label>

@@ -106,6 +106,30 @@ async function renew(id) {
   loadRoles()
 }
 
+// ESPORTA IN EXCEL
+async function exportUsersCSV() {
+  const token = await getAccessTokenSilently()
+  const res = await fetch("http://localhost:8000/users/export", {
+    headers: {
+      Authorization: `Bearer ${token}`
+    }
+  })
+  
+  if (res.ok) {
+    const blob = await res.blob()
+    const url = window.URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = 'utenti.xlsx'
+    document.body.appendChild(a)
+    a.click()
+    a.remove()
+    window.URL.revokeObjectURL(url)
+  } else {
+    console.error("Errore durante l'esportazione", await res.text())
+  }
+}
+
 function formatDate(date) {
   if (!date) return "-"
 
@@ -272,6 +296,10 @@ const showRenewConfirmDialog  = (id_user_to_accept) => {
           @click="filter = 'EXPIRED'"
         />
       </div>
+
+      <div class="col-12 md:col-4 flex justify-content-end" v-if="canApprove()">
+        <Button label="Esporta Utenti" icon="pi pi-download" severity="help" @click="exportUsersCSV" />
+      </div>
     </div>
 
         
@@ -283,6 +311,8 @@ const showRenewConfirmDialog  = (id_user_to_accept) => {
       paginator
       :rows="10"
       responsiveLayout="scroll"
+      size="small"
+      class="text-sm"
     >
 
       <Column

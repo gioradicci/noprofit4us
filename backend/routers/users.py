@@ -1,7 +1,10 @@
 from fastapi import APIRouter, Depends, HTTPException
+from fastapi.responses import StreamingResponse
 from sqlalchemy.orm import Session
 from datetime import date, timedelta
 from pydantic import BaseModel
+import openpyxl
+from io import BytesIO
 
 
 from database.database import get_db
@@ -242,6 +245,82 @@ def dashboard(
         })
 
     return result
+
+
+@router.get("/export")
+def export_users(
+    current_user=Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    # ✅ SOLO ADMIN o TREASURER
+    roles = current_user.roles
+
+    if "ADMIN" not in roles and "TREASURER" not in roles:
+        raise HTTPException(status_code=403, detail="Not authorized")
+
+    today = date.today()
+    users = db.query(User).all()
+
+    wb = openpyxl.Workbook()
+    ws = wb.active
+    ws.title = "Utenti"
+
+    headers_row = [
+        "ID", "Nome", "Cognome", "Email", "Codice Fiscale", 
+        "Telefono", "Indirizzo", "Citta", "Provincia", "CAP",
+        "Stato Profilo", "Stato Membership", "Scadenza Membership"
+    ]
+    ws.append(headers_row)
+
+    for u in users:
+        member = db.query(Member).filter(Member.user_id == u.id).first()
+        latest_membership = None
+        if member:
+            latest_membership = db.query(Membership) \
+                .filter(Membership.member_id == member.id) \
+                .order_by(Membership.end_date.desc()) \
+                .first()
+
+        membership_status = "NONE"
+        membership_end = ""
+
+        if u.status == "PENDING":
+            membership_status = "PENDING"
+        elif latest_membership:
+            membership_end = latest_membership.end_date.isoformat() if latest_membership.end_date else ""
+            if not latest_membership.is_paid:
+                membership_status = "RENEWAL_PENDING"
+            elif latest_membership.end_date >= today:
+                membership_status = "ACTIVE"
+            else:
+                membership_status = "EXPIRED"
+        elif u.status == "INCOMPLETE":
+            membership_status = "INCOMPLETE"
+
+        ws.append([
+            u.id,
+            u.first_name or "",
+            u.last_name or "",
+            u.email or "",
+            u.tax_code or "",
+            u.phone or "",
+            u.address or "",
+            u.city or "",
+            u.province or "",
+            u.zip_code or "",
+            u.status or "",
+            membership_status,
+            membership_end
+        ])
+
+    output = BytesIO()
+    wb.save(output)
+    output.seek(0)
+    
+    headers = {
+        'Content-Disposition': 'attachment; filename="utenti.xlsx"'
+    }
+    return StreamingResponse(iter([output.getvalue()]), media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", headers=headers)
 
 
 #  LISTA UTENTI (solo ADMIN)

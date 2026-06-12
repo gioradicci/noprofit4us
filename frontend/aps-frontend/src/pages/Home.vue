@@ -10,7 +10,7 @@ const { isAuthenticated, isLoading, getAccessTokenSilently, loginWithRedirect } 
 // ✅ Utente caricato dal backend
 const backendUser = ref(null)
 const loadingBackend = ref(false)
-const mese_inizio_rinnovo_anticipato = 10 //Novembre  
+const mese_inizio_rinnovo_anticipato = 10 //Novembre=10  
 
 // ✅ Carica dettagli utente
 async function loadUser() {
