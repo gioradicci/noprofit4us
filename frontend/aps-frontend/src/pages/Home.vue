@@ -151,9 +151,9 @@ function getRoleIcon() {
       <!-- Hero Banner -->
       <div class="hero-section text-center py-4 px-4 mb-5 border-round-3xl shadow-1 relative overflow-hidden">
         <div class="mb-3 " >
-          <Image src="/logosic_roma.svg" alt="Logo" width="100" ></Image>
+          <Image src="/logo.svg" alt="Logo" width="100" ></Image>
         </div>
-        <h1 class="text-2xl md:text-3xl font-bold mb-3 mt-0 text-primary-gradient">Associazione SalvaiciclistiRoma.it</h1>
+        <h1 class="text-2xl md:text-3xl font-bold mb-3 mt-0 text-primary-gradient">Associazione APS.it</h1>
         <p class="text-lg md:text-xl text-color-secondary mb-5 max-w-30rem mx-auto line-height-3">
           Entra a far parte della nostra comunità. Compila il modulo digitale e sostieni i nostri progetti di promozione sociale.
         </p>
@@ -281,7 +281,7 @@ function getRoleIcon() {
           <div class="flex justify-content-between align-items-center mb-5">
             <div class="flex align-items-center gap-2">
               <i :class="['pi', getRoleIcon(), 'text-2xl']"></i>
-              <span class="font-bold tracking-wider text-xs uppercase">Tessera Socio SalvaiciclistiRoma</span>
+              <span class="font-bold tracking-wider text-xs uppercase">Tessera Socio APS</span>
             </div>
             <span v-if="memberNoActive()" class="bg-blue-500 text-white text-xxs px-2.5 py-1 font-bold border-round-lg uppercase shadow-1">Socio non attivo</span>
             <span v-else-if="memberExpiring()" class="bg-blue-500 text-white text-xxs px-2.5 py-1 font-bold border-round-lg uppercase shadow-1">In scadenza</span>

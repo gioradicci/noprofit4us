@@ -10,7 +10,7 @@ import requests
 
 security = HTTPBearer()
 
-AUTH0_DOMAIN = "dev-salvaiciclistiroma-it.eu.auth0.com"
+AUTH0_DOMAIN = "dev-APS.eu.auth0.com"
 API_AUDIENCE = "https://aps-api"
 ALGORITHMS = ["RS256"]
 #TODO in prod togliere  verify=False

@@ -411,7 +411,7 @@ onMounted(() => {
               </div>
 
               <div class="flex flex-column gap-2 mt-3">
-                <label for="payment_method" class="text-sm">Paga con bonifico, Satispay o Paypal. <a href="https://salvaiciclistiroma.it/lassociazione/diventa-socio/" target="_blank" >Qui trovi le coordinate.</a></label>
+                <label for="payment_method" class="text-sm">Paga con bonifico, Satispay o Paypal. <a href="https://APS/" target="_blank" >Qui trovi le coordinate.</a></label>
                 <label for="payment_method" class="font-semibold text-sm mt-2">Metodo di Pagamento *</label>
                 <Select 
                   id="payment_method" 
