@@ -236,6 +236,7 @@ def dashboard(
 
         result.append({
             "id": u.id,
+            "card_number" : latest_membership.card_number if latest_membership else "NA",
             "auth0_id": u.auth0_id,
             "first_name": u.first_name,
             "last_name": u.last_name,

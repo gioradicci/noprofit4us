@@ -71,7 +71,7 @@ function doLogout() {
     <Menubar v-if="isAuthenticated" :model="items" class="py-2 px-4 border-none border-bottom-1 border-light border-round-none shadow-1 mb-0">
       <template #start>
         <router-link to="/" class="mr-4 flex align-items-center">
-          <Image src="/logosic_roma.svg" alt="Logo" width="50" />
+          <Image src="/logo.svg" alt="Logo" width="50" />
         </router-link>
       </template>
       <template #item="{ item, props, hasSubmenu }">

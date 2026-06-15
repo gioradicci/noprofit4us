@@ -44,3 +44,4 @@ backend/app.db
 *.sln
 *.sw?
 backend/app.sqbpro
+frontend/aps-frontend/.env.local

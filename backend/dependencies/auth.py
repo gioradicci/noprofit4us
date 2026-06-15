@@ -7,12 +7,14 @@ from sqlalchemy.orm import Session
 
 from jose import jwt
 import requests
+import os
 
 security = HTTPBearer()
 
-AUTH0_DOMAIN = "dev-APS.eu.auth0.com"
-API_AUDIENCE = "https://aps-api"
-ALGORITHMS = ["RS256"]
+AUTH0_DOMAIN = os.getenv("AUTH0_DOMAIN", "")
+API_AUDIENCE = os.getenv("API_AUDIENCE", "")
+#ALGORITHMS = ["RS256"]
+
 #TODO in prod togliere  verify=False
 jwks = requests.get(f"https://{AUTH0_DOMAIN}/.well-known/jwks.json", verify=False).json()
 

@@ -6,9 +6,9 @@ import { FilterMatchMode } from '@primevue/core/api'
 import { useConfirm } from 'primevue/useconfirm';
 
 const filters = ref({
-  first_name: { value: null, matchMode: FilterMatchMode.CONTAINS },
+  card_number: { value: null, matchMode: FilterMatchMode.CONTAINS },
   last_name: { value: null, matchMode: FilterMatchMode.CONTAINS },
-
+  first_name : { value: null, matchMode: FilterMatchMode.CONTAINS },
   status: { value: null, matchMode: FilterMatchMode.EQUALS },
   membership_status: { value: null, matchMode: FilterMatchMode.EQUALS }
 })
@@ -312,8 +312,26 @@ const showRenewConfirmDialog  = (id_user_to_accept) => {
       :rows="10"
       responsiveLayout="scroll"
       size="small"
-      class="text-sm"
+      class="text-sm equal-cols"
     >
+    <Column
+        field="card_number"
+        header="#tessera"
+        sortable
+        filter
+        filterField="card_number"
+        :showFilterMenu="false"
+        :showClearButton="true"
+      >
+        <template #filter="{ filterModel, filterCallback }">
+          <InputText
+            v-model="filterModel.value"
+            @input="filterCallback()"
+            placeholder="N. tessera"
+            class="w-full"
+          />
+        </template>
+      </Column>
 
       <Column
           field="first_name"
@@ -525,6 +543,16 @@ const showRenewConfirmDialog  = (id_user_to_accept) => {
   display: flex;
   gap: 0.5rem;
   margin-bottom: 1rem;
+}
+
+@media (min-width: 1024px) {
+  .equal-cols .p-datatable-table {
+    table-layout: fixed !important;
+    width: 100% !important;
+  }
+  .equal-cols th, .equal-cols td {
+    width: 14.28% !important;
+  }
 }
 
 </style>
