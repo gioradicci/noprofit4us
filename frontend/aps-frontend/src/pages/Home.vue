@@ -130,6 +130,7 @@ function getRoleIcon() {
   
   if (role === 'ADMIN' || roles.includes('ADMIN')) return 'pi-crown';
   if (role === 'TREASURER' || roles.includes('TREASURER')) return 'pi-money-bill';
+  if (role === 'SECRETARY' || roles.includes('SECRETARY')) return 'pi-envelope';
   return 'pi-user';
 }
 

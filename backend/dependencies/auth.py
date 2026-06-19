@@ -46,16 +46,16 @@ def get_current_user(
 
         # ✅ 🔥 PRENDI I RUOLI DA AUTH0
         roles = payload.get("https://aps/roles", [])
-
         # Determina il ruolo primario da associare nel DB
         primary_role = "USER"
         if "ADMIN" in roles:
             primary_role = "ADMIN"
         elif "TREASURER" in roles:
             primary_role = "TREASURER"
+        elif "SECRETARY" in roles:
+            primary_role = "SECRETARY"
         elif "MEMBER" in roles:
             primary_role = "MEMBER"
-
         # ✅ DB lookup
         user = db.query(User).filter_by(auth0_id=auth0_id).first()
 

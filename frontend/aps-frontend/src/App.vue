@@ -31,6 +31,11 @@ const isAdminOrTreasurer = computed(() => {
   return role === 'ADMIN' || role === 'TREASURER'
 })
 
+const canManageGadgets = computed(() => {
+  const role = backendUser.value?.role
+  return role === 'ADMIN' || role === 'SECRETARY'
+})
+
 const items = computed(() => {
   const menu = [
     { label: 'Home', icon: 'pi pi-home', route: '/' },
@@ -38,6 +43,10 @@ const items = computed(() => {
   ]
   if (isAdminOrTreasurer.value) {
     menu.push({ label: 'Dashboard', icon: 'pi pi-chart-bar', route: '/dashboard' })
+  }
+  if (canManageGadgets.value) {
+    menu.push({ label: 'Gestione Gadget', icon: 'pi pi-box', route: '/gadgets' })
+    menu.push({ label: 'Gestione Magazzino Gadget', icon: 'pi pi-warehouse', route: '/gadget-stock' })
   }
   return menu
 })

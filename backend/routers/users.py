@@ -1,8 +1,9 @@
 from fastapi import APIRouter, Depends, HTTPException
 from fastapi.responses import StreamingResponse
 from sqlalchemy.orm import Session
-from datetime import date, timedelta
+from datetime import date, timedelta, datetime
 from pydantic import BaseModel
+from typing import Optional, List
 import openpyxl
 from io import BytesIO
 
@@ -11,28 +12,53 @@ from database.database import get_db
 from database.models.user import User
 from database.models.member import Member
 from database.models.membership import Membership
+from database.models.audit import AuditLog
 
 
 from dependencies.auth import get_current_user
 from services.user_service import approve_user
+from services.audit_service import log_action
 
 from domain.services.membership_domain import (
     calculate_membership_period,
     calculate_reference_year
 )
 
-router = APIRouter(prefix="/users")
+#router = APIRouter(prefix="/users")
+router = APIRouter()
 
 
-@router.get("/me")
-def me(current_user=Depends(get_current_user), db: Session = Depends(get_db)):
-    # Convert target SQLAlchemy model to dictionary
-    user_dict = {c.name: getattr(current_user, c.name) for c in current_user.__table__.columns}
+# Pydantic validation schemas
+class UserUpdate(BaseModel):
+    first_name: Optional[str] = None
+    last_name: Optional[str] = None
+    tax_code: Optional[str] = None
+    phone: Optional[str] = None
+    address: Optional[str] = None
+    document_type: Optional[str] = None
+    document_number: Optional[str] = None
+    payment_method: Optional[str] = None
+    birth_date: Optional[date] = None
+    birth_place: Optional[str] = None
+    document_expiry: Optional[date] = None
+    city: Optional[str] = None
+    zip_code: Optional[str] = None
+    province: Optional[str] = None
+    municipality: Optional[str] = None
+    profession: Optional[str] = None
+    usage_type: Optional[List[str]] = None
+    avg_km_per_day: Optional[int] = None
+    member_type: Optional[str] = None
+    municipio_roma: Optional[str] = None
+
+
+# Entity serialization helpers
+def serialize_user(user: User, db: Session) -> dict:
+    user_dict = {c.name: getattr(user, c.name) for c in user.__table__.columns}
     
-    # Format dates to string
-    if user_dict.get("birth_date"):
+    if user_dict.get("birth_date") and not isinstance(user_dict["birth_date"], str):
         user_dict["birth_date"] = user_dict["birth_date"].isoformat()
-    if user_dict.get("document_expiry"):
+    if user_dict.get("document_expiry") and not isinstance(user_dict["document_expiry"], str):
         user_dict["document_expiry"] = user_dict["document_expiry"].isoformat()
 
     if user_dict.get("usage_type"):
@@ -40,7 +66,7 @@ def me(current_user=Depends(get_current_user), db: Session = Depends(get_db)):
     else:
         user_dict["usage_type"] = []
         
-    user_dict["roles"] = getattr(current_user, "roles", [])
+    user_dict["roles"] = getattr(user, "roles", [])
     
     # Initialize membership placeholders
     user_dict["membership_number"] = None
@@ -48,11 +74,11 @@ def me(current_user=Depends(get_current_user), db: Session = Depends(get_db)):
     user_dict["end_date"] = None
     user_dict["is_paid"] = False
     user_dict["reference_year"] = None
+    user_dict["is_renewal_pending"] = False
 
     # Fetch member details if present
-    member = db.query(Member).filter_by(user_id=current_user.id).first()
+    member = db.query(Member).filter_by(user_id=user.id).first()
     if member:
-        from datetime import date
         memberships = db.query(Membership).filter_by(member_id=member.id).order_by(Membership.end_date.desc()).all()
         if memberships:
             active_membership = next((m for m in memberships if m.is_paid and m.end_date >= date.today()), None)
@@ -71,66 +97,105 @@ def me(current_user=Depends(get_current_user), db: Session = Depends(get_db)):
                 user_dict["pending_renewal_year"] = pending_renewal.reference_year
         else:
             user_dict["membership_number"] = member.membership_number
-            user_dict["is_renewal_pending"] = False
-    else:
-        user_dict["is_renewal_pending"] = False
 
     return user_dict
 
 
+def serialize_membership(membership: Membership) -> dict:
+    return {
+        "id": membership.id,
+        "member_id": membership.member_id,
+        "start_date": membership.start_date.isoformat() if membership.start_date else None,
+        "end_date": membership.end_date.isoformat() if membership.end_date else None,
+        "reference_year": membership.reference_year,
+        "card_number": membership.card_number,
+        "amount": membership.amount,
+        "payment_method": membership.payment_method,
+        "is_paid": membership.is_paid,
+        "payment_date": membership.payment_date.isoformat() if membership.payment_date else None,
+        "is_renewal": membership.is_renewal
+    }
+
+
+@router.get("/me")
+def me(current_user=Depends(get_current_user), db: Session = Depends(get_db)):
+    # Log authentication event if not logged in the last 15 minutes
+    recent_login = db.query(AuditLog).filter(
+        AuditLog.action_type == "LOGIN",
+        AuditLog.performed_by == current_user.id,
+        AuditLog.timestamp >= datetime.utcnow() - timedelta(minutes=15)
+    ).first()
+    
+    if not recent_login:
+        log_action(
+            db=db,
+            action_type="LOGIN",
+            entity_type="USER",
+            entity_id=current_user.id,
+            performed_by=current_user.id,
+            details=f"User {current_user.id} authenticated into the system"
+        )
+        db.commit()
+
+    return serialize_user(current_user, db)
+
+
 @router.put("/me")
 def update_me(
-    payload: dict,
+    payload: UserUpdate,
     user=Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
+    changed_fields = []
+    is_submitting_candidacy = False
 
-    allowed_fields = [
-        "first_name",
-        "last_name",
-        "tax_code",
-        "phone",
-        "address",
-        "document_type",
-        "document_number",
-        "payment_method",
-        "birth_date",
-        "birth_place",
-        "document_expiry",
-        "city",
-        "zip_code",
-        "province",
-        "municipality",
-        "profession",
-        "usage_type",
-        "avg_km_per_day",
-        "member_type",
-        "municipio_roma"
-    ]
+    # Extract update fields sent by client
+    update_data = payload.dict(exclude_unset=True)
 
-    from datetime import datetime
+    for key, value in update_data.items():
+        original_val = getattr(user, key)
+        parsed_value = value
+        
+        # Special handling for usage_type since it's stored as comma-separated string in DB
+        if key == "usage_type" and isinstance(value, list):
+            parsed_value = ",".join(value) if value else None
+            
+        if original_val != parsed_value:
+            changed_fields.append(key)
+            setattr(user, key, parsed_value)
 
-    for key, value in payload.items():
-        if key in allowed_fields:
-            if key in ["birth_date", "document_expiry"] and isinstance(value, str) and value:
-                try:
-                    # Assumes YYYY-MM-DD format from frontend input type="date"
-                    value = datetime.strptime(value[:10], "%Y-%m-%d").date()
-                except ValueError:
-                    pass
-            elif key == "usage_type" and isinstance(value, list):
-                value = ",".join(value)
-            setattr(user, key, value)
-
-    # ✅ logica stato
+    # State transition logic
     if user.first_name and user.last_name and user.tax_code and user.status == "INCOMPLETE":
         user.status = "PENDING"
+        is_submitting_candidacy = True
 
     db.commit()
     db.refresh(user)
-    
-    return user
 
+    if changed_fields:
+        log_action(
+            db=db,
+            action_type="UPDATE_PROFILE",
+            entity_type="USER",
+            entity_id=user.id,
+            performed_by=user.id,
+            details=f"User updated fields: {', '.join(changed_fields)}"
+        )
+    
+    if is_submitting_candidacy:
+        log_action(
+            db=db,
+            action_type="SUBMIT_CANDIDACY",
+            entity_type="USER",
+            entity_id=user.id,
+            performed_by=user.id,
+            details="User submitted registration candidacy"
+        )
+        
+    if changed_fields or is_submitting_candidacy:
+        db.commit()
+
+    return serialize_user(user, db)
 class RenewRequest(BaseModel):
     payment_method: str
     member_type: str
@@ -174,12 +239,21 @@ def request_renew(
         is_paid=False,
         is_renewal=True
     )
-
     db.add(new_membership)
     db.commit()
     db.refresh(new_membership)
-    return new_membership
 
+    log_action(
+        db=db,
+        action_type="SUBMIT_CANDIDACY",
+        entity_type="MEMBERSHIP",
+        entity_id=new_membership.id,
+        performed_by=current_user.id,
+        details=f"User submitted renewal candidacy for year {ref_year}"
+    )
+    db.commit()
+
+    return serialize_membership(new_membership)
 @router.get("/dashboard")
 def dashboard(
     current_user=Depends(get_current_user),
@@ -327,15 +401,11 @@ def export_users(
 #  LISTA UTENTI (solo ADMIN)
 @router.get("/")
 def get_users(user=Depends(get_current_user), db: Session = Depends(get_db)):
-
     if user.role != "ADMIN" and user.role != "TREASURER":
         raise HTTPException(status_code=403, detail="Forbidden: Only ADMIN can see users")
 
-    return db.query(User).all()
-
-
-
-
+    users = db.query(User).all()
+    return [serialize_user(u, db) for u in users]
 
 
 # RIFIUTA UTENTE
@@ -345,12 +415,10 @@ def reject_user(
     user=Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
-
     if user.role != "TREASURER":
         raise HTTPException(status_code=403, detail="Only treasurer can reject")
 
     target = db.query(User).get(id)
-
     if not target:
         raise HTTPException(status_code=404, detail="User not found")
 
@@ -358,7 +426,6 @@ def reject_user(
         raise HTTPException(status_code=400, detail="Already processed")
 
     target.status = "REJECTED"
-
     db.commit()
 
     return {"status": "rejected"}
@@ -372,12 +439,10 @@ def renew_member(
     user=Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
-
     if user.role != "TREASURER" and "TREASURER" not in user.roles and "ADMIN" not in user.roles:
         raise HTTPException(status_code=403, detail="Only treasurer or admin can renew")
 
     member = db.query(Member).filter(Member.user_id == id).first()
-
     if not member:
         raise HTTPException(status_code=404, detail="Member not found")
 
@@ -389,17 +454,25 @@ def renew_member(
 
     if not pending_membership:
         raise HTTPException(status_code=404, detail="No pending renewal request found")
-
+        
     from services.membership_service import generate_card_number_for_year
-    
     pending_membership.is_paid = True
     pending_membership.payment_date = date.today()
     pending_membership.card_number = generate_card_number_for_year(db, pending_membership.reference_year)
+    
+    log_action(
+        db=db,
+        action_type="APPROVE_RENEWAL",
+        entity_type="MEMBERSHIP",
+        entity_id=pending_membership.id,
+        performed_by=user.id,
+        details=f"Admin/Treasurer approved renewal for member {member.id}, membership ID {pending_membership.id}"
+    )
 
     db.commit()
     db.refresh(pending_membership)
 
-    return pending_membership
+    return serialize_membership(pending_membership)
 
 
 # DETTAGLIO UTENTE (self o admin/treasurer)
@@ -409,9 +482,7 @@ def get_user(
     user=Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
-
     target = db.query(User).get(id)
-
     if not target:
         raise HTTPException(status_code=404, detail="User not found")
 
@@ -419,8 +490,7 @@ def get_user(
     if user.role == "MEMBER" and user.id != id:
         raise HTTPException(status_code=403, detail="Forbidden")
 
-    return target
-
+    return serialize_user(target, db)
 
 
 @router.put("/{id}/pay")
@@ -430,24 +500,29 @@ def register_payment(
     db: Session = Depends(get_db)
 ):
     roles = current_user.roles
-
     if "TREASURER" not in roles and "ADMIN" not in roles:
         raise HTTPException(403)
 
-    user = db.get(User, id)
-
+    user = db.query(User).get(id)
     if not user:
         raise HTTPException(404, "User not found")
 
-    # ✅ QUI VIENE SETTATO
     user.status = "PAID"
+
+    log_action(
+        db=db,
+        action_type="APPROVE_PAYMENT",
+        entity_type="USER",
+        entity_id=user.id,
+        performed_by=current_user.id,
+        details=f"Admin/Treasurer approved payment for user {user.id} (status set to PAID)"
+    )
 
     db.commit()
     db.refresh(user)
 
-    return user
+    return serialize_user(user, db)
 
-   
 
 # PAGAMENTO E APPROVAZIONE SIMULTANEI (Transazionale e Atomico)
 @router.put("/{id}/pay-and-approve")
@@ -457,12 +532,10 @@ def pay_and_approve(
     db: Session = Depends(get_db)
 ):
     roles = current_user.roles
-
     if "TREASURER" not in roles and "ADMIN" not in roles:
         raise HTTPException(403, "Not authorized")
 
     user = db.get(User, id)
-
     if not user:
         raise HTTPException(404, "User not found")
 
@@ -470,13 +543,20 @@ def pay_and_approve(
         raise HTTPException(400, "User is not in PENDING status")
 
     try:
-        # 1. Imposta lo stato su PAID
         user.status = "PAID"
         db.flush()
 
-        # 2. Approva l'utente (esegue commit e refresh internamente)
-        approved_user = approve_user(user, db)
-        return approved_user
+        log_action(
+            db=db,
+            action_type="APPROVE_PAYMENT",
+            entity_type="USER",
+            entity_id=user.id,
+            performed_by=current_user.id,
+            details=f"Admin/Treasurer approved payment for user {user.id} during pay-and-approve"
+        )
+
+        approved_user = approve_user(user, db, performed_by=current_user.id)
+        return serialize_user(approved_user, db)
     except Exception as e:
         db.rollback()
         raise HTTPException(500, f"Errore durante l'approvazione: {str(e)}")

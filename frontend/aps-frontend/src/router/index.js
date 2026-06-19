@@ -4,6 +4,8 @@ import { createRouter, createWebHistory } from 'vue-router'
 import Home from '../pages/Home.vue'
 import Wizard from '../pages/Wizard.vue'
 import Dashboard from '../pages/Dashboard.vue'
+import Gadgets from '../pages/Gadgets.vue'
+import GadgetStock from '../pages/GadgetStock.vue'
 
 const routes = [
   {
@@ -22,7 +24,16 @@ const routes = [
     path: '/dashboard',
     component: Dashboard,
     meta: { requiresAuth: true, requiresAdmin: true }
-
+  },
+  {
+    path: '/gadgets',
+    component: Gadgets,
+    meta: { requiresAuth: true }
+  },
+  {
+    path: '/gadget-stock',
+    component: GadgetStock,
+    meta: { requiresAuth: true }
   }
 ]
 
