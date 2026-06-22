@@ -165,7 +165,7 @@ function getRoleIcon() {
       <div class="mb-6" >
         <h2 class="text-2xl md:text-3xl font-bold text-center mb-5">Come funziona l'iscrizione</h2>
         
-        <div class="grid row-gap-4 column-gap-3 justify-content-center">
+        <div class="grid justify-content-center">
           <div class="col-12 md:col-3">
             <div class="step-card p-2 border-round-xl border-1 border-light surface-card text-left h-full">
               <span class="step-num text-3xl font-bold text-primary opacity-50 block mb-3">01</span>
@@ -193,7 +193,7 @@ function getRoleIcon() {
       <!-- Sezione Vantaggi -->
       <div>
         <h2 class="text-2xl md:text-3xl font-bold text-center mb-5">I vantaggi per i nostri soci</h2>
-        <div class="grid row-gap-3 column-gap-3 justify-content-center">
+        <div class="grid justify-content-center">
           <div class="col-12 md:col-3">
             <div class="benefit-card p-4 border-round-xl border-1 border-light surface-card h-full text-left shadow-1">
               <i class="pi pi-compass text-3xl text-primary mb-3 block"></i>

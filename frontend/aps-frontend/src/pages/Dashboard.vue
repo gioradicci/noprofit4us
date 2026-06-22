@@ -298,7 +298,7 @@ const showRenewConfirmDialog  = (id_user_to_accept) => {
       </div>
 
       <div class="col-12 md:col-4 flex justify-content-end" v-if="canApprove()">
-        <Button label="Esporta Utenti" icon="pi pi-download" severity="help" @click="exportUsersCSV" />
+        <Button label="Esporta libro soci" icon="pi pi-download" severity="help" @click="exportUsersCSV" />
       </div>
     </div>
 

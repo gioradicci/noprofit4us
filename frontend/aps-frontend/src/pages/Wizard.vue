@@ -19,8 +19,11 @@ import InputNumber from 'primevue/inputnumber'
 const { getAccessTokenSilently } = useAuth0()
 const toast = useToast()
 
-// ✅ Utente backend
+//  Utente backend
 const backendUser = ref(null)
+
+//  Errori di validazione
+const validationErrors = ref({})
 
 const initialDate = new Date(new Date().getFullYear() -18, 0, 1);
 
@@ -145,6 +148,7 @@ async function loadUser() {
 
 // ✅ Invia dati al backend
 async function submit() {
+  validationErrors.value = {}
   try {
     const token = await getAccessTokenSilently()
 
@@ -167,7 +171,31 @@ async function submit() {
     })
 
     if (!res.ok) {
-      throw new Error(`Errore salvataggio: ${res.status}`);
+      let errorMsg = `Errore salvataggio: ${res.status}`;
+      if (res.status === 422) {
+        try {
+          const errData = await res.json();
+          if (errData && errData.detail && Array.isArray(errData.detail)) {
+            const errors = {};
+            errData.detail.forEach(err => {
+              const field = err.loc[err.loc.length - 1];
+              errors[field] = err.msg;
+            });
+            validationErrors.value = errors;
+            errorMsg = Object.values(errors).join(", ");
+          }
+        } catch (jsonErr) {
+          // Ignore json parsing error
+        }
+      } else {
+        try {
+          const errData = await res.json();
+          if (errData && errData.detail) {
+            errorMsg = typeof errData.detail === 'string' ? errData.detail : JSON.stringify(errData.detail);
+          }
+        } catch (jsonErr) {}
+      }
+      throw new Error(errorMsg);
     }
 
     const data = await res.json()
@@ -178,7 +206,7 @@ async function submit() {
 
   } catch (e) {
     console.error("Errore submit:", e)
-    toast.add({ severity: 'error',  summary: 'Errore', detail: 'Si è verificato un errore durante il salvataggio', life: 3000 });
+    toast.add({ severity: 'error',  summary: 'Errore', detail: e.message || 'Si è verificato un errore durante il salvataggio', life: 5000 });
   }
 }
 
@@ -234,7 +262,8 @@ onMounted(() => {
               </div>
               <div class="flex flex-column gap-2">
                 <label for="tax_code" class="font-semibold text-sm">Codice Fiscale *</label>
-                <InputText id="tax_code" v-model="profile.tax_code" placeholder="Inserisci il codice fiscale" class="w-full uppercase" />
+                <InputText id="tax_code" v-model="profile.tax_code" placeholder="Inserisci il codice fiscale" class="w-full uppercase" :invalid="!!validationErrors.tax_code" />
+                <small v-if="validationErrors.tax_code" class="text-red-500 block mt-1">{{ validationErrors.tax_code }}</small>
               </div>
               <div class="flex flex-column gap-2">
                 <label for="birth_date" class="font-semibold text-sm">Data di Nascita *</label>
@@ -297,7 +326,7 @@ onMounted(() => {
                 <InputText id="municipality" v-model="profile.municipality" placeholder="Comune" class="w-full" />
               </div>
               <div class="flex flex-column gap-2">
-                <label for="municipio_roma" class="font-semibold text-sm">Numero Municipio (I - XII) *</label>
+                <label for="municipio_roma" class="font-semibold text-sm">Numero Municipio (I - XV) *</label>
                 <Select 
                   id="municipio_roma" 
                   v-model="profile.municipio_roma" 
@@ -450,31 +479,47 @@ onMounted(() => {
               <div class="surface-ground p-4 border-round grid row-gap-3 column-gap-4">
                 <div class="col-12 md:col-5 flex flex-column gap-1">
                   <span class="text-xs font-semibold text-muted text-uppercase uppercase">Nome e Cognome</span>
-                  <span class="text-base text-900 font-medium">{{ profile.first_name }} {{ profile.last_name }}</span>
+                  <span class="text-base text-900 font-medium" :class="{'text-red-500 font-bold': validationErrors.first_name || validationErrors.last_name}">{{ profile.first_name }} {{ profile.last_name }}</span>
+                  <small v-if="validationErrors.first_name" class="text-red-500 font-bold mt-1">{{ validationErrors.first_name }}</small>
+                  <small v-if="validationErrors.last_name" class="text-red-500 font-bold mt-1">{{ validationErrors.last_name }}</small>
                 </div>
                 <div class="col-12 md:col-5 flex flex-column gap-1">
                   <span class="text-xs font-semibold text-muted text-uppercase uppercase">Codice Fiscale</span>
-                  <span class="text-base text-900 font-medium uppercase">{{ profile.tax_code }}</span>
+                  <span class="text-base text-900 font-medium uppercase" :class="{'text-red-500 font-bold': validationErrors.tax_code}">{{ profile.tax_code }}</span>
+                  <small v-if="validationErrors.tax_code" class="text-red-500 font-bold mt-1">{{ validationErrors.tax_code }}</small>
                 </div>
                 <div class="col-12 md:col-5 flex flex-column gap-1">
                   <span class="text-xs font-semibold text-muted text-uppercase uppercase">Data e Luogo Nascita</span>
-                  <span class="text-base text-900 font-medium">{{ profile.birth_date ? profile.birth_date.toLocaleDateString() : '' }} - {{ profile.birth_place }}</span>
+                  <span class="text-base text-900 font-medium" :class="{'text-red-500 font-bold': validationErrors.birth_date || validationErrors.birth_place}">{{ profile.birth_date ? profile.birth_date.toLocaleDateString() : '' }} - {{ profile.birth_place }}</span>
+                  <small v-if="validationErrors.birth_date" class="text-red-500 font-bold mt-1">{{ validationErrors.birth_date }}</small>
+                  <small v-if="validationErrors.birth_place" class="text-red-500 font-bold mt-1">{{ validationErrors.birth_place }}</small>
                 </div>
                 <div class="col-12 md:col-5 flex flex-column gap-1">
                   <span class="text-xs font-semibold text-muted text-uppercase uppercase">Telefono</span>
-                  <span class="text-base text-900 font-medium">{{ profile.phone || '-' }}</span>
+                  <span class="text-base text-900 font-medium" :class="{'text-red-500 font-bold': validationErrors.phone}">{{ profile.phone || '-' }}</span>
+                  <small v-if="validationErrors.phone" class="text-red-500 font-bold mt-1">{{ validationErrors.phone }}</small>
                 </div>
                 <div class="col-12 md:col-10 flex flex-column gap-1">
                   <span class="text-xs font-semibold text-muted text-uppercase uppercase">Residenza</span>
-                  <span class="text-base text-900 font-medium">{{ profile.address || '-' }}, {{ profile.city || '-' }} ({{ profile.province || '-' }}) - {{ profile.zip_code || '-' }}<template v-if="profile.municipio_roma"> - Municipio {{ profile.municipio_roma }}</template></span>
+                  <span class="text-base text-900 font-medium" :class="{'text-red-500 font-bold': validationErrors.address || validationErrors.city || validationErrors.province || validationErrors.zip_code || validationErrors.municipio_roma}">{{ profile.address || '-' }}, {{ profile.city || '-' }} ({{ profile.province || '-' }}) - {{ profile.zip_code || '-' }}<template v-if="profile.municipio_roma"> - Municipio {{ profile.municipio_roma }}</template></span>
+                  <small v-if="validationErrors.address" class="text-red-500 font-bold mt-1">{{ validationErrors.address }}</small>
+                  <small v-if="validationErrors.city" class="text-red-500 font-bold mt-1">{{ validationErrors.city }}</small>
+                  <small v-if="validationErrors.province" class="text-red-500 font-bold mt-1">{{ validationErrors.province }}</small>
+                  <small v-if="validationErrors.zip_code" class="text-red-500 font-bold mt-1">{{ validationErrors.zip_code }}</small>
+                  <small v-if="validationErrors.municipio_roma" class="text-red-500 font-bold mt-1">{{ validationErrors.municipio_roma }}</small>
                 </div>
                 <div class="col-12 md:col-5 flex flex-column gap-1">
                   <span class="text-xs font-semibold text-muted text-uppercase uppercase">Documento</span>
-                  <span class="text-base text-900 font-medium">{{ profile.document_type }} - {{ profile.document_number }} (Scad: {{ profile.document_expiry ? profile.document_expiry.toLocaleDateString() : '' }})</span>
+                  <span class="text-base text-900 font-medium" :class="{'text-red-500 font-bold': validationErrors.document_type || validationErrors.document_number || validationErrors.document_expiry}">{{ profile.document_type }} - {{ profile.document_number }} (Scad: {{ profile.document_expiry ? profile.document_expiry.toLocaleDateString() : '' }})</span>
+                  <small v-if="validationErrors.document_type" class="text-red-500 font-bold mt-1">{{ validationErrors.document_type }}</small>
+                  <small v-if="validationErrors.document_number" class="text-red-500 font-bold mt-1">{{ validationErrors.document_number }}</small>
+                  <small v-if="validationErrors.document_expiry" class="text-red-500 font-bold mt-1">{{ validationErrors.document_expiry }}</small>
                 </div>
                 <div class="col-12 md:col-5 flex flex-column gap-1">
                   <span class="text-xs font-semibold text-muted text-uppercase uppercase">Quota e Pagamento</span>
-                  <span class="text-base text-900 font-medium">{{ profile.member_type }} - {{ profile.payment_method }}</span>
+                  <span class="text-base text-900 font-medium" :class="{'text-red-500 font-bold': validationErrors.member_type || validationErrors.payment_method}">{{ profile.member_type }} - {{ profile.payment_method }}</span>
+                  <small v-if="validationErrors.member_type" class="text-red-500 font-bold mt-1">{{ validationErrors.member_type }}</small>
+                  <small v-if="validationErrors.payment_method" class="text-red-500 font-bold mt-1">{{ validationErrors.payment_method }}</small>
                 </div>
               </div>
 

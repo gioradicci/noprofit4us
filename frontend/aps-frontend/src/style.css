@@ -53,6 +53,7 @@
 
 body {
   margin: 0;
+  overflow-x: hidden;
 }
 
 body, 
@@ -176,6 +177,7 @@ code {
   display: flex;
   flex-direction: column;
   box-sizing: border-box;
+  overflow-x: hidden;
 }
 
 #center {

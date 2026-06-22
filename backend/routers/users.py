@@ -2,8 +2,9 @@ from fastapi import APIRouter, Depends, HTTPException
 from fastapi.responses import StreamingResponse
 from sqlalchemy.orm import Session
 from datetime import date, timedelta, datetime
-from pydantic import BaseModel
+from pydantic import BaseModel, validator
 from typing import Optional, List
+import re
 import openpyxl
 from io import BytesIO
 
@@ -51,6 +52,19 @@ class UserUpdate(BaseModel):
     member_type: Optional[str] = None
     municipio_roma: Optional[str] = None
 
+    @validator("tax_code")
+    def validate_tax_code(cls, v):
+        if v is None:
+            return v
+        v = v.strip().upper()
+        if not v:
+            return None
+        cf_pattern = r'^([A-Z]{6}[0-9]{2}[A-Z][0-9]{2}[A-Z0-9]{4})[A-Z0-9]{1}$'
+        piva_pattern = r'^\d{11}$'
+        if not (re.match(cf_pattern, v) or re.match(piva_pattern, v)):
+            raise ValueError("Codice Fiscale o Partita IVA non valido")
+        return v
+
 
 # Entity serialization helpers
 def serialize_user(user: User, db: Session) -> dict:
@@ -75,6 +89,7 @@ def serialize_user(user: User, db: Session) -> dict:
     user_dict["is_paid"] = False
     user_dict["reference_year"] = None
     user_dict["is_renewal_pending"] = False
+    user_dict["has_active_membership"] = False
 
     # Fetch member details if present
     member = db.query(Member).filter_by(user_id=user.id).first()
@@ -83,6 +98,9 @@ def serialize_user(user: User, db: Session) -> dict:
         if memberships:
             active_membership = next((m for m in memberships if m.is_paid and m.end_date >= date.today()), None)
             pending_renewal = next((m for m in memberships if not m.is_paid and m.is_renewal), None)
+
+            if active_membership:
+                user_dict["has_active_membership"] = True
 
             membership = active_membership if active_membership else memberships[0]
 
@@ -169,7 +187,14 @@ def update_me(
         user.status = "PENDING"
         is_submitting_candidacy = True
 
-    db.commit()
+    from sqlalchemy.exc import IntegrityError
+    try:
+        db.commit()
+    except IntegrityError as e:
+        db.rollback()
+        if "tax_code" in str(e).lower():
+            raise HTTPException(status_code=400, detail="Il Codice Fiscale inserito è già registrato da un altro utente.")
+        raise HTTPException(status_code=400, detail="Errore durante il salvataggio dei dati nel database.")
     db.refresh(user)
 
     if changed_fields:
@@ -486,8 +511,8 @@ def get_user(
     if not target:
         raise HTTPException(status_code=404, detail="User not found")
 
-    # se MEMBER → solo se stesso
-    if user.role == "MEMBER" and user.id != id:
+    # solo se stesso, a meno che non sia ADMIN o TREASURER
+    if user.role not in ["ADMIN", "TREASURER"] and user.id != id:
         raise HTTPException(status_code=403, detail="Forbidden")
 
     return serialize_user(target, db)

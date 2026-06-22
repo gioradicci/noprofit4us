@@ -10,15 +10,13 @@ import GadgetStock from '../pages/GadgetStock.vue'
 const routes = [
   {
     path: '/',
-    component : Home,
-    // redirect: '/home',
-    meta: { requiresAuth: false}
-       // ✅ IMPORTANTISSIMO
+    component: Home,
+    meta: { requiresAuth: false }
   },
   {
     path: '/wizard',
     component: Wizard,
-    meta: { requiresAuth: true}
+    meta: { requiresAuth: true }
   },
   {
     path: '/dashboard',
@@ -43,19 +41,73 @@ const router = createRouter({
 })
 
 
-router.beforeEach(async (to, from, next) => {
+let cachedUser = null
 
-  const { isAuthenticated, loginWithRedirect } = useAuth0()
+router.beforeEach(async (to) => {
+
+  const { isAuthenticated, getAccessTokenSilently, loginWithRedirect } = useAuth0()
 
   // ✅ richiede login
   if (to.meta.requiresAuth && !isAuthenticated.value) {
+    cachedUser = null
     await loginWithRedirect({
       appState: { target: to.fullPath }
     })
-    return
+    return false
   }
 
-  next()
+  if (!isAuthenticated.value) {
+    cachedUser = null
+  }
+
+  const requiresAdmin = to.meta.requiresAdmin
+  const isGadgetRoute = ['/gadgets', '/gadget-stock'].includes(to.path)
+
+  if (isAuthenticated.value && (requiresAdmin || isGadgetRoute)) {
+    try {
+      if (!cachedUser) {
+        const token = await getAccessTokenSilently()
+        const res = await fetch("http://localhost:8000/users/me", {
+          headers: {
+            Authorization: `Bearer ${token}`
+          }
+        })
+        if (res.ok) {
+          cachedUser = await res.json()
+        }
+      }
+
+      if (!cachedUser) {
+        return '/'
+      }
+
+      const role = cachedUser.role
+      const hasActiveMembership = cachedUser.has_active_membership
+
+      if (requiresAdmin) {
+        if (role === 'ADMIN' || role === 'TREASURER') {
+          return true
+        } else {
+          return '/'
+        }
+      }
+
+      if (isGadgetRoute) {
+        if (role === 'ADMIN') {
+          return true
+        } else if (role === 'SECRETARY' && hasActiveMembership) {
+          return true
+        } else {
+          return '/'
+        }
+      }
+    } catch (e) {
+      console.error("Router guard error:", e)
+      return '/'
+    }
+  }
+
+  return true
 })
 
 

@@ -47,6 +47,14 @@ const categories = [
   { label: 'Altro', value: 'OTHER' }
 ]
 
+// Model options
+const modelOptions = [
+  { label: 'Nessuno / Vuoto', value: '' },
+  { label: 'Uomo', value: 'Uomo' },
+  { label: 'Donna', value: 'Donna' },
+  { label: 'Unisex', value: 'Unisex' }
+]
+
 // New Variant Form Data
 const newVariant = ref({
   size: '',
@@ -409,7 +417,7 @@ onMounted(() => {
 
                   <div class="flex flex-column gap-1">
                     <label for="v_model" class="text-xs font-semibold">Modello</label>
-                    <InputText id="v_model" v-model="newVariant.model" placeholder="Es. Uomo, Donna, Unisex" class="w-full" size="small" />
+                    <Select id="v_model" v-model="newVariant.model" :options="modelOptions" optionLabel="label" optionValue="value" placeholder="Seleziona Modello" class="w-full" size="small" />
                   </div>
 
                   <div class="flex flex-column gap-1">
@@ -453,7 +461,7 @@ onMounted(() => {
                   </Column>
                   <Column field="model" header="Modello">
                     <template #body="slotProps">
-                      <InputText v-model="slotProps.data.model" class="w-full" size="small" />
+                      <Select v-model="slotProps.data.model" :options="modelOptions" optionLabel="label" optionValue="value" class="w-full" size="small" />
                     </template>
                   </Column>
                   <Column field="price_modifier" header="Extra Prezzo">

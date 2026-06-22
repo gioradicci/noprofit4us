@@ -2,6 +2,7 @@
 import { ref, onMounted, computed, watch } from 'vue'
 import { useAuth0 } from '@auth0/auth0-vue'
 import { useToast } from 'primevue/usetoast'
+import { FilterMatchMode } from '@primevue/core/api'
 
 // PrimeVue Components
 import Button from 'primevue/button'
@@ -23,6 +24,13 @@ const movements = ref([])
 const loading = ref(false)
 const showMovementDialog = ref(false)
 const submitting = ref(false)
+
+const filters = ref({
+  gadget_name: { value: null, matchMode: FilterMatchMode.CONTAINS },
+  category: { value: null, matchMode: FilterMatchMode.CONTAINS },
+  sku: { value: null, matchMode: FilterMatchMode.CONTAINS },
+  variant_details: { value: null, matchMode: FilterMatchMode.CONTAINS }
+})
 
 // Form state
 const movementForm = ref({
@@ -115,6 +123,13 @@ const flattenedStocks = computed(() => {
         const found = v.stocks.find(s => s.warehouse_id === w.id)
         stockMap[w.code] = found ? found.quantity : 0
       })
+
+      const parts = []
+      if (v.size) parts.push(`Taglia: ${v.size}`)
+      if (v.color) parts.push(`Colore: ${v.color}`)
+      if (v.model) parts.push(`Modello: ${v.model}`)
+      const variant_details = parts.join(' | ')
+
       list.push({
         id: v.id,
         gadget_name: g.name,
@@ -123,6 +138,7 @@ const flattenedStocks = computed(() => {
         size: v.size,
         color: v.color,
         model: v.model,
+        variant_details,
         total_stock: v.stock_quantity,
         ...stockMap
       })
@@ -325,29 +341,101 @@ onMounted(() => {
       <div class="col-12 mb-5">
         <div class="card p-4 shadow-2 border-round surface-card">
           <h3 class="text-xl font-bold mb-4 text-900">Giacenze per Variante</h3>
-          <DataTable :value="flattenedStocks" :loading="loading" paginator :rows="10" responsiveLayout="scroll">
+          <DataTable 
+            :value="flattenedStocks" 
+            v-model:filters="filters" 
+            filterDisplay="row" 
+            :loading="loading" 
+            paginator 
+            :rows="10" 
+            responsiveLayout="scroll"
+          >
             <template #empty>
               <div class="text-center py-4">
                 <i class="pi pi-info-circle text-3xl text-400 mb-2"></i>
                 <p class="m-0 text-color-secondary">Nessun gadget o variante caricata nel database.</p>
               </div>
             </template>
-            <Column field="gadget_name" header="Gadget" sortable class="font-bold"></Column>
-            <Column field="category" header="Categoria" sortable>
+            <Column 
+              field="gadget_name" 
+              header="Gadget" 
+              sortable 
+              class="font-bold"
+              filter
+              filterField="gadget_name"
+              :showFilterMenu="false"
+              :showClearButton="true"
+            >
+              <template #filter="{ filterModel, filterCallback }">
+                <InputText
+                  v-model="filterModel.value"
+                  @input="filterCallback()"
+                  placeholder="Cerca gadget..."
+                  class="w-full"
+                />
+              </template>
+            </Column>
+            <Column 
+              field="category" 
+              header="Categoria" 
+              sortable
+              filter
+              filterField="category"
+              :showFilterMenu="false"
+              :showClearButton="true"
+            >
               <template #body="slotProps">
                 <span class="badge border-round px-2 py-1 text-xs bg-cyan-100 text-cyan-800">
                   {{ slotProps.data.category }}
                 </span>
               </template>
+              <template #filter="{ filterModel, filterCallback }">
+                <InputText
+                  v-model="filterModel.value"
+                  @input="filterCallback()"
+                  placeholder="Cerca categoria..."
+                  class="w-full"
+                />
+              </template>
             </Column>
-            <Column field="sku" header="SKU" sortable></Column>
-            <Column header="Dettagli Variante">
+            <Column 
+              field="sku" 
+              header="SKU" 
+              sortable
+              filter
+              filterField="sku"
+              :showFilterMenu="false"
+              :showClearButton="true"
+            >
+              <template #filter="{ filterModel, filterCallback }">
+                <InputText
+                  v-model="filterModel.value"
+                  @input="filterCallback()"
+                  placeholder="Cerca SKU..."
+                  class="w-full"
+                />
+              </template>
+            </Column>
+            <Column 
+              field="variant_details" 
+              header="Dettagli Variante"
+              filter
+              filterField="variant_details"
+              :showFilterMenu="false"
+              :showClearButton="true"
+            >
               <template #body="slotProps">
                 <span class="text-sm">
-                  {{ slotProps.data.size ? 'Taglia: ' + slotProps.data.size : '' }}
-                  {{ slotProps.data.color ? '| Colore: ' + slotProps.data.color : '' }}
-                  {{ slotProps.data.model ? '| Modello: ' + slotProps.data.model : '' }}
+                  {{ slotProps.data.variant_details }}
                 </span>
+              </template>
+              <template #filter="{ filterModel, filterCallback }">
+                <InputText
+                  v-model="filterModel.value"
+                  @input="filterCallback()"
+                  placeholder="Cerca dettagli..."
+                  class="w-full"
+                />
               </template>
             </Column>
             

@@ -6,9 +6,24 @@ from database.database import get_db
 from database.models.gadget import Gadget, Warehouse, StockMovement
 from dependencies.auth import get_current_user
 from services import gadget_service
+from database.models.member import Member
+from database.models.membership import Membership
+from datetime import date
 
 #router = APIRouter(prefix="/gadgets", tags=["gadgets"])
 router = APIRouter()
+
+def has_active_membership(user, db: Session) -> bool:
+    member = db.query(Member).filter_by(user_id=user.id).first()
+    if not member:
+        return False
+    active_membership = db.query(Membership).filter(
+        Membership.member_id == member.id,
+        Membership.is_paid == True,
+        Membership.end_date >= date.today()
+    ).first()
+    return active_membership is not None
+
 
 # Pydantic Schemas
 class GadgetCreate(BaseModel):
@@ -51,7 +66,12 @@ class MovementCreate(BaseModel):
 
 
 @router.get("/")
-def get_gadgets(db: Session = Depends(get_db)):
+def get_gadgets(current_user=Depends(get_current_user), db: Session = Depends(get_db)):
+    if current_user.role not in ["ADMIN", "SECRETARY"]:
+        raise HTTPException(status_code=403, detail="Not authorized")
+    if current_user.role == "SECRETARY" and not has_active_membership(current_user, db):
+        raise HTTPException(status_code=403, detail="Active membership required")
+
     gadgets = db.query(Gadget).all()
     result = []
     for g in gadgets:
@@ -92,6 +112,8 @@ def get_gadgets(db: Session = Depends(get_db)):
 def create_gadget(payload: GadgetCreate, current_user=Depends(get_current_user), db: Session = Depends(get_db)):
     if current_user.role not in ["ADMIN", "SECRETARY"]:
         raise HTTPException(status_code=403, detail="Not authorized")
+    if current_user.role == "SECRETARY" and not has_active_membership(current_user, db):
+        raise HTTPException(status_code=403, detail="Active membership required")
 
     gadget = gadget_service.create_gadget(
         db=db,
@@ -115,6 +137,8 @@ def create_gadget(payload: GadgetCreate, current_user=Depends(get_current_user),
 def create_variant(payload: VariantCreate, current_user=Depends(get_current_user), db: Session = Depends(get_db)):
     if current_user.role not in ["ADMIN", "SECRETARY"]:
         raise HTTPException(status_code=403, detail="Not authorized")
+    if current_user.role == "SECRETARY" and not has_active_membership(current_user, db):
+        raise HTTPException(status_code=403, detail="Active membership required")
 
     variant = gadget_service.create_variant(
         db=db,
@@ -143,6 +167,8 @@ def create_variant(payload: VariantCreate, current_user=Depends(get_current_user
 def update_gadget(id: int, payload: GadgetUpdate, current_user=Depends(get_current_user), db: Session = Depends(get_db)):
     if current_user.role not in ["ADMIN", "SECRETARY"]:
         raise HTTPException(status_code=403, detail="Not authorized")
+    if current_user.role == "SECRETARY" and not has_active_membership(current_user, db):
+        raise HTTPException(status_code=403, detail="Active membership required")
 
     gadget = gadget_service.update_gadget(
         db=db,
@@ -167,6 +193,8 @@ def update_gadget(id: int, payload: GadgetUpdate, current_user=Depends(get_curre
 def update_gadget_variants(gadget_id: int, payload: List[VariantUpdate], current_user=Depends(get_current_user), db: Session = Depends(get_db)):
     if current_user.role not in ["ADMIN", "SECRETARY"]:
         raise HTTPException(status_code=403, detail="Not authorized")
+    if current_user.role == "SECRETARY" and not has_active_membership(current_user, db):
+        raise HTTPException(status_code=403, detail="Active membership required")
 
     updated_variants = gadget_service.update_gadget_variants(
         db=db,
@@ -194,6 +222,8 @@ def update_gadget_variants(gadget_id: int, payload: List[VariantUpdate], current
 def delete_gadget(id: int, current_user=Depends(get_current_user), db: Session = Depends(get_db)):
     if current_user.role not in ["ADMIN", "SECRETARY"]:
         raise HTTPException(status_code=403, detail="Not authorized")
+    if current_user.role == "SECRETARY" and not has_active_membership(current_user, db):
+        raise HTTPException(status_code=403, detail="Active membership required")
 
     gadget_service.delete_gadget(
         db=db,
@@ -204,7 +234,11 @@ def delete_gadget(id: int, current_user=Depends(get_current_user), db: Session =
 
 
 @router.get("/warehouses")
-def get_warehouses(db: Session = Depends(get_db)):
+def get_warehouses(current_user=Depends(get_current_user), db: Session = Depends(get_db)):
+    if current_user.role not in ["ADMIN", "SECRETARY"]:
+        raise HTTPException(status_code=403, detail="Not authorized")
+    if current_user.role == "SECRETARY" and not has_active_membership(current_user, db):
+        raise HTTPException(status_code=403, detail="Active membership required")
     return db.query(Warehouse).all()
 
 
@@ -212,6 +246,8 @@ def get_warehouses(db: Session = Depends(get_db)):
 def get_movements(current_user=Depends(get_current_user), db: Session = Depends(get_db)):
     if current_user.role not in ["ADMIN", "SECRETARY"]:
         raise HTTPException(status_code=403, detail="Not authorized")
+    if current_user.role == "SECRETARY" and not has_active_membership(current_user, db):
+        raise HTTPException(status_code=403, detail="Active membership required")
 
     movements = db.query(StockMovement).order_by(StockMovement.timestamp.desc()).all()
     result = []
@@ -244,6 +280,8 @@ def get_movements(current_user=Depends(get_current_user), db: Session = Depends(
 def create_movement(payload: MovementCreate, current_user=Depends(get_current_user), db: Session = Depends(get_db)):
     if current_user.role not in ["ADMIN", "SECRETARY"]:
         raise HTTPException(status_code=403, detail="Not authorized")
+    if current_user.role == "SECRETARY" and not has_active_membership(current_user, db):
+        raise HTTPException(status_code=403, detail="Active membership required")
 
     movement = gadget_service.create_stock_movement(
         db=db,

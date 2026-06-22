@@ -2,6 +2,8 @@
 import { ref, computed, onMounted, watch } from 'vue'
 import { useAuth0 } from '@auth0/auth0-vue'
 import Button from 'primevue/button'
+import Avatar from 'primevue/avatar'
+import Badge from 'primevue/badge'
 
 const { isAuthenticated, isLoading, getAccessTokenSilently, logout } = useAuth0()
 
@@ -31,9 +33,35 @@ const isAdminOrTreasurer = computed(() => {
   return role === 'ADMIN' || role === 'TREASURER'
 })
 
+const userInitials = computed(() => {
+  const first = backendUser.value?.first_name || ''
+  const last = backendUser.value?.last_name || ''
+  if (first && last) {
+    return (first[0] + last[0]).toUpperCase()
+  }
+  return 'U'
+})
+
+const userRole = computed(() => {
+  return backendUser.value?.role || ''
+})
+
+const roleBadgeSeverity = computed(() => {
+  const role = backendUser.value?.role
+  if (role === 'ADMIN') return 'contrast'
+  if (role === 'TREASURER') return 'success'
+  if (role === 'SECRETARY') return 'info'
+  return 'secondary'
+})
+
 const canManageGadgets = computed(() => {
   const role = backendUser.value?.role
-  return role === 'ADMIN' || role === 'SECRETARY'
+  const hasActiveMembership = backendUser.value?.has_active_membership
+  if (role === 'ADMIN') return true
+  if (role === 'SECRETARY') {
+    return !!hasActiveMembership
+  }
+  return false
 })
 
 const items = computed(() => {
@@ -97,7 +125,13 @@ function doLogout() {
         </a>
       </template>
       <template #end>
-        <Button label="Logout" icon="pi pi-sign-out" severity="danger" size="small" outlined @click="doLogout" />
+        <div class="flex align-items-center gap-2">
+          <div v-if="backendUser" class="flex align-items-center gap-2 mr-2">
+            <Avatar :label="userInitials" shape="circle" style="background-color: #ea580c; color: #ffffff;" class="font-bold" />
+            <div style="font-size: 9px;">{{ userRole }}</div>
+          </div>
+          <Button label="Logout" icon="pi pi-sign-out" severity="danger" size="small" outlined @click="doLogout" />
+        </div>
       </template>
     </Menubar>
 
