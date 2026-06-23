@@ -45,3 +45,6 @@ backend/app.db
 *.sw?
 backend/app.sqbpro
 frontend/aps-frontend/.env.local
+
+# Image files
+backend/static/images/gadgets/*.webp
