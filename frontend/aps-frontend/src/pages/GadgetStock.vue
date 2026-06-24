@@ -13,6 +13,7 @@ import DataTable from 'primevue/datatable'
 import Column from 'primevue/column'
 import Dialog from 'primevue/dialog'
 import Card from 'primevue/card'
+import Image from 'primevue/image'
 
 const { getAccessTokenSilently } = useAuth0()
 const toast = useToast()
@@ -140,11 +141,42 @@ const flattenedStocks = computed(() => {
         model: v.model,
         variant_details,
         total_stock: v.stock_quantity,
+        image_path: v.image_path || g.image_path || '',
         ...stockMap
       })
     })
   })
   return list
+})
+
+const selectedVariantImage = computed(() => {
+  if (!movementForm.value.gadget_id) return null
+  const gadget = gadgets.value.find(g => g.id === movementForm.value.gadget_id)
+  if (!gadget) return null
+  if (movementForm.value.variant_id) {
+    const variant = gadget.variants.find(v => v.id === movementForm.value.variant_id)
+    if (variant && variant.image_path) return variant.image_path
+  }
+  return gadget.image_path || null
+})
+
+const selectedGadgetName = computed(() => {
+  if (!movementForm.value.gadget_id) return ''
+  const gadget = gadgets.value.find(g => g.id === movementForm.value.gadget_id)
+  return gadget ? gadget.name : ''
+})
+
+const selectedVariantName = computed(() => {
+  if (!movementForm.value.gadget_id || !movementForm.value.variant_id) return 'Seleziona una variante...'
+  const gadget = gadgets.value.find(g => g.id === movementForm.value.gadget_id)
+  if (!gadget) return ''
+  const variant = gadget.variants.find(v => v.id === movementForm.value.variant_id)
+  if (!variant) return ''
+  const parts = []
+  if (variant.size) parts.push(`Taglia: ${variant.size}`)
+  if (variant.color) parts.push(`Colore: ${variant.color}`)
+  if (variant.model) parts.push(`Modello: ${variant.model}`)
+  return parts.join(' | ') || 'Variante Unica'
 })
 
 const totalStockPieces = computed(() => {
@@ -356,6 +388,22 @@ onMounted(() => {
                 <p class="m-0 text-color-secondary">Nessun gadget o variante caricata nel database.</p>
               </div>
             </template>
+            <Column header="Foto" class="w-5rem text-center">
+              <template #body="slotProps">
+                <div class="flex align-items-center justify-content-center m-auto border-1 border-light border-round overflow-hidden" style="width: 40px; height: 60px; background-color: var(--code-bg);">
+                  <Image 
+                    v-slot="{ src }"
+                    v-if="slotProps.data.image_path" 
+                    :src="'http://localhost:8000' + slotProps.data.image_path" 
+                    alt="Gadget" 
+                    preview 
+                    imageClass="object-fit-cover"
+                    style="width: 100%; height: 100%;"
+                  />
+                  <i v-else class="pi pi-image text-color-secondary text-lg"></i>
+                </div>
+              </template>
+            </Column>
             <Column 
               field="gadget_name" 
               header="Gadget" 
@@ -470,6 +518,21 @@ onMounted(() => {
                 <p class="m-0 text-color-secondary">Nessun movimento registrato.</p>
               </div>
             </template>
+            <Column header="Foto" class="w-5rem text-center">
+              <template #body="slotProps">
+                <div class="flex align-items-center justify-content-center m-auto border-1 border-light border-round overflow-hidden" style="width: 40px; height: 60px; background-color: var(--code-bg);">
+                  <Image 
+                    v-if="slotProps.data.image_path" 
+                    :src="'http://localhost:8000' + slotProps.data.image_path" 
+                    alt="Movimento" 
+                    preview 
+                    imageClass="object-fit-cover"
+                    style="width: 100%; height: 100%;"
+                  />
+                  <i v-else class="pi pi-image text-color-secondary text-lg"></i>
+                </div>
+              </template>
+            </Column>
             <Column field="timestamp" header="Data e Ora" sortable>
               <template #body="slotProps">
                 {{ formatDate(slotProps.data.timestamp) }}
@@ -521,6 +584,24 @@ onMounted(() => {
           <Select id="m_variant" v-model="movementForm.variant_id" :options="variantsOptions" optionLabel="label" optionValue="value" placeholder="Seleziona Variante" class="w-full" />
         </div>
 
+        <!-- Selected Item Visual Preview Card -->
+        <div v-if="movementForm.gadget_id" class="flex align-items-center gap-3 p-3 border-round" style="background-color: var(--code-bg); border: 1px solid var(--border);">
+          <div class="border-round border-1 border-light overflow-hidden flex align-items-center justify-content-center" style="width: 40px; height: 60px; background-color: var(--bg); flex-shrink: 0;">
+            <img 
+              v-if="selectedVariantImage" 
+              :src="'http://localhost:8000' + selectedVariantImage" 
+              alt="Preview" 
+              class="w-full h-full object-fit-cover" 
+            />
+            <i v-else class="pi pi-image text-color-secondary text-lg"></i>
+          </div>
+          <div class="flex flex-column gap-1 text-left">
+            <span class="text-xxs font-semibold text-color-secondary uppercase" style="letter-spacing: 0.5px;">Articolo Selezionato</span>
+            <span class="text-sm font-bold text-900 line-height-2">{{ selectedGadgetName }}</span>
+            <span class="text-xs text-500 font-medium">{{ selectedVariantName }}</span>
+          </div>
+        </div>
+
         <!-- Type -->
         <div class="flex flex-column gap-2">
           <label for="m_type" class="font-semibold text-sm">Tipo Movimento *</label>
@@ -568,5 +649,23 @@ onMounted(() => {
 
 .border-light {
   border-color: var(--border);
+}
+
+:deep(.p-image-img) {
+  width: 100% !important;
+  height: 100% !important;
+  object-fit: cover !important;
+}
+
+.object-fit-cover {
+  object-fit: cover;
+}
+
+.line-height-2 {
+  line-height: 1.2;
+}
+
+.text-xxs {
+  font-size: 0.65rem;
 }
 </style>

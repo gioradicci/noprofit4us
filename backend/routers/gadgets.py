@@ -1,7 +1,10 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, UploadFile, File
 from sqlalchemy.orm import Session
 from pydantic import BaseModel
 from typing import Optional, List
+import uuid
+import os
+import shutil
 from database.database import get_db
 from database.models.gadget import Gadget, Warehouse, StockMovement
 from dependencies.auth import get_current_user
@@ -31,6 +34,7 @@ class GadgetCreate(BaseModel):
     description: Optional[str] = None
     category: str
     min_donation: float
+    image_path: Optional[str] = None
 
 class VariantCreate(BaseModel):
     gadget_id: int
@@ -40,12 +44,14 @@ class VariantCreate(BaseModel):
     variant_type: Optional[str] = None
     sku: Optional[str] = None
     price_modifier: Optional[float] = 0.0
+    image_path: Optional[str] = None
 
 class GadgetUpdate(BaseModel):
     name: str
     description: Optional[str] = None
     category: str
     min_donation: float
+    image_path: Optional[str] = None
 
 class VariantUpdate(BaseModel):
     id: Optional[int] = None
@@ -55,6 +61,7 @@ class VariantUpdate(BaseModel):
     variant_type: Optional[str] = None
     sku: Optional[str] = None
     price_modifier: Optional[float] = 0.0
+    image_path: Optional[str] = None
 
 class MovementCreate(BaseModel):
     variant_id: int
@@ -63,6 +70,47 @@ class MovementCreate(BaseModel):
     quantity: int
     movement_type: str  # RESTOCK, TRANSFER, DELIVERY
     notes: Optional[str] = None
+
+
+@router.post("/upload-image")
+def upload_image(
+    file: UploadFile = File(...),
+    current_user=Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    if current_user.role not in ["ADMIN", "SECRETARY"]:
+        raise HTTPException(status_code=403, detail="Not authorized")
+    if current_user.role == "SECRETARY" and not has_active_membership(current_user, db):
+        raise HTTPException(status_code=403, detail="Active membership required")
+
+    # Validate file type
+    content_type = file.content_type
+    if content_type not in ["image/jpeg", "image/png", "image/webp", "image/gif"]:
+        raise HTTPException(status_code=400, detail="Only image files (JPEG, PNG, WebP, GIF) are allowed")
+
+    # Create a unique filename
+    ext = os.path.splitext(file.filename)[1]
+    if not ext:
+        # Fallback based on content type
+        if "webp" in content_type:
+            ext = ".webp"
+        elif "png" in content_type:
+            ext = ".png"
+        else:
+            ext = ".jpg"
+            
+    filename = f"{uuid.uuid4()}{ext}"
+    
+    # Save the file
+    static_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), "static")
+    images_dir = os.path.join(static_dir, "images", "gadgets")
+    os.makedirs(images_dir, exist_ok=True)
+    
+    file_path = os.path.join(images_dir, filename)
+    with open(file_path, "wb") as buffer:
+        shutil.copyfileobj(file.file, buffer)
+        
+    return {"image_path": f"/static/images/gadgets/{filename}"}
 
 
 @router.get("/")
@@ -81,6 +129,7 @@ def get_gadgets(current_user=Depends(get_current_user), db: Session = Depends(ge
             "description": g.description,
             "category": g.category,
             "min_donation": g.min_donation,
+            "image_path": g.image_path,
             "created_at": g.created_at.isoformat() if g.created_at else None,
             "variants": []
         }
@@ -94,6 +143,7 @@ def get_gadgets(current_user=Depends(get_current_user), db: Session = Depends(ge
                 "sku": v.sku,
                 "price_modifier": v.price_modifier,
                 "stock_quantity": v.stock_quantity,
+                "image_path": v.image_path,
                 "stocks": []
             }
             for s in v.stocks:
@@ -121,6 +171,7 @@ def create_gadget(payload: GadgetCreate, current_user=Depends(get_current_user),
         description=payload.description,
         category=payload.category,
         min_donation=payload.min_donation,
+        image_path=payload.image_path,
         performed_by=current_user.id
     )
     return {
@@ -129,6 +180,7 @@ def create_gadget(payload: GadgetCreate, current_user=Depends(get_current_user),
         "description": gadget.description,
         "category": gadget.category,
         "min_donation": gadget.min_donation,
+        "image_path": gadget.image_path,
         "created_at": gadget.created_at.isoformat() if gadget.created_at else None
     }
 
@@ -149,6 +201,7 @@ def create_variant(payload: VariantCreate, current_user=Depends(get_current_user
         variant_type=payload.variant_type,
         sku=payload.sku,
         price_modifier=payload.price_modifier or 0.0,
+        image_path=payload.image_path,
         performed_by=current_user.id
     )
     return {
@@ -159,7 +212,8 @@ def create_variant(payload: VariantCreate, current_user=Depends(get_current_user
         "model": variant.model,
         "variant_type": variant.variant_type,
         "sku": variant.sku,
-        "price_modifier": variant.price_modifier
+        "price_modifier": variant.price_modifier,
+        "image_path": variant.image_path
     }
 
 
@@ -177,6 +231,7 @@ def update_gadget(id: int, payload: GadgetUpdate, current_user=Depends(get_curre
         category=payload.category,
         min_donation=payload.min_donation,
         description=payload.description,
+        image_path=payload.image_path,
         performed_by=current_user.id
     )
     return {
@@ -185,6 +240,7 @@ def update_gadget(id: int, payload: GadgetUpdate, current_user=Depends(get_curre
         "description": gadget.description,
         "category": gadget.category,
         "min_donation": gadget.min_donation,
+        "image_path": gadget.image_path,
         "created_at": gadget.created_at.isoformat() if gadget.created_at else None
     }
 
@@ -212,7 +268,8 @@ def update_gadget_variants(gadget_id: int, payload: List[VariantUpdate], current
             "variant_type": v.variant_type,
             "sku": v.sku,
             "price_modifier": v.price_modifier,
-            "stock_quantity": v.stock_quantity
+            "stock_quantity": v.stock_quantity,
+            "image_path": v.image_path
         }
         for v in updated_variants
     ]
@@ -257,6 +314,7 @@ def get_movements(current_user=Depends(get_current_user), db: Session = Depends(
             "variant_id": m.variant_id,
             "variant_sku": m.variant.sku if m.variant else None,
             "gadget_name": m.variant.gadget.name if m.variant and m.variant.gadget else None,
+            "image_path": m.variant.image_path if (m.variant and m.variant.image_path) else (m.variant.gadget.image_path if (m.variant and m.variant.gadget and m.variant.gadget.image_path) else None),
             "from_warehouse": {
                 "id": m.from_warehouse.id,
                 "name": m.from_warehouse.name,

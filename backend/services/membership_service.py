@@ -11,8 +11,8 @@ from datetime import date
 # #Serve a gestire il progressivo
 def generate_membership_number(db: Session):
 
-    last_member = 0
-    last_member = db.query(Member.membership_number).order_by(Member.membership_number.desc()).first()
+
+    last_member = db.query(Member).order_by(Member.membership_number.desc()).first()
 
     if not last_member:
         return 1
@@ -23,9 +23,7 @@ def generate_membership_number(db: Session):
 def generate_card_number_for_year(db: Session, reference_year: int) -> int:
     
     #Modifica per evitare di far camminare troppi dati in rete
-    last_membership = 0
-
-    last_membership = db.query(Membership.card_number).filter(Membership.reference_year == reference_year).order_by(Membership.card_number.desc()).first()
+    last_membership = db.query(Membership).filter(Membership.reference_year == reference_year).order_by(Membership.card_number.desc()).first()
     if not last_membership or not last_membership.card_number:
         return 1
     return last_membership.card_number + 1

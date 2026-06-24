@@ -11,6 +11,7 @@ class Gadget(Base):
     description = Column(String, nullable=True)
     category = Column(String, nullable=False)  # T-SHIRT, CAP, KEYCHAIN, PIN, STICKER, POSTER, OTHER
     min_donation = Column(Float, nullable=False)
+    image_path = Column(String, nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow)
 
     variants = relationship("GadgetVariant", back_populates="gadget", cascade="all, delete-orphan")
@@ -30,6 +31,7 @@ class GadgetVariant(Base):
     sku = Column(String, unique=True, nullable=True)
     price_modifier = Column(Float, default=0.0)    # adjustment to min_donation
     stock_quantity = Column(Integer, default=0)    # Total aggregated stock
+    image_path = Column(String, nullable=True)
 
     gadget = relationship("Gadget", back_populates="variants")
     stocks = relationship("GadgetVariantStock", back_populates="variant", cascade="all, delete-orphan")

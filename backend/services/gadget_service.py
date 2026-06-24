@@ -13,13 +13,15 @@ def create_gadget(
     category: str,
     min_donation: float,
     description: Optional[str] = None,
+    image_path: Optional[str] = None,
     performed_by: Optional[int] = None
 ) -> Gadget:
     gadget = Gadget(
         name=name,
         description=description,
         category=category,
-        min_donation=min_donation
+        min_donation=min_donation,
+        image_path=image_path
     )
     db.add(gadget)
     db.commit()
@@ -45,6 +47,7 @@ def create_variant(
     variant_type: Optional[str] = None,
     sku: Optional[str] = None,
     price_modifier: float = 0.0,
+    image_path: Optional[str] = None,
     performed_by: Optional[int] = None
 ) -> GadgetVariant:
     gadget = db.query(Gadget).get(gadget_id)
@@ -58,7 +61,8 @@ def create_variant(
         model=model,
         variant_type=variant_type,
         sku=sku,
-        price_modifier=price_modifier or 0.0
+        price_modifier=price_modifier or 0.0,
+        image_path=image_path
     )
     db.add(variant)
     db.commit()
@@ -108,6 +112,7 @@ def update_gadget(
     category: str,
     min_donation: float,
     description: Optional[str] = None,
+    image_path: Optional[str] = None,
     performed_by: Optional[int] = None
 ) -> Gadget:
     gadget = db.query(Gadget).get(gadget_id)
@@ -118,6 +123,7 @@ def update_gadget(
     gadget.category = category
     gadget.min_donation = min_donation
     gadget.description = description
+    gadget.image_path = image_path
 
     db.commit()
     db.refresh(gadget)
@@ -160,6 +166,7 @@ def update_gadget_variants(
             v.variant_type = v_data.get("variant_type")
             v.sku = v_data.get("sku")
             v.price_modifier = v_data.get("price_modifier") or 0.0
+            v.image_path = v_data.get("image_path")
             
             # Remove from tracking dict so it doesn't get deleted
             existing_by_id.pop(v_id)
@@ -182,7 +189,8 @@ def update_gadget_variants(
                 model=v_data.get("model"),
                 variant_type=v_data.get("variant_type"),
                 sku=v_data.get("sku"),
-                price_modifier=v_data.get("price_modifier") or 0.0
+                price_modifier=v_data.get("price_modifier") or 0.0,
+                image_path=v_data.get("image_path")
             )
             db.add(v)
             db.flush() # Flush to generate id

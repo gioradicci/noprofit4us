@@ -1,6 +1,8 @@
 import os
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
+from sqlalchemy import text
 
 from database.database import engine
 from database.base import Base
@@ -10,6 +12,16 @@ from database.models.gadget import Gadget, GadgetVariant, Warehouse, GadgetVaria
 app = FastAPI(title="APS Backend v2")
 # Create tables
 Base.metadata.create_all(bind=engine)
+
+
+
+# Ensure directories for uploaded images exist
+static_dir = os.path.join(os.path.dirname(__file__), "static")
+images_dir = os.path.join(static_dir, "images", "gadgets")
+os.makedirs(images_dir, exist_ok=True)
+
+# Mount static files folder
+app.mount("/static", StaticFiles(directory=static_dir), name="static")
 
 cors_origins = os.getenv("CORS_ORIGINS", "*").split(",")
 

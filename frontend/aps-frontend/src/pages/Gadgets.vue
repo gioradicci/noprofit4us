@@ -3,6 +3,7 @@ import { ref, onMounted, computed } from 'vue'
 import { useAuth0 } from '@auth0/auth0-vue'
 import { useToast } from 'primevue/usetoast'
 import { useConfirm } from 'primevue/useconfirm'
+import ImageUpload from '../components/ImageUpload.vue'
 
 // PrimeVue Components
 import Stepper from 'primevue/stepper'
@@ -33,7 +34,8 @@ const newGadget = ref({
   name: '',
   description: '',
   category: 'T-SHIRT',
-  min_donation: 10.0
+  min_donation: 10.0,
+  image_path: ''
 })
 
 // Categories
@@ -43,7 +45,11 @@ const categories = [
   { label: 'Portachiavi', value: 'KEYCHAIN' },
   { label: 'Spilla', value: 'PIN' },
   { label: 'Adesivo', value: 'STICKER' },
+  { label: 'Apribottiglie', value: 'APRIBOTTIGLIE' },
+  { label: 'Scaldacollo', value: 'SCALDACOLLO' },
   { label: 'Poster', value: 'POSTER' },
+  { label: 'Shopper', value: 'SHOPPER' },
+  { label: 'Borse', value: 'BORSE' },
   { label: 'Altro', value: 'OTHER' }
 ]
 
@@ -62,7 +68,8 @@ const newVariant = ref({
   model: '',
   variant_type: '',
   sku: '',
-  price_modifier: 0.0
+  price_modifier: 0.0,
+  image_path: ''
 })
 
 // Temporary list of variants to create
@@ -101,7 +108,8 @@ function startCreate() {
     name: '',
     description: '',
     category: 'T-SHIRT',
-    min_donation: 10.0
+    min_donation: 10.0,
+    image_path: ''
   }
   newVariant.value = {
     size: '',
@@ -109,7 +117,8 @@ function startCreate() {
     model: '',
     variant_type: '',
     sku: '',
-    price_modifier: 0.0
+    price_modifier: 0.0,
+    image_path: ''
   }
   tempVariants.value = []
   activeStep.value = "1"
@@ -123,7 +132,8 @@ function startEdit(gadget) {
     name: gadget.name,
     description: gadget.description || '',
     category: gadget.category,
-    min_donation: gadget.min_donation
+    min_donation: gadget.min_donation,
+    image_path: gadget.image_path || ''
   }
   
   // Clone variants so modifications remain local until save
@@ -135,7 +145,8 @@ function startEdit(gadget) {
     variant_type: v.variant_type || '',
     sku: v.sku || '',
     price_modifier: v.price_modifier || 0.0,
-    stock_quantity: v.stock_quantity || 0
+    stock_quantity: v.stock_quantity || 0,
+    image_path: v.image_path || ''
   }))
 
   newVariant.value = {
@@ -144,7 +155,8 @@ function startEdit(gadget) {
     model: '',
     variant_type: '',
     sku: '',
-    price_modifier: 0.0
+    price_modifier: 0.0,
+    image_path: ''
   }
   
   activeStep.value = "1"
@@ -168,7 +180,8 @@ function addTempVariant() {
     model: '',
     variant_type: '',
     sku: '',
-    price_modifier: 0.0
+    price_modifier: 0.0,
+    image_path: ''
   }
   toast.add({ severity: 'success', summary: 'Variante Aggiunta', detail: 'Variante aggiunta alla lista temporanea', life: 2000 })
 }
@@ -204,7 +217,8 @@ async function saveGadgetAndVariants() {
           name: newGadget.value.name,
           description: newGadget.value.description,
           category: newGadget.value.category,
-          min_donation: newGadget.value.min_donation
+          min_donation: newGadget.value.min_donation,
+          image_path: newGadget.value.image_path
         })
       })
       
@@ -228,7 +242,8 @@ async function saveGadgetAndVariants() {
           model: v.model,
           variant_type: v.variant_type,
           sku: v.sku,
-          price_modifier: v.price_modifier
+          price_modifier: v.price_modifier,
+          image_path: v.image_path
         })))
       })
       
@@ -368,27 +383,34 @@ onMounted(() => {
         <StepPanels>
           <!-- STEP 1: Dati Generali -->
           <StepPanel v-slot="{ activateCallback }" value="1">
-            <div class="flex flex-column gap-4 py-3 text-left">
-              <div class="flex flex-column gap-2">
-                <label for="name" class="font-semibold text-sm">Nome Gadget *</label>
-                <InputText id="name" v-model="newGadget.name" placeholder="Es. T-Shirt Ufficiale APS" class="w-full" />
-              </div>
-              
-              <div class="grid">
-                <div class="col-12 md:col-6 flex flex-column gap-2">
-                  <label for="category" class="font-semibold text-sm">Categoria *</label>
-                  <Select id="category" v-model="newGadget.category" :options="categories" optionLabel="label" optionValue="value" class="w-full" />
+            <div class="grid py-3 text-left">
+              <div class="col-12 md:col-8 flex flex-column gap-4">
+                <div class="flex flex-column gap-2">
+                  <label for="name" class="font-semibold text-sm">Nome Gadget *</label>
+                  <InputText id="name" v-model="newGadget.name" placeholder="Es. T-Shirt Ufficiale APS" class="w-full" />
                 </div>
                 
-                <div class="col-12 md:col-6 flex flex-column gap-2">
-                  <label for="min_donation" class="font-semibold text-sm">Donazione Minima (€) *</label>
-                  <InputNumber id="min_donation" v-model="newGadget.min_donation" :min="0" :minFractionDigits="2" :maxFractionDigits="2" class="w-full" mode="currency" currency="EUR" locale="it-IT" />
+                <div class="grid">
+                  <div class="col-12 md:col-6 flex flex-column gap-2">
+                    <label for="category" class="font-semibold text-sm">Categoria *</label>
+                    <Select id="category" v-model="newGadget.category" :options="categories" optionLabel="label" optionValue="value" class="w-full" />
+                  </div>
+                  
+                  <div class="col-12 md:col-6 flex flex-column gap-2">
+                    <label for="min_donation" class="font-semibold text-sm">Donazione Minima (€) *</label>
+                    <InputNumber id="min_donation" v-model="newGadget.min_donation" :min="0" :minFractionDigits="2" :maxFractionDigits="2" class="w-full" mode="currency" currency="EUR" locale="it-IT" />
+                  </div>
+                </div>
+
+                <div class="flex flex-column gap-2">
+                  <label for="description" class="font-semibold text-sm">Descrizione</label>
+                  <InputText id="description" v-model="newGadget.description" placeholder="Descrizione o dettagli aggiuntivi..." class="w-full" />
                 </div>
               </div>
-
-              <div class="flex flex-column gap-2">
-                <label for="description" class="font-semibold text-sm">Descrizione</label>
-                <InputText id="description" v-model="newGadget.description" placeholder="Descrizione o dettagli aggiuntivi..." class="w-full" />
+              
+              <div class="col-12 md:col-4 flex flex-column align-items-center justify-content-center border-left-none md:border-left-1 border-light pl-0 md:pl-4 mt-4 md:mt-0">
+                <label class="font-semibold text-sm mb-2 align-self-start md:align-self-center">Immagine Gadget</label>
+                <ImageUpload v-model="newGadget.image_path" label="Foto Gadget" />
               </div>
             </div>
             
@@ -435,6 +457,11 @@ onMounted(() => {
                     <InputNumber id="v_price" v-model="newVariant.price_modifier" :minFractionDigits="2" :maxFractionDigits="2" class="w-full" mode="currency" currency="EUR" locale="it-IT" size="small" />
                   </div>
 
+                  <div class="flex flex-column gap-1 align-items-center mb-2">
+                    <label class="text-xs font-semibold align-self-start">Immagine Variante (Opzionale)</label>
+                    <ImageUpload v-model="newVariant.image_path" label="Foto Variante" />
+                  </div>
+
                   <Button label="Aggiungi Variante" icon="pi pi-plus" severity="success" size="small" class="mt-2" @click="addTempVariant" />
                 </div>
               </div>
@@ -444,6 +471,13 @@ onMounted(() => {
                 <h4 class="font-bold text-lg mb-3 text-700">Varianti ({{ tempVariants.length }})</h4>
                 
                 <DataTable :value="tempVariants" class="p-datatable-sm" responsiveLayout="scroll" emptyMessage="Nessuna variante aggiunta. I gadget semplici possono avere anche una singola variante generica.">
+                  <Column header="Foto" class="w-4rem">
+                    <template #body="slotProps">
+                      <div class="flex align-items-center justify-content-center">
+                        <ImageUpload v-model="slotProps.data.image_path" compact />
+                      </div>
+                    </template>
+                  </Column>
                   <Column field="sku" header="SKU">
                     <template #body="slotProps">
                       <InputText v-model="slotProps.data.sku" class="w-full" size="small" />
@@ -506,6 +540,13 @@ onMounted(() => {
                   <span class="text-xs font-semibold text-color-secondary uppercase">Descrizione</span>
                   <span class="text-base text-900 font-medium">{{ newGadget.description || '-' }}</span>
                 </div>
+                <div class="col-12 flex flex-column gap-1 mt-2">
+                  <span class="text-xs font-semibold text-color-secondary uppercase">Immagine Principale</span>
+                  <div class="border-round border-1 border-light overflow-hidden" style="width: 80px; height: 120px; background-color: var(--code-bg);">
+                    <img v-if="newGadget.image_path" :src="newGadget.image_path.startsWith('http') ? newGadget.image_path : 'http://localhost:8000' + newGadget.image_path" alt="Gadget image" class="w-full h-full object-fit-cover" />
+                    <div v-else class="w-full h-full flex align-items-center justify-content-center text-color-secondary"><i class="pi pi-image text-xl"></i></div>
+                  </div>
+                </div>
               </div>
 
               <h4 class="font-bold text-lg mb-3 text-700">{{ isEditMode ? 'Varianti modificate' : 'Varianti da creare' }}</h4>
@@ -541,6 +582,22 @@ onMounted(() => {
           </div>
         </template>
         
+        <Column header="Foto" class="w-5rem text-center">
+          <template #body="slotProps">
+            <div class="flex align-items-center justify-content-center m-auto border-1 border-light border-round overflow-hidden" style="width: 40px; height: 60px; background-color: var(--code-bg);">
+              <Image 
+                v-if="slotProps.data.image_path" 
+                :src="'http://localhost:8000' + slotProps.data.image_path" 
+                alt="Gadget" 
+                preview 
+                imageClass="object-fit-cover"
+                style="width: 100%; height: 100%;"
+              />
+              <i v-else class="pi pi-image text-color-secondary text-lg"></i>
+            </div>
+          </template>
+        </Column>
+
         <Column field="name" header="Nome" sortable class="font-bold"></Column>
         
         <Column field="category" header="Categoria" sortable>
@@ -561,11 +618,22 @@ onMounted(() => {
         
         <Column header="Varianti Attive">
           <template #body="slotProps">
-            <div class="flex flex-wrap gap-1">
-              <span v-for="v in slotProps.data.variants" :key="v.id" class="text-xs bg-light border-round px-2 py-1" :title="`SKU: ${v.sku}`">
-                {{ v.size || '' }} {{ v.color || '' }} {{ v.model || '' }}
-                <span :class="['font-semibold ml-1', v.stock_quantity < 1 ? 'text-red-500' : '']">({{ v.stock_quantity }} pz)</span>
-              </span>
+            <div class="flex flex-wrap gap-2">
+              <div v-for="v in slotProps.data.variants" :key="v.id" class="flex align-items-center gap-2 bg-light border-round px-2 py-1 text-xs" :title="`SKU: ${v.sku}`">
+                <div class="flex align-items-center justify-content-center border-round overflow-hidden border-1 border-300" style="width: 16px; height: 24px; background-color: var(--code-bg);">
+                  <img 
+                    v-if="v.image_path || slotProps.data.image_path" 
+                    :src="'http://localhost:8000' + (v.image_path || slotProps.data.image_path)" 
+                    alt="Var" 
+                    class="w-full h-full object-fit-cover"
+                  />
+                  <i v-else class="pi pi-image text-400" style="font-size: 8px;"></i>
+                </div>
+                <span>
+                  {{ v.size || '' }} {{ v.color || '' }} {{ v.model || '' }}
+                  <span :class="['font-semibold ml-1', v.stock_quantity < 1 ? 'text-red-500' : '']">({{ v.stock_quantity }} pz)</span>
+                </span>
+              </div>
             </div>
           </template>
         </Column>
@@ -603,5 +671,15 @@ onMounted(() => {
 
 .border-light {
   border-color: var(--border);
+}
+
+:deep(.p-image-img) {
+  width: 100% !important;
+  height: 100% !important;
+  object-fit: cover !important;
+}
+
+.object-fit-cover {
+  object-fit: cover;
 }
 </style>
