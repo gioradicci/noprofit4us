@@ -352,3 +352,81 @@ def create_stock_movement(
     )
     db.commit()
     return movement
+
+
+def bulk_transfer_warehouse_stock(
+    db: Session,
+    from_warehouse_id: int,
+    to_warehouse_id: int,
+    performed_by: int,
+    notes: Optional[str] = None
+) -> int:
+    if from_warehouse_id == to_warehouse_id:
+        raise HTTPException(status_code=400, detail="Il magazzino di origine e destinazione devono essere diversi.")
+
+    from_wh = db.query(Warehouse).get(from_warehouse_id)
+    to_wh = db.query(Warehouse).get(to_warehouse_id)
+    if not from_wh or not to_wh:
+        raise HTTPException(status_code=404, detail="Magazzino di origine o destinazione non trovato.")
+
+    if not to_wh.is_active:
+        raise HTTPException(status_code=400, detail="Il magazzino di destinazione deve essere attivo.")
+
+    # Find all stock rows in from_warehouse that have quantity > 0
+    active_stocks = db.query(GadgetVariantStock).filter(
+        GadgetVariantStock.warehouse_id == from_warehouse_id,
+        GadgetVariantStock.quantity > 0
+    ).all()
+
+    if not active_stocks:
+        return 0
+
+    transferred_count = 0
+    for stock in active_stocks:
+        qty = stock.quantity
+        variant_id = stock.variant_id
+        
+        # Deduct from source
+        stock.quantity = 0
+
+        # Add to destination
+        stock_to = db.query(GadgetVariantStock).filter_by(
+            variant_id=variant_id, warehouse_id=to_warehouse_id
+        ).first()
+        if not stock_to:
+            stock_to = GadgetVariantStock(
+                variant_id=variant_id,
+                warehouse_id=to_warehouse_id,
+                quantity=0
+            )
+            db.add(stock_to)
+        stock_to.quantity += qty
+
+        # Record movement log
+        movement = StockMovement(
+            variant_id=variant_id,
+            from_warehouse_id=from_warehouse_id,
+            to_warehouse_id=to_warehouse_id,
+            quantity=qty,
+            movement_type="TRANSFER",
+            performed_by=performed_by,
+            notes=notes or f"Spostamento massivo da {from_wh.code} a {to_wh.code}"
+        )
+        db.add(movement)
+        
+        transferred_count += qty
+
+    db.commit()
+
+    log_action(
+        db=db,
+        action_type="BULK_STOCK_TRANSFER",
+        entity_type="WAREHOUSE",
+        entity_id=from_warehouse_id,
+        performed_by=performed_by,
+        details=f"Bulk stock transfer from warehouse {from_wh.code} (ID: {from_warehouse_id}) to {to_wh.code} (ID: {to_warehouse_id}). Total items: {transferred_count}."
+    )
+    db.commit()
+
+    return transferred_count
+

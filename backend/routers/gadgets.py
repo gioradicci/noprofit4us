@@ -94,6 +94,12 @@ class WarehouseUpdate(BaseModel):
     is_active: Optional[bool] = None
 
 
+class BulkTransferPayload(BaseModel):
+    from_warehouse_id: int
+    to_warehouse_id: int
+    notes: Optional[str] = None
+
+
 @router.post("/upload-image")
 def upload_image(
     file: UploadFile = File(...),
@@ -465,6 +471,27 @@ def delete_warehouse(
     db.delete(wh)
     db.commit()
     return {"status": "deleted"}
+
+
+@router.post("/warehouses/bulk-transfer")
+def bulk_transfer(
+    payload: BulkTransferPayload,
+    current_user=Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    if current_user.role not in ["ADMIN", "SECRETARY"]:
+        raise HTTPException(status_code=403, detail="Not authorized")
+    if current_user.role == "SECRETARY" and not has_active_membership(current_user, db):
+        raise HTTPException(status_code=403, detail="Active membership required")
+
+    transferred = gadget_service.bulk_transfer_warehouse_stock(
+        db=db,
+        from_warehouse_id=payload.from_warehouse_id,
+        to_warehouse_id=payload.to_warehouse_id,
+        performed_by=current_user.id,
+        notes=payload.notes
+    )
+    return {"status": "success", "transferred_quantity": transferred}
 
 
 @router.get("/movements")

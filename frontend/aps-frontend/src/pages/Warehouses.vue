@@ -1,5 +1,5 @@
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, computed } from 'vue'
 import { useAuth0 } from '@auth0/auth0-vue'
 import { useToast } from 'primevue/usetoast'
 import { useConfirm } from 'primevue/useconfirm'
@@ -22,6 +22,22 @@ const submitting = ref(false)
 const showDialog = ref(false)
 const isEditMode = ref(false)
 const currentWarehouseId = ref(null)
+
+const showTransferDialog = ref(false)
+const transferForm = ref({
+  from_warehouse_id: null,
+  from_warehouse_name: '',
+  from_warehouse_code: '',
+  to_warehouse_id: null,
+  notes: ''
+})
+const transferring = ref(false)
+
+const targetWarehouseOptions = computed(() => {
+  return warehouses.value.filter(
+    w => w.id !== transferForm.value.from_warehouse_id && w.is_active !== false
+  )
+})
 
 const warehouseForm = ref({
   code: '',
@@ -170,6 +186,66 @@ function confirmDelete(wh) {
   })
 }
 
+function openBulkTransfer(wh) {
+  transferForm.value = {
+    from_warehouse_id: wh.id,
+    from_warehouse_name: wh.name,
+    from_warehouse_code: wh.code,
+    to_warehouse_id: null,
+    notes: ''
+  }
+  showTransferDialog.value = true
+}
+
+async function executeBulkTransfer() {
+  if (!transferForm.value.to_warehouse_id) {
+    toast.add({ severity: 'warn', summary: 'Attenzione', detail: 'Seleziona il magazzino di destinazione', life: 3000 })
+    return
+  }
+
+  transferring.value = true
+  try {
+    const token = await getAccessTokenSilently()
+    const res = await fetch('http://localhost:8000/gadgets/warehouses/bulk-transfer', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${token}`
+      },
+      body: JSON.stringify({
+        from_warehouse_id: transferForm.value.from_warehouse_id,
+        to_warehouse_id: transferForm.value.to_warehouse_id,
+        notes: transferForm.value.notes
+      })
+    })
+
+    const data = await res.json()
+
+    if (res.ok) {
+      toast.add({ 
+        severity: 'success', 
+        summary: 'Successo', 
+        detail: `Trasferiti con successo ${data.transferred_quantity} pezzi.`, 
+        life: 3000 
+      })
+      showTransferDialog.value = false
+      loadWarehouses()
+    } else {
+      toast.add({ 
+        severity: 'error', 
+        summary: 'Errore', 
+        detail: data.detail || 'Impossibile completare il trasferimento', 
+        life: 4000 
+      })
+    }
+  } catch (err) {
+    console.error(err)
+    toast.add({ severity: 'error', summary: 'Errore', detail: 'Errore durante la connessione al server', life: 3000 })
+  } finally {
+    transferring.value = false
+  }
+}
+
 onMounted(() => {
   loadWarehouses()
 })
@@ -216,6 +292,15 @@ onMounted(() => {
         <Column header="Azioni" class="text-right">
           <template #body="slotProps">
             <div class="flex gap-2 justify-content-end">
+              <Button 
+                v-if="slotProps.data.total_stock > 0" 
+                icon="pi pi-directions" 
+                severity="warn" 
+                outlined 
+                size="small" 
+                title="Trasferimento massivo"
+                @click="openBulkTransfer(slotProps.data)" 
+              />
               <Button icon="pi pi-pencil" severity="secondary" outlined size="small" @click="openEdit(slotProps.data)" />
               <Button icon="pi pi-trash" severity="danger" outlined size="small" @click="confirmDelete(slotProps.data)" />
             </div>
@@ -251,6 +336,45 @@ onMounted(() => {
       <template #footer>
         <Button label="Annulla" severity="secondary" outlined @click="showDialog = false" />
         <Button label="Salva" severity="success" :loading="submitting" @click="saveWarehouse" />
+      </template>
+    </Dialog>
+
+    <!-- Bulk Transfer Dialog -->
+    <Dialog v-model:visible="showTransferDialog" header="Trasferimento Massivo Scorte" :modal="true" :style="{ width: '450px' }">
+      <div class="flex flex-column gap-4 py-2 text-left">
+        <div class="p-3 border-round flex gap-3 align-items-center" style="background-color: #fffbeb; border: 1px solid #fde68a; color: #b45309; font-size: 0.9rem;">
+          <i class="pi pi-exclamation-triangle text-xl"></i>
+          <div>
+            Stai per trasferire <strong>tutti</strong> gli articoli con giacenza dal magazzino 
+            <strong>{{ transferForm.from_warehouse_name }} ({{ transferForm.from_warehouse_code }})</strong>.
+          </div>
+        </div>
+
+        <!-- Destination Warehouse -->
+        <div class="flex flex-column gap-2">
+          <label for="to_wh" class="font-semibold text-sm">Magazzino di Destinazione *</label>
+          <Select 
+            id="to_wh" 
+            v-model="transferForm.to_warehouse_id" 
+            :options="targetWarehouseOptions" 
+            optionLabel="name" 
+            optionValue="id" 
+            placeholder="Seleziona magazzino di destinazione..." 
+            class="w-full" 
+          />
+          <small class="text-color-secondary">Vengono proposti solo i magazzini attivi diversi da quello di origine.</small>
+        </div>
+
+        <!-- Notes -->
+        <div class="flex flex-column gap-2">
+          <label for="transfer_notes" class="font-semibold text-sm">Note</label>
+          <InputText id="transfer_notes" v-model="transferForm.notes" placeholder="Es. Spostamento per dismissione filiale" class="w-full" />
+        </div>
+      </div>
+
+      <template #footer>
+        <Button label="Annulla" severity="secondary" outlined @click="showTransferDialog = false" />
+        <Button label="Conferma Trasferimento" severity="warn" :loading="transferring" @click="executeBulkTransfer" />
       </template>
     </Dialog>
   </div>
