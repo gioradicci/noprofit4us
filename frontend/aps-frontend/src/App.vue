@@ -57,9 +57,10 @@ const roleBadgeSeverity = computed(() => {
 const canManageGadgets = computed(() => {
   const role = backendUser.value?.role
   const hasActiveMembership = backendUser.value?.has_active_membership
+  const isRenewalPending = backendUser.value?.is_renewal_pending
   if (role === 'ADMIN') return true
   if (role === 'SECRETARY') {
-    return !!hasActiveMembership
+    return !!hasActiveMembership && !isRenewalPending
   }
   return false
 })
@@ -73,8 +74,15 @@ const items = computed(() => {
     menu.push({ label: 'Dashboard', icon: 'pi pi-chart-bar', route: '/dashboard' })
   }
   if (canManageGadgets.value) {
-    menu.push({ label: 'Gestione Gadget', icon: 'pi pi-box', route: '/gadgets' })
-    menu.push({ label: 'Gestione Magazzino Gadget', icon: 'pi pi-warehouse', route: '/gadget-stock' })
+    menu.push({
+      label: 'Gestione Gadget',
+      icon: 'pi pi-box',
+      items: [
+        { label: 'Elenco Gadget', icon: 'pi pi-box', route: '/gadgets' },
+        { label: 'Movimentazione gadget', icon: 'pi pi-warehouse', route: '/gadget-stock' },
+        { label: 'Magazzini', icon: 'pi pi-building', route: '/warehouses' }
+      ]
+    })
   }
   return menu
 })

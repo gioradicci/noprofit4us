@@ -1,0 +1,280 @@
+<script setup>
+import { ref, onMounted } from 'vue'
+import { useAuth0 } from '@auth0/auth0-vue'
+import { useToast } from 'primevue/usetoast'
+import { useConfirm } from 'primevue/useconfirm'
+
+import Button from 'primevue/button'
+import DataTable from 'primevue/datatable'
+import Column from 'primevue/column'
+import InputText from 'primevue/inputtext'
+import Dialog from 'primevue/dialog'
+import Select from 'primevue/select'
+
+const { getAccessTokenSilently } = useAuth0()
+const toast = useToast()
+const confirm = useConfirm()
+
+// State
+const warehouses = ref([])
+const loading = ref(false)
+const submitting = ref(false)
+const showDialog = ref(false)
+const isEditMode = ref(false)
+const currentWarehouseId = ref(null)
+
+const warehouseForm = ref({
+  code: '',
+  name: '',
+  is_active: true
+})
+
+const activeOptions = [
+  { label: 'Attivo', value: true },
+  { label: 'Disattivato', value: false }
+]
+
+// Load warehouses
+async function loadWarehouses() {
+  loading.value = true
+  try {
+    const token = await getAccessTokenSilently()
+    const res = await fetch("http://localhost:8000/gadgets/warehouses", {
+      headers: { Authorization: `Bearer ${token}` }
+    })
+    if (res.ok) {
+      warehouses.value = await res.json()
+    } else {
+      toast.add({ severity: 'error', summary: 'Errore', detail: 'Errore nel caricamento dei magazzini', life: 3000 })
+    }
+  } catch (err) {
+    console.error(err)
+    toast.add({ severity: 'error', summary: 'Errore', detail: 'Impossibile connettersi al server', life: 3000 })
+  } finally {
+    loading.value = false
+  }
+}
+
+// Dialog management
+function openCreate() {
+  isEditMode.value = false
+  currentWarehouseId.value = null
+  warehouseForm.value = {
+    code: '',
+    name: '',
+    is_active: true
+  }
+  showDialog.value = true
+}
+
+// Edit Dialog
+function openEdit(wh) {
+  isEditMode.value = true
+  currentWarehouseId.value = wh.id
+  warehouseForm.value = {
+    code: wh.code,
+    name: wh.name,
+    is_active: wh.is_active
+  }
+  showDialog.value = true
+}
+
+// Save (create or update)
+async function saveWarehouse() {
+  if (!warehouseForm.value.code || !warehouseForm.value.name) {
+    toast.add({ severity: 'warn', summary: 'Attenzione', detail: 'Compilare tutti i campi obbligatori', life: 3000 })
+    return
+  }
+
+  submitting.value = true
+  try {
+    const token = await getAccessTokenSilently()
+    const method = isEditMode.value ? 'PUT' : 'POST'
+    const url = isEditMode.value 
+      ? `http://localhost:8000/gadgets/warehouses/${currentWarehouseId.value}`
+      : 'http://localhost:8000/gadgets/warehouses'
+
+    const res = await fetch(url, {
+      method,
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${token}`
+      },
+      body: JSON.stringify(warehouseForm.value)
+    })
+
+    const data = await res.json()
+
+    if (res.ok) {
+      toast.add({ 
+        severity: 'success', 
+        summary: 'Successo', 
+        detail: isEditMode.value ? 'Magazzino aggiornato con successo' : 'Magazzino creato con successo', 
+        life: 3000 
+      })
+      showDialog.value = false
+      loadWarehouses()
+    } else {
+      toast.add({ 
+        severity: 'error', 
+        summary: 'Errore', 
+        detail: data.detail || 'Impossibile salvare il magazzino', 
+        life: 4000 
+      })
+    }
+  } catch (err) {
+    console.error(err)
+    toast.add({ severity: 'error', summary: 'Errore', detail: 'Errore durante la connessione al server', life: 3000 })
+  } finally {
+    submitting.value = false
+  }
+}
+
+// Delete warehouse
+async function deleteWarehouse(id) {
+  try {
+    const token = await getAccessTokenSilently()
+    const res = await fetch(`http://localhost:8000/gadgets/warehouses/${id}`, {
+      method: 'DELETE',
+      headers: { Authorization: `Bearer ${token}` }
+    })
+    
+    const data = await res.json()
+
+    if (res.ok) {
+      toast.add({ severity: 'success', summary: 'Successo', detail: 'Magazzino eliminato con successo', life: 3000 })
+      loadWarehouses()
+    } else {
+      toast.add({ 
+        severity: 'error', 
+        summary: 'Errore', 
+        detail: data.detail || 'Impossibile eliminare il magazzino', 
+        life: 4000 
+      })
+    }
+  } catch (err) {
+    console.error(err)
+    toast.add({ severity: 'error', summary: 'Errore', detail: 'Errore durante la connessione al server', life: 3000 })
+  }
+}
+
+function confirmDelete(wh) {
+  confirm.require({
+    message: `Sei sicuro di voler eliminare il magazzino ${wh.name} (${wh.code})? L'operazione non è reversibile.`,
+    header: 'Conferma Eliminazione',
+    icon: 'pi pi-exclamation-triangle',
+    acceptLabel: 'Sì, elimina',
+    rejectLabel: 'Annulla',
+    acceptProps: { severity: 'danger' },
+    accept: () => deleteWarehouse(wh.id)
+  })
+}
+
+onMounted(() => {
+  loadWarehouses()
+})
+</script>
+
+<template>
+  <div class="warehouses-container py-5 px-3">
+    <!-- Header -->
+    <div class="flex justify-content-between align-items-center mb-5">
+      <div>
+        <h2 class="font-bold text-3xl mb-1 text-900">Gestione Magazzini</h2>
+        <p class="text-secondary text-sm m-0">Crea, modifica e disattiva i magazzini per lo stoccaggio dei gadget dell'associazione</p>
+      </div>
+      <Button label="Nuovo Magazzino" icon="pi pi-plus" severity="primary" @click="openCreate" />
+    </div>
+
+    <!-- Table -->
+    <div class="card p-4 shadow-2 border-round surface-card">
+      <DataTable :value="warehouses" :loading="loading" paginator :rows="10" responsiveLayout="scroll" class="text-sm">
+        <template #empty>
+          <div class="text-center py-4">
+            <i class="pi pi-building text-3xl text-400 mb-2"></i>
+            <p class="m-0 text-color-secondary">Nessun magazzino configurato.</p>
+          </div>
+        </template>
+
+        <Column field="code" header="Codice" sortable class="font-bold"></Column>
+        <Column field="name" header="Nome Magazzino" sortable></Column>
+        <Column field="total_stock" header="Pezzi in Giacenza" sortable class="text-center">
+          <template #body="slotProps">
+            <span :class="['font-semibold', (slotProps.data.total_stock ?? 0) > 0 ? 'text-green-600' : 'text-red-500']">
+              {{ slotProps.data.total_stock ?? 0 }} pz
+            </span>
+          </template>
+        </Column>
+        <Column field="is_active" header="Stato" sortable>
+          <template #body="slotProps">
+            <span :class="['badge', slotProps.data.is_active ? 'bg-green-500' : 'bg-gray-500']">
+              {{ slotProps.data.is_active ? 'Attivo' : 'Disattivato' }}
+            </span>
+          </template>
+        </Column>
+        
+        <Column header="Azioni" class="text-right">
+          <template #body="slotProps">
+            <div class="flex gap-2 justify-content-end">
+              <Button icon="pi pi-pencil" severity="secondary" outlined size="small" @click="openEdit(slotProps.data)" />
+              <Button icon="pi pi-trash" severity="danger" outlined size="small" @click="confirmDelete(slotProps.data)" />
+            </div>
+          </template>
+        </Column>
+      </DataTable>
+    </div>
+
+    <!-- Create/Edit Dialog -->
+    <Dialog v-model:visible="showDialog" :header="isEditMode ? 'Modifica Magazzino' : 'Nuovo Magazzino'" :modal="true" :style="{ width: '400px' }">
+      <div class="flex flex-column gap-4 py-2 text-left">
+        <!-- Code -->
+        <div class="flex flex-column gap-2">
+          <label for="w_code" class="font-semibold text-sm">Codice Magazzino *</label>
+          <InputText id="w_code" v-model="warehouseForm.code" placeholder="Es. MAIN, NORD, SUD" class="w-full" />
+          <small class="text-color-secondary">Identificativo unico in maiuscolo.</small>
+        </div>
+
+        <!-- Name -->
+        <div class="flex flex-column gap-2">
+          <label for="w_name" class="font-semibold text-sm">Nome Magazzino *</label>
+          <InputText id="w_name" v-model="warehouseForm.name" placeholder="Es. Magazzino Centrale" class="w-full" />
+        </div>
+
+        <!-- Is Active -->
+        <div class="flex flex-column gap-2" v-if="isEditMode">
+          <label for="w_active" class="font-semibold text-sm">Stato Magazzino</label>
+          <Select id="w_active" v-model="warehouseForm.is_active" :options="activeOptions" optionLabel="label" optionValue="value" class="w-full" />
+          <small class="text-color-secondary">I magazzini disattivati non possono ricevere nuovi stock, ma permettono di svuotare le giacenze esistenti.</small>
+        </div>
+      </div>
+
+      <template #footer>
+        <Button label="Annulla" severity="secondary" outlined @click="showDialog = false" />
+        <Button label="Salva" severity="success" :loading="submitting" @click="saveWarehouse" />
+      </template>
+    </Dialog>
+  </div>
+</template>
+
+<style scoped>
+.warehouses-container {
+  max-width: 900px;
+  margin: 0 auto;
+}
+
+.badge {
+  padding: 4px 10px;
+  border-radius: 10px;
+  color: white;
+  font-size: 0.8rem;
+  font-weight: 500;
+}
+
+.bg-green-500 {
+  background-color: #22c55e !important;
+}
+
+.bg-gray-500 {
+  background-color: #6b7280 !important;
+}
+</style>

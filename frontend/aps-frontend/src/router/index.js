@@ -6,6 +6,7 @@ import Wizard from '../pages/Wizard.vue'
 import Dashboard from '../pages/Dashboard.vue'
 import Gadgets from '../pages/Gadgets.vue'
 import GadgetStock from '../pages/GadgetStock.vue'
+import Warehouses from '../pages/Warehouses.vue'
 
 const routes = [
   {
@@ -31,6 +32,11 @@ const routes = [
   {
     path: '/gadget-stock',
     component: GadgetStock,
+    meta: { requiresAuth: true }
+  },
+  {
+    path: '/warehouses',
+    component: Warehouses,
     meta: { requiresAuth: true }
   }
 ]
@@ -61,7 +67,7 @@ router.beforeEach(async (to) => {
   }
 
   const requiresAdmin = to.meta.requiresAdmin
-  const isGadgetRoute = ['/gadgets', '/gadget-stock'].includes(to.path)
+  const isGadgetRoute = ['/gadgets', '/gadget-stock', '/warehouses'].includes(to.path)
 
   if (isAuthenticated.value && (requiresAdmin || isGadgetRoute)) {
     try {
@@ -95,7 +101,7 @@ router.beforeEach(async (to) => {
       if (isGadgetRoute) {
         if (role === 'ADMIN') {
           return true
-        } else if (role === 'SECRETARY' && hasActiveMembership) {
+        } else if (role === 'SECRETARY' && hasActiveMembership && !cachedUser.is_renewal_pending) {
           return true
         } else {
           return '/'

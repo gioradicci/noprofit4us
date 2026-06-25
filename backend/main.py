@@ -7,7 +7,7 @@ from sqlalchemy import text
 from database.database import engine
 from database.base import Base
 from routers import auth, users, members, audit, dashboard, gadgets
-from database.models.gadget import Gadget, GadgetVariant, Warehouse, GadgetVariantStock, StockMovement
+from database.models.gadget import Gadget, GadgetVariant, Warehouse, GadgetVariantStock, StockMovement, GadgetLock
 
 app = FastAPI(title="APS Backend v2")
 # Create tables

@@ -28,6 +28,7 @@ const loading = ref(false)
 const showCreateWizard = ref(false)
 const activeStep = ref("1")
 const isEditMode = ref(false)
+let heartbeatInterval = null
 
 // New Gadget Form Data
 const newGadget = ref({
@@ -102,6 +103,62 @@ async function loadGadgets() {
   }
 }
 
+async function acquireLock(id) {
+  try {
+    const token = await getAccessTokenSilently()
+    const res = await fetch(`http://localhost:8000/gadgets/${id}/lock`, {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${token}` }
+    })
+    if (!res.ok) {
+      if (res.status === 423) {
+        const errorData = await res.json()
+        toast.add({ severity: 'error', summary: 'Accesso Negato', detail: errorData.detail || 'Articolo in modifica da un altro utente', life: 5000 })
+      } else {
+        toast.add({ severity: 'error', summary: 'Errore', detail: 'Impossibile acquisire il blocco per la modifica', life: 3000 })
+      }
+      return false
+    }
+    return true
+  } catch (err) {
+    console.error(err)
+    toast.add({ severity: 'error', summary: 'Errore', detail: 'Impossibile connettersi al server', life: 3000 })
+    return false
+  }
+}
+
+async function releaseLock(id) {
+  if (heartbeatInterval) {
+    clearInterval(heartbeatInterval)
+    heartbeatInterval = null
+  }
+  if (!id) return
+  try {
+    const token = await getAccessTokenSilently()
+    await fetch(`http://localhost:8000/gadgets/${id}/lock`, {
+      method: 'DELETE',
+      headers: { Authorization: `Bearer ${token}` }
+    })
+  } catch (err) {
+    console.error('Error releasing lock', err)
+  }
+}
+
+function startHeartbeat(id) {
+  if (heartbeatInterval) clearInterval(heartbeatInterval)
+  // Heartbeat every 90 seconds (90000 ms)
+  heartbeatInterval = setInterval(() => {
+    acquireLock(id)
+  }, 90000)
+}
+
+function cancelEdit() {
+  showCreateWizard.value = false
+  if (isEditMode.value && newGadget.value.id) {
+    releaseLock(newGadget.value.id)
+  }
+}
+
 function startCreate() {
   isEditMode.value = false
   newGadget.value = {
@@ -125,7 +182,12 @@ function startCreate() {
   showCreateWizard.value = true
 }
 
-function startEdit(gadget) {
+async function startEdit(gadget) {
+  const locked = await acquireLock(gadget.id)
+  if (!locked) return
+  
+  startHeartbeat(gadget.id)
+
   isEditMode.value = true
   newGadget.value = {
     id: gadget.id,
@@ -300,6 +362,9 @@ async function saveGadgetAndVariants() {
     toast.add({ severity: 'error', summary: 'Errore', detail: err.message || 'Si è verificato un errore', life: 4000 })
   } finally {
     loading.value = false
+    if (isEditMode.value && newGadget.value.id) {
+      releaseLock(newGadget.value.id)
+    }
   }
 }
 
@@ -367,7 +432,7 @@ onMounted(() => {
         <p class="text-secondary text-sm m-0">Visualizza, crea e organizza i gadget dell'associazione e le loro varianti</p>
       </div>
       <Button v-if="!showCreateWizard" label="Nuovo Gadget" icon="pi pi-plus" severity="primary" @click="startCreate" />
-      <Button v-else label="Annulla" icon="pi pi-times" severity="secondary" outlined @click="showCreateWizard = false" />
+      <Button v-else label="Annulla" icon="pi pi-times" severity="secondary" outlined @click="cancelEdit" />
     </div>
 
     <!-- Wizard Creazione -->

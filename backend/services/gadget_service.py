@@ -2,11 +2,50 @@ from sqlalchemy.orm import Session
 from sqlalchemy import func
 from fastapi import HTTPException
 from typing import Optional
-from database.models.gadget import Gadget, GadgetVariant, Warehouse, GadgetVariantStock, StockMovement
+from database.models.gadget import Gadget, GadgetVariant, Warehouse, GadgetVariantStock, StockMovement, GadgetLock
 from services.audit_service import log_action
+from datetime import datetime, timedelta
 
+def acquire_lock(db: Session, gadget_id: int, user_id: int) -> bool:
+    gadget = db.query(Gadget).get(gadget_id)
+    if not gadget:
+        raise HTTPException(status_code=404, detail="Gadget not found")
+        
+    lock = db.query(GadgetLock).filter(GadgetLock.gadget_id == gadget_id).first()
+    now = datetime.utcnow()
+    
+    if lock:
+        if lock.user_id != user_id and lock.expires_at > now:
+            user_name = f"{lock.user.first_name or ''} {lock.user.last_name or ''}".strip() if lock.user else None
+            if not user_name:
+                user_name = lock.user.email if lock.user and lock.user.email else f"Utente {lock.user_id}"
+            raise HTTPException(
+                status_code=423, 
+                detail=f"Questo articolo è attualmente in modifica da parte di {user_name}."
+            )
+        # Refresh existing lock
+        lock.user_id = user_id
+        lock.locked_at = now
+        lock.expires_at = now + timedelta(minutes=3)
+    else:
+        # Create new lock
+        lock = GadgetLock(
+            gadget_id=gadget_id,
+            user_id=user_id,
+            locked_at=now,
+            expires_at=now + timedelta(minutes=3)
+        )
+        db.add(lock)
+        
+    db.commit()
+    return True
 
-
+def release_lock(db: Session, gadget_id: int, user_id: int) -> bool:
+    lock = db.query(GadgetLock).filter(GadgetLock.gadget_id == gadget_id).first()
+    if lock and lock.user_id == user_id:
+        db.delete(lock)
+        db.commit()
+    return True
 def create_gadget(
     db: Session,
     name: str,

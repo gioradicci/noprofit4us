@@ -77,7 +77,7 @@ const fromWarehouseOptions = computed(() => {
       const wh = warehouses.value.find(w => w.id === stock.warehouse_id)
       if (wh) {
         options.push({
-          label: `${wh.name} (${stock.quantity} pz)`,
+          label: `${wh.name} (${stock.quantity} pz)${wh.is_active === false ? ' [DISATTIVATO]' : ''}`,
           value: wh.id,
           quantity: stock.quantity
         })
@@ -89,8 +89,9 @@ const fromWarehouseOptions = computed(() => {
 
 const toWarehouseOptions = computed(() => {
   if (!warehouses.value) return []
+  const activeWarehouses = warehouses.value.filter(w => w.is_active !== false)
   if (!movementForm.value.variant_id) {
-    return warehouses.value.map(w => ({
+    return activeWarehouses.map(w => ({
       label: `${w.name} (0 pz)`,
       value: w.id,
       quantity: 0
@@ -102,7 +103,7 @@ const toWarehouseOptions = computed(() => {
   const variant = gadget.variants.find(v => v.id === movementForm.value.variant_id)
   if (!variant) return []
 
-  return warehouses.value.map(w => {
+  return activeWarehouses.map(w => {
     const stock = variant.stocks.find(s => s.warehouse_id === w.id)
     const quantity = stock ? stock.quantity : 0
     return {
@@ -495,7 +496,7 @@ onMounted(() => {
               </template>
             </Column>
             <!-- Dynamic Warehouse Columns -->
-            <Column v-for="wh in warehouses" :key="wh.id" :field="wh.code" :header="wh.name" sortable>
+            <Column v-for="wh in warehouses.filter(w => w.is_active !== false)" :key="wh.id" :field="wh.code" :header="wh.name" sortable>
               <template #body="slotProps">
                 <span :class="['font-bold', slotProps.data[wh.code] > 0 ? 'text-green-600' : 'text-400']">
                   {{ slotProps.data[wh.code] }} pz

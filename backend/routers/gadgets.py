@@ -6,7 +6,7 @@ import uuid
 import os
 import shutil
 from database.database import get_db
-from database.models.gadget import Gadget, Warehouse, StockMovement
+from database.models.gadget import Gadget, Warehouse, StockMovement, GadgetVariantStock
 from dependencies.auth import get_current_user
 from services import gadget_service
 from database.models.member import Member
@@ -20,6 +20,16 @@ def has_active_membership(user, db: Session) -> bool:
     member = db.query(Member).filter_by(user_id=user.id).first()
     if not member:
         return False
+    
+    # Se c'è un rinnovo pendente non ancora approvato, il ruolo non è ancora attivo
+    pending_renewal = db.query(Membership).filter(
+        Membership.member_id == member.id,
+        Membership.is_renewal == True,
+        Membership.is_paid == False
+    ).first()
+    if pending_renewal:
+        return False
+
     active_membership = db.query(Membership).filter(
         Membership.member_id == member.id,
         Membership.is_paid == True,
@@ -70,6 +80,18 @@ class MovementCreate(BaseModel):
     quantity: int
     movement_type: str  # RESTOCK, TRANSFER, DELIVERY
     notes: Optional[str] = None
+
+
+class WarehouseCreate(BaseModel):
+    name: str
+    code: str
+    is_active: bool = True
+
+
+class WarehouseUpdate(BaseModel):
+    name: Optional[str] = None
+    code: Optional[str] = None
+    is_active: Optional[bool] = None
 
 
 @router.post("/upload-image")
@@ -156,6 +178,26 @@ def get_gadgets(current_user=Depends(get_current_user), db: Session = Depends(ge
             g_data["variants"].append(v_data)
         result.append(g_data)
     return result
+
+
+@router.post("/{id}/lock")
+def acquire_gadget_lock(id: int, current_user=Depends(get_current_user), db: Session = Depends(get_db)):
+    if current_user.role not in ["ADMIN", "SECRETARY"]:
+        raise HTTPException(status_code=403, detail="Not authorized")
+    if current_user.role == "SECRETARY" and not has_active_membership(current_user, db):
+        raise HTTPException(status_code=403, detail="Active membership required")
+
+    success = gadget_service.acquire_lock(db=db, gadget_id=id, user_id=current_user.id)
+    return {"status": "locked" if success else "failed"}
+
+
+@router.delete("/{id}/lock")
+def release_gadget_lock(id: int, current_user=Depends(get_current_user), db: Session = Depends(get_db)):
+    if current_user.role not in ["ADMIN", "SECRETARY"]:
+        raise HTTPException(status_code=403, detail="Not authorized")
+    
+    success = gadget_service.release_lock(db=db, gadget_id=id, user_id=current_user.id)
+    return {"status": "unlocked" if success else "failed"}
 
 
 @router.post("/")
@@ -296,7 +338,133 @@ def get_warehouses(current_user=Depends(get_current_user), db: Session = Depends
         raise HTTPException(status_code=403, detail="Not authorized")
     if current_user.role == "SECRETARY" and not has_active_membership(current_user, db):
         raise HTTPException(status_code=403, detail="Active membership required")
-    return db.query(Warehouse).all()
+    
+    warehouses = db.query(Warehouse).all()
+    return [
+        {
+            "id": wh.id,
+            "name": wh.name,
+            "code": wh.code,
+            "is_active": wh.is_active,
+            "total_stock": sum(s.quantity for s in wh.stocks)
+        }
+        for wh in warehouses
+    ]
+
+
+@router.post("/warehouses")
+def create_warehouse(
+    payload: WarehouseCreate,
+    current_user=Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    if current_user.role not in ["ADMIN", "SECRETARY"]:
+        raise HTTPException(status_code=403, detail="Not authorized")
+    if current_user.role == "SECRETARY" and not has_active_membership(current_user, db):
+        raise HTTPException(status_code=403, detail="Active membership required")
+
+    # Validazione codice univoco
+    existing = db.query(Warehouse).filter_by(code=payload.code.upper()).first()
+    if existing:
+        raise HTTPException(status_code=400, detail="Un magazzino con questo codice esiste già.")
+
+    wh = Warehouse(
+        name=payload.name,
+        code=payload.code.upper(),
+        is_active=payload.is_active
+    )
+    db.add(wh)
+    db.commit()
+    db.refresh(wh)
+    return {
+        "id": wh.id,
+        "name": wh.name,
+        "code": wh.code,
+        "is_active": wh.is_active,
+        "total_stock": 0
+    }
+
+
+@router.put("/warehouses/{id}")
+def update_warehouse(
+    id: int,
+    payload: WarehouseUpdate,
+    current_user=Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    if current_user.role not in ["ADMIN", "SECRETARY"]:
+        raise HTTPException(status_code=403, detail="Not authorized")
+    if current_user.role == "SECRETARY" and not has_active_membership(current_user, db):
+        raise HTTPException(status_code=403, detail="Active membership required")
+
+    wh = db.query(Warehouse).get(id)
+    if not wh:
+        raise HTTPException(status_code=404, detail="Warehouse not found")
+
+    if payload.code is not None:
+        code_upper = payload.code.upper()
+        if code_upper != wh.code:
+            existing = db.query(Warehouse).filter_by(code=code_upper).first()
+            if existing:
+                raise HTTPException(status_code=400, detail="Un magazzino con questo codice esiste già.")
+            wh.code = code_upper
+
+    if payload.name is not None:
+        wh.name = payload.name
+
+    if payload.is_active is not None:
+        if payload.is_active is False and wh.is_active is True:
+            # Verifica se ci sono scorte maggiori di 0 nel magazzino
+            active_stocks = db.query(GadgetVariantStock).filter(
+                GadgetVariantStock.warehouse_id == id,
+                GadgetVariantStock.quantity > 0
+            ).first()
+            if active_stocks:
+                raise HTTPException(
+                    status_code=400,
+                    detail="Impossibile disattivare il magazzino: ci sono ancora gadget in giacenza. Svuotare o trasferire prima le scorte."
+                )
+        wh.is_active = payload.is_active
+
+    db.commit()
+    db.refresh(wh)
+    return {
+        "id": wh.id,
+        "name": wh.name,
+        "code": wh.code,
+        "is_active": wh.is_active,
+        "total_stock": sum(s.quantity for s in wh.stocks)
+    }
+
+
+@router.delete("/warehouses/{id}")
+def delete_warehouse(
+    id: int,
+    current_user=Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    if current_user.role not in ["ADMIN", "SECRETARY"]:
+        raise HTTPException(status_code=403, detail="Not authorized")
+    if current_user.role == "SECRETARY" and not has_active_membership(current_user, db):
+        raise HTTPException(status_code=403, detail="Active membership required")
+
+    wh = db.query(Warehouse).get(id)
+    if not wh:
+        raise HTTPException(status_code=404, detail="Warehouse not found")
+
+    # Verifica movimentazioni associate
+    has_movements = db.query(StockMovement).filter(
+        (StockMovement.from_warehouse_id == id) | (StockMovement.to_warehouse_id == id)
+    ).first()
+    if has_movements:
+        raise HTTPException(
+            status_code=400,
+            detail="Impossibile eliminare il magazzino: sono presenti movimentazioni storiche associate ad esso. Disattivarlo invece."
+        )
+
+    db.delete(wh)
+    db.commit()
+    return {"status": "deleted"}
 
 
 @router.get("/movements")

@@ -440,8 +440,8 @@ def reject_user(
     user=Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
-    if user.role != "TREASURER":
-        raise HTTPException(status_code=403, detail="Only treasurer can reject")
+    if user.role not in ["TREASURER", "ADMIN"]:
+        raise HTTPException(status_code=403, detail="Only treasurer or admin can reject")
 
     target = db.query(User).get(id)
     if not target:

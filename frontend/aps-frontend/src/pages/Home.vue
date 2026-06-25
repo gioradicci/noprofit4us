@@ -269,6 +269,20 @@ function getRoleIcon() {
       </div>
     </div>
 
+    <!-- 🔴 CASO 3.5: UTENTE LOGGATO CON STATO "REJECTED" -->
+    <div v-else-if="backendUser?.status === 'REJECTED'" class="flex justify-content-center py-5">
+      <div class="card p-5 text-center shadow-3 border-round-xl border-top-3 border-danger max-w-30rem surface-card">
+        <i class="pi pi-times-circle text-5xl text-danger mb-3 block"></i>
+        <h2 class="text-2xl font-bold mb-2">Richiesta respinta</h2>
+        <p class="text-color-secondary mb-4 line-height-3">
+          La tua richiesta di iscrizione all'associazione è stata respinta.
+        </p>
+        <p class="text-color-secondary text-sm font-medium">
+          Per maggiori informazioni scrivere alla segreteria.
+        </p>
+      </div>
+    </div>
+
     <!-- 🏆 CASO 4: UTENTE APPROVATO (Socio Attivo con Tessera) -->
     <div v-else-if="backendUser?.status === 'APPROVED'" class="flex flex-column align-items-center py-4">
       

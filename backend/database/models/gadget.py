@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, Float, ForeignKey, DateTime
+from sqlalchemy import Column, Integer, String, Float, ForeignKey, DateTime, Boolean
 from sqlalchemy.orm import relationship
 from datetime import datetime
 from database.base import Base
@@ -44,6 +44,7 @@ class Warehouse(Base):
     id = Column(Integer, primary_key=True)
     name = Column(String, nullable=False)
     code = Column(String, unique=True, nullable=False)  # e.g. MAIN, NORD, SUD
+    is_active = Column(Boolean, default=True, nullable=False)
 
     stocks = relationship("GadgetVariantStock", back_populates="warehouse", cascade="all, delete-orphan")
 
@@ -79,3 +80,15 @@ class StockMovement(Base):
     variant = relationship("GadgetVariant", back_populates="movements")
     from_warehouse = relationship("Warehouse", foreign_keys=[from_warehouse_id])
     to_warehouse = relationship("Warehouse", foreign_keys=[to_warehouse_id])
+
+
+class GadgetLock(Base):
+    __tablename__ = "gadget_locks"
+
+    gadget_id = Column(Integer, ForeignKey("gadgets.id"), primary_key=True)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+    locked_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+    expires_at = Column(DateTime, nullable=False)
+
+    gadget = relationship("Gadget")
+    user = relationship("User")

@@ -17,7 +17,8 @@ const statusOptions = [
   { label: 'PENDING', value: 'PENDING' },
   { label: 'APPROVED', value: 'APPROVED' },
   { label: 'PAID', value: 'PAID' },
-  { label: 'INCOMPLETE', value: 'INCOMPLETE' }
+  { label: 'INCOMPLETE', value: 'INCOMPLETE' },
+  { label: 'REJECTED', value: 'REJECTED' }
 ]
 
 const users = ref([])
@@ -183,6 +184,45 @@ const showRenewConfirmDialog  = (id_user_to_accept) => {
         },
         accept: () => {
           renew(id_user_to_accept);
+        },
+    });
+};
+
+async function rejectUser(id) {
+  const token = await getAccessTokenSilently()
+  try {
+    const res = await fetch(`http://localhost:8000/users/${id}/reject`, {
+      method: "PUT",
+      headers: { Authorization: `Bearer ${token}` }
+    })
+    if (res.ok) {
+      loadUsers()
+      loadRoles()
+    } else {
+      console.error("Errore durante il rifiuto dell'utente")
+    }
+  } catch (err) {
+    console.error("Errore di rete durante il rifiuto dell'utente", err)
+  }
+}
+
+const showRejectConfirmDialog = (id_user_to_reject) => {
+    confirm.require({
+        message: 'Vuoi rifiutare la richiesta di iscrizione del socio?',
+        header: 'Rifiuta iscrizione socio',
+        acceptLabel: 'Rifiuta iscrizione',
+        icon: 'pi pi-exclamation-triangle',
+        rejectLabel: 'Annulla',
+        acceptProps: {
+          severity: 'danger',
+          label: 'Rifiuta iscrizione'
+        },
+        rejectProps: {
+          severity: 'secondary',
+          outlined: true
+        },
+        accept: () => {
+          rejectUser(id_user_to_reject);
         },
     });
 };
@@ -389,7 +429,7 @@ const showRenewConfirmDialog  = (id_user_to_accept) => {
         <template #filter="{ filterModel, filterCallback }">
           <Dropdown
             v-model="filterModel.value"
-            :options="['PENDING', 'PAID','APPROVED', 'INCOMPLETE']"
+            :options="['PENDING', 'PAID', 'APPROVED', 'INCOMPLETE', 'REJECTED']"
             placeholder="Filtra"
             class="w-full"
             @change="filterCallback()"
@@ -434,30 +474,42 @@ const showRenewConfirmDialog  = (id_user_to_accept) => {
       <!-- AZIONI -->
       <Column header="Azioni">
         <template #body="slotProps">
-
-          <Button class="multiline-btn"
-            v-if="slotProps.data.status === 'PENDING' && canApprove()"
-            label="Conferma Pagamento e registra socio"
-            severity="success"
-            @click="showConfirmDialog(slotProps.data.id)"
-          >
-          <div class="flex flex-column align-items-center">
-              <span>Conferma Pagamento</span>
-              <span>e registra socio</span>
-            </div>
-          </Button>
-
-          <Button class="multiline-btn"
-            v-if="slotProps.data.membership_status === 'RENEWAL_PENDING' && canApprove()"
-            severity="warning"
-            @click="showRenewConfirmDialog(slotProps.data.id)"
-          >
+          <div class="flex gap-2">
+            <Button class="multiline-btn"
+              v-if="slotProps.data.status === 'PENDING' && canApprove()"
+              label="Conferma Pagamento e registra socio"
+              severity="success"
+              @click="showConfirmDialog(slotProps.data.id)"
+            >
             <div class="flex flex-column align-items-center">
-              <span>Conferma Pagamento</span>
-              <span>e Rinnova</span>
-            </div>
-          </Button>
+                <span>Conferma Pagamento</span>
+                <span>e registra socio</span>
+              </div>
+            </Button>
 
+            <Button class="multiline-btn"
+              v-if="slotProps.data.status === 'PENDING' && canApprove()"
+              label="Rifiuta socio"
+              severity="danger"
+              @click="showRejectConfirmDialog(slotProps.data.id)"
+            >
+              <div class="flex flex-column align-items-center">
+                <span>Rifiuta</span>
+                <span>socio</span>
+              </div>
+            </Button>
+
+            <Button class="multiline-btn"
+              v-if="slotProps.data.membership_status === 'RENEWAL_PENDING' && canApprove()"
+              severity="warning"
+              @click="showRenewConfirmDialog(slotProps.data.id)"
+            >
+              <div class="flex flex-column align-items-center">
+                <span>Conferma Pagamento</span>
+                <span>e Rinnova</span>
+              </div>
+            </Button>
+          </div>
         </template>
       </Column>
 
@@ -502,6 +554,10 @@ const showRenewConfirmDialog  = (id_user_to_accept) => {
 
 .APPROVED {
   background: green;
+}
+
+.REJECTED {
+  background: red;
 }
 
 /* ✅ MEMBERSHIP STATUS */
