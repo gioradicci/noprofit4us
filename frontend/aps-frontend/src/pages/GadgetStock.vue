@@ -1,6 +1,6 @@
 <script setup>
 import { ref, onMounted, computed, watch } from 'vue'
-import { useAuth0 } from '@auth0/auth0-vue'
+import { supabase } from '../supabase'
 import { useToast } from 'primevue/usetoast'
 import { FilterMatchMode } from '@primevue/core/api'
 
@@ -15,7 +15,7 @@ import Dialog from 'primevue/dialog'
 import Card from 'primevue/card'
 import Image from 'primevue/image'
 
-const { getAccessTokenSilently } = useAuth0()
+
 const toast = useToast()
 
 // State
@@ -207,7 +207,7 @@ watch(() => movementForm.value.movement_type, (newType) => {
 async function loadData() {
   loading.value = true
   try {
-    const token = await getAccessTokenSilently()
+    const token = (await supabase.auth.getSession()).data.session?.access_token
     const headers = { Authorization: `Bearer ${token}` }
     
     // Fetch gadgets
@@ -280,7 +280,7 @@ async function submitMovement() {
 
   submitting.value = true
   try {
-    const token = await getAccessTokenSilently()
+    const token = (await supabase.auth.getSession()).data.session?.access_token
     const res = await fetch("http://localhost:8000/gadgets/movements", {
       method: 'POST',
       headers: {
@@ -380,7 +380,8 @@ onMounted(() => {
             filterDisplay="row" 
             :loading="loading" 
             paginator 
-            :rows="10" 
+            :rows="10"
+            scrollable  
             responsiveLayout="scroll"
           >
             <template #empty>
@@ -389,7 +390,7 @@ onMounted(() => {
                 <p class="m-0 text-color-secondary">Nessun gadget o variante caricata nel database.</p>
               </div>
             </template>
-            <Column header="Foto" class="w-5rem text-center">
+            <Column frozen  header="Foto" class="w-5rem text-center" style="min-width: 60px">
               <template #body="slotProps">
                 <div class="flex align-items-center justify-content-center m-auto border-1 border-light border-round overflow-hidden" style="width: 40px; height: 60px; background-color: var(--code-bg);">
                   <Image 
@@ -420,6 +421,29 @@ onMounted(() => {
                   v-model="filterModel.value"
                   @input="filterCallback()"
                   placeholder="Cerca gadget..."
+                  class="w-full"
+                />
+              </template>
+            </Column>
+            <Column 
+              field="variant_details" 
+              header="Dettagli Variante"
+              filter
+              frozen
+              filterField="variant_details"
+              :showFilterMenu="false"
+              :showClearButton="true"
+            >
+              <template #body="slotProps">
+                <span class="text-sm">
+                  {{ slotProps.data.variant_details }}
+                </span>
+              </template>
+              <template #filter="{ filterModel, filterCallback }">
+                <InputText
+                  v-model="filterModel.value"
+                  @input="filterCallback()"
+                  placeholder="Cerca dettagli..."
                   class="w-full"
                 />
               </template>
@@ -465,28 +489,7 @@ onMounted(() => {
                 />
               </template>
             </Column>
-            <Column 
-              field="variant_details" 
-              header="Dettagli Variante"
-              filter
-              filterField="variant_details"
-              :showFilterMenu="false"
-              :showClearButton="true"
-            >
-              <template #body="slotProps">
-                <span class="text-sm">
-                  {{ slotProps.data.variant_details }}
-                </span>
-              </template>
-              <template #filter="{ filterModel, filterCallback }">
-                <InputText
-                  v-model="filterModel.value"
-                  @input="filterCallback()"
-                  placeholder="Cerca dettagli..."
-                  class="w-full"
-                />
-              </template>
-            </Column>
+            
             
             <Column field="total_stock" header="Totale Giacenza" sortable class="bg-surface-50">
               <template #body="slotProps">

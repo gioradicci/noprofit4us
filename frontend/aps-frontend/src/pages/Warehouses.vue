@@ -1,6 +1,6 @@
 <script setup>
 import { ref, onMounted, computed } from 'vue'
-import { useAuth0 } from '@auth0/auth0-vue'
+import { supabase } from '../supabase'
 import { useToast } from 'primevue/usetoast'
 import { useConfirm } from 'primevue/useconfirm'
 
@@ -11,7 +11,7 @@ import InputText from 'primevue/inputtext'
 import Dialog from 'primevue/dialog'
 import Select from 'primevue/select'
 
-const { getAccessTokenSilently } = useAuth0()
+
 const toast = useToast()
 const confirm = useConfirm()
 
@@ -54,7 +54,7 @@ const activeOptions = [
 async function loadWarehouses() {
   loading.value = true
   try {
-    const token = await getAccessTokenSilently()
+    const token = (await supabase.auth.getSession()).data.session?.access_token
     const res = await fetch("http://localhost:8000/gadgets/warehouses", {
       headers: { Authorization: `Bearer ${token}` }
     })
@@ -104,7 +104,7 @@ async function saveWarehouse() {
 
   submitting.value = true
   try {
-    const token = await getAccessTokenSilently()
+    const token = (await supabase.auth.getSession()).data.session?.access_token
     const method = isEditMode.value ? 'PUT' : 'POST'
     const url = isEditMode.value 
       ? `http://localhost:8000/gadgets/warehouses/${currentWarehouseId.value}`
@@ -149,7 +149,7 @@ async function saveWarehouse() {
 // Delete warehouse
 async function deleteWarehouse(id) {
   try {
-    const token = await getAccessTokenSilently()
+    const token = (await supabase.auth.getSession()).data.session?.access_token
     const res = await fetch(`http://localhost:8000/gadgets/warehouses/${id}`, {
       method: 'DELETE',
       headers: { Authorization: `Bearer ${token}` }
@@ -205,7 +205,7 @@ async function executeBulkTransfer() {
 
   transferring.value = true
   try {
-    const token = await getAccessTokenSilently()
+    const token = (await supabase.auth.getSession()).data.session?.access_token
     const res = await fetch('http://localhost:8000/gadgets/warehouses/bulk-transfer', {
       method: 'POST',
       headers: {
@@ -301,8 +301,8 @@ onMounted(() => {
                 title="Trasferimento massivo"
                 @click="openBulkTransfer(slotProps.data)" 
               />
-              <Button icon="pi pi-pencil" severity="secondary" outlined size="small" @click="openEdit(slotProps.data)" />
-              <Button icon="pi pi-trash" severity="danger" outlined size="small" @click="confirmDelete(slotProps.data)" />
+              <Button icon="pi pi-pencil" severity="secondary" title="Modifica magazzino" outlined size="small" @click="openEdit(slotProps.data)" />
+              <Button icon="pi pi-trash" severity="danger" title="Cancella magazzino" outlined size="small" @click="confirmDelete(slotProps.data)" />
             </div>
           </template>
         </Column>

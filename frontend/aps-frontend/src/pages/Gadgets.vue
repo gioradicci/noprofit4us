@@ -1,6 +1,6 @@
 <script setup>
 import { ref, onMounted, computed } from 'vue'
-import { useAuth0 } from '@auth0/auth0-vue'
+import { supabase } from '../supabase'
 import { useToast } from 'primevue/usetoast'
 import { useConfirm } from 'primevue/useconfirm'
 import ImageUpload from '../components/ImageUpload.vue'
@@ -18,7 +18,7 @@ import Select from 'primevue/select'
 import DataTable from 'primevue/datatable'
 import Column from 'primevue/column'
 
-const { getAccessTokenSilently } = useAuth0()
+
 const toast = useToast()
 const confirm = useConfirm()
 
@@ -80,7 +80,7 @@ const tempVariants = ref([])
 async function loadGadgets() {
   loading.value = true
   try {
-    const token = await getAccessTokenSilently()
+    const token = (await supabase.auth.getSession()).data.session?.access_token
     const res = await fetch("http://localhost:8000/gadgets/", {
       headers: {
         Authorization: `Bearer ${token}`
@@ -105,7 +105,7 @@ async function loadGadgets() {
 
 async function acquireLock(id) {
   try {
-    const token = await getAccessTokenSilently()
+    const token = (await supabase.auth.getSession()).data.session?.access_token
     const res = await fetch(`http://localhost:8000/gadgets/${id}/lock`, {
       method: 'POST',
       headers: { Authorization: `Bearer ${token}` }
@@ -134,7 +134,7 @@ async function releaseLock(id) {
   }
   if (!id) return
   try {
-    const token = await getAccessTokenSilently()
+    const token = (await supabase.auth.getSession()).data.session?.access_token
     await fetch(`http://localhost:8000/gadgets/${id}/lock`, {
       method: 'DELETE',
       headers: { Authorization: `Bearer ${token}` }
@@ -265,7 +265,7 @@ function removeTempVariant(index) {
 async function saveGadgetAndVariants() {
   loading.value = true
   try {
-    const token = await getAccessTokenSilently()
+    const token = (await supabase.auth.getSession()).data.session?.access_token
     
     if (isEditMode.value) {
       // 1. Update gadget
@@ -396,7 +396,7 @@ function confirmDelete(id, name) {
     },
     accept: async () => {
       try {
-        const token = await getAccessTokenSilently()
+        const token = (await supabase.auth.getSession()).data.session?.access_token
         const res = await fetch(`http://localhost:8000/gadgets/${id}`, {
           method: 'DELETE',
           headers: {

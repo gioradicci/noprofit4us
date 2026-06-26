@@ -1,6 +1,6 @@
 <script setup>
 import { ref, watch, onUnmounted } from 'vue'
-import { useAuth0 } from '@auth0/auth0-vue'
+import { supabase } from '../supabase'
 import Button from 'primevue/button'
 
 const props = defineProps({
@@ -20,7 +20,7 @@ const props = defineProps({
 
 const emit = defineEmits(['update:modelValue', 'uploaded'])
 
-const { getAccessTokenSilently } = useAuth0()
+
 
 // State
 const fileInput = ref(null)
@@ -169,7 +169,7 @@ async function applyCrop() {
       }
       
       try {
-        const token = await getAccessTokenSilently()
+        const token = (await supabase.auth.getSession()).data.session?.access_token
         const formData = new FormData()
         formData.append('file', finalBlob, filename)
         

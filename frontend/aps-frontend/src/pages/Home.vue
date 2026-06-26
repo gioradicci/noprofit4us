@@ -1,11 +1,41 @@
 <script setup>
 import { ref, onMounted, watch } from 'vue'
-import { useAuth0 } from '@auth0/auth0-vue'
+import { supabase } from '../supabase'
 import Button from 'primevue/button'
 import Select from 'primevue/select'
+import InputText from 'primevue/inputtext'
 
+const isAuthenticated = ref(false)
+const isLoading = ref(true)
 
-const { isAuthenticated, isLoading, getAccessTokenSilently, loginWithRedirect } = useAuth0()
+const email = ref('')
+const password = ref('')
+const isRegistering = ref(false)
+const authError = ref('')
+const authLoading = ref(false)
+
+async function loginWithEmail() {
+  authError.value = ''
+  authLoading.value = true
+  const { data, error } = await supabase.auth.signInWithPassword({
+    email: email.value,
+    password: password.value
+  })
+  if (error) authError.value = error.message
+  authLoading.value = false
+}
+
+async function registerWithEmail() {
+  authError.value = ''
+  authLoading.value = true
+  const { data, error } = await supabase.auth.signUp({
+    email: email.value,
+    password: password.value
+  })
+  if (error) authError.value = error.message
+  else authError.value = 'Controlla la tua email per confermare la registrazione!'
+  authLoading.value = false
+}
 
 // ✅ Utente caricato dal backend
 const backendUser = ref(null)
@@ -17,7 +47,9 @@ async function loadUser() {
   if (!isAuthenticated.value) return
   loadingBackend.value = true
   try {
-    const token = await getAccessTokenSilently()
+    const { data: { session } } = await supabase.auth.getSession()
+    if (!session) return
+    const token = session.access_token
     const res = await fetch("http://localhost:8000/users/me", {
       headers: {
         Authorization: `Bearer ${token}`
@@ -44,18 +76,23 @@ function formatDate(dateStr) {
   }
 }
 
-//  Monitora l'autenticazione Auth0
-watch(isAuthenticated, (newVal) => {
-  if (newVal) {
-    loadUser()
-  }
-  
-})
-
-onMounted(() => {
+//  Monitora l'autenticazione Supabase
+onMounted(async () => {
+  const { data: { session } } = await supabase.auth.getSession()
+  isAuthenticated.value = !!session
+  isLoading.value = false
   if (isAuthenticated.value) {
     loadUser()
   }
+
+  supabase.auth.onAuthStateChange((event, _session) => {
+    isAuthenticated.value = !!_session
+    if (isAuthenticated.value) {
+      loadUser()
+    } else {
+      backendUser.value = null
+    }
+  })
 })
 const memberTypes = ref([
   { label: "Socio Ordinario (10€)", value: "ORDINARIO" },
@@ -77,7 +114,8 @@ async function requestRenewal() {
   if (!selectedPaymentMethod.value || !selectedMemberType.value) return;
   renewing.value = true;
   try {
-    const token = await getAccessTokenSilently()
+    const { data: { session } } = await supabase.auth.getSession()
+    const token = session.access_token
     const res = await fetch("http://localhost:8000/users/me/request-renew", {
       method: "POST",
       headers: {
@@ -158,7 +196,22 @@ function getRoleIcon() {
         <p class="text-lg md:text-xl text-color-secondary mb-5 max-w-30rem mx-auto line-height-3">
           Entra a far parte della nostra comunità. Compila il modulo digitale e sostieni i nostri progetti di promozione sociale.
         </p>
-        <Button label="Registrati / Accedi"  severity="info"  icon="pi pi-user-plus" size="large" class="p-button-raised p-button-lg" @click="loginWithRedirect" />
+        
+        <div class="card p-4 mx-auto max-w-20rem mt-4 surface-card border-round shadow-2">
+          <h3 class="mb-3 mt-0 text-center text-color">{{ isRegistering ? 'Registrati' : 'Accedi' }}</h3>
+          
+          <div class="flex flex-column gap-3">
+            <InputText v-model="email" placeholder="Email" type="email" class="w-full" />
+            <InputText v-model="password" placeholder="Password" type="password" class="w-full" />
+            
+            <small v-if="authError" class="p-error text-center" style="color: red;">{{ authError }}</small>
+            
+            <Button v-if="!isRegistering" label="Accedi" :loading="authLoading" @click="loginWithEmail" class="w-full" />
+            <Button v-if="isRegistering" label="Registrati" :loading="authLoading" @click="registerWithEmail" class="w-full" />
+            
+            <Button :label="isRegistering ? 'Hai già un account? Accedi' : 'Nuovo utente? Registrati'" link class="w-full p-0 text-sm" @click="isRegistering = !isRegistering" />
+          </div>
+        </div>
       </div>
 
       <!-- Sezione Come Funziona -->

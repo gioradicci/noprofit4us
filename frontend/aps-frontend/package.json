@@ -9,9 +9,9 @@
     "preview": "vite preview"
   },
   "dependencies": {
-    "@auth0/auth0-vue": "^2.7.0",
     "@primeuix/themes": "^2.0.3",
     "@primevue/themes": "^4.5.4",
+    "@supabase/supabase-js": "^2.45.0",
     "primeflex": "^4.0.0",
     "primeicons": "^7.0.0",
     "primevue": "^4.5.5",

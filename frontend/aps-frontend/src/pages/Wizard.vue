@@ -1,6 +1,6 @@
 <script setup>
 import { ref, onMounted, computed } from 'vue'
-import { useAuth0 } from '@auth0/auth0-vue'
+import { supabase } from '../supabase'
 import { useToast } from 'primevue/usetoast'
 
 // Import PrimeVue Stepper and custom components
@@ -16,7 +16,7 @@ import MultiSelect from 'primevue/multiselect'
 import DatePicker from 'primevue/datepicker'
 import InputNumber from 'primevue/inputnumber'
 
-const { getAccessTokenSilently } = useAuth0()
+
 const toast = useToast()
 
 //  Utente backend
@@ -107,7 +107,7 @@ const municipiRoma = ref([
 // ✅ Carica dati utente
 async function loadUser() {
   try {
-    const token = await getAccessTokenSilently()
+    const token = (await supabase.auth.getSession()).data.session?.access_token
 
     const res = await fetch("http://localhost:8000/users/me", {
       headers: {
@@ -150,7 +150,7 @@ async function loadUser() {
 async function submit() {
   validationErrors.value = {}
   try {
-    const token = await getAccessTokenSilently()
+    const token = (await supabase.auth.getSession()).data.session?.access_token
 
     // Formatta date prima dell'invio
     const payload = { ...profile.value }

@@ -4,16 +4,14 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from sqlalchemy import text
 
-from database.database import engine
+from database.database import engine, initialize_database
 from database.base import Base
 from routers import auth, users, members, audit, dashboard, gadgets
 from database.models.gadget import Gadget, GadgetVariant, Warehouse, GadgetVariantStock, StockMovement, GadgetLock
 
 app = FastAPI(title="APS Backend v2")
-# Create tables
-Base.metadata.create_all(bind=engine)
-
-
+# Inizializzazione automatica database (tabelle, permessi e trigger)
+initialize_database()
 
 # Ensure directories for uploaded images exist
 static_dir = os.path.join(os.path.dirname(__file__), "static")

@@ -6,6 +6,7 @@ import uuid
 import os
 import shutil
 from database.database import get_db
+from supabase import create_client, Client
 from database.models.gadget import Gadget, Warehouse, StockMovement, GadgetVariantStock
 from dependencies.auth import get_current_user
 from services import gadget_service
@@ -129,16 +130,34 @@ def upload_image(
             
     filename = f"{uuid.uuid4()}{ext}"
     
-    # Save the file
-    static_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), "static")
-    images_dir = os.path.join(static_dir, "images", "gadgets")
-    os.makedirs(images_dir, exist_ok=True)
-    
-    file_path = os.path.join(images_dir, filename)
-    with open(file_path, "wb") as buffer:
-        shutil.copyfileobj(file.file, buffer)
+    # Initialize Supabase client
+    supabase_url = os.environ.get("SUPABASE_URL")
+    supabase_key = os.environ.get("SUPABASE_KEY")
+    if not supabase_url or not supabase_key:
+        raise HTTPException(status_code=500, detail="Supabase credentials not configured")
         
-    return {"image_path": f"/static/images/gadgets/{filename}"}
+    try:
+        supabase: Client = create_client(supabase_url, supabase_key)
+        
+        # Read file bytes
+        file_bytes = file.file.read()
+        
+        # Upload to Supabase Storage
+        # Check if python supabase client uses from_
+        res = supabase.storage.from_("gadgets").upload(
+            path=filename, 
+            file=file_bytes, 
+            file_options={"content-type": content_type}
+        )
+        
+        # Get public URL
+        public_url = supabase.storage.from_("gadgets").get_public_url(filename)
+        
+    except Exception as e:
+        print(f"Error uploading to Supabase: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to upload image: {str(e)}")
+        
+    return {"image_path": public_url}
 
 
 @router.get("/")

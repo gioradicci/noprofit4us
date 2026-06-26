@@ -1,11 +1,12 @@
 <script setup>
-import { ref, computed, onMounted, watch } from 'vue'
-import { useAuth0 } from '@auth0/auth0-vue'
+import { ref, computed, onMounted } from 'vue'
+import { supabase } from './supabase'
 import Button from 'primevue/button'
 import Avatar from 'primevue/avatar'
 import Badge from 'primevue/badge'
 
-const { isAuthenticated, isLoading, getAccessTokenSilently, logout } = useAuth0()
+const isAuthenticated = ref(false)
+const isLoading = ref(true)
 
 import Menubar from 'primevue/menubar'
 
@@ -14,7 +15,9 @@ const backendUser = ref(null)
 async function loadBackendUser() {
   if (!isAuthenticated.value) return
   try {
-    const token = await getAccessTokenSilently()
+    const { data: { session } } = await supabase.auth.getSession()
+    if (!session) return
+    const token = session.access_token
     const res = await fetch("http://localhost:8000/users/me", {
       headers: {
         Authorization: `Bearer ${token}`
@@ -87,20 +90,28 @@ const items = computed(() => {
   return menu
 })
 
-watch(isAuthenticated, (newVal) => {
-  if (newVal) {
-    loadBackendUser()
-  }
-})
-
-onMounted(() => {
+onMounted(async () => {
+  const { data: { session } } = await supabase.auth.getSession()
+  isAuthenticated.value = !!session
+  isLoading.value = false
   if (isAuthenticated.value) {
     loadBackendUser()
   }
+
+  // Listen for auth changes
+  supabase.auth.onAuthStateChange((event, _session) => {
+    isAuthenticated.value = !!_session
+    if (isAuthenticated.value) {
+      loadBackendUser()
+    } else {
+      backendUser.value = null
+    }
+  })
 })
 
-function doLogout() {
-  logout({ logoutParams: { returnTo: window.location.origin } })
+async function doLogout() {
+  await supabase.auth.signOut()
+  window.location.href = '/'
 }
 </script>
 

@@ -1,5 +1,5 @@
-import { useAuth0 } from '@auth0/auth0-vue'
 import { createRouter, createWebHistory } from 'vue-router'
+import { supabase } from '../supabase'
 
 import Home from '../pages/Home.vue'
 import Wizard from '../pages/Wizard.vue'
@@ -46,33 +46,31 @@ const router = createRouter({
   routes
 })
 
-
 let cachedUser = null
 
 router.beforeEach(async (to) => {
-
-  const { isAuthenticated, getAccessTokenSilently, loginWithRedirect } = useAuth0()
+  const { data: { session } } = await supabase.auth.getSession()
+  const isAuthenticated = !!session
 
   // ✅ richiede login
-  if (to.meta.requiresAuth && !isAuthenticated.value) {
+  if (to.meta.requiresAuth && !isAuthenticated) {
     cachedUser = null
-    await loginWithRedirect({
-      appState: { target: to.fullPath }
-    })
-    return false
+    // Supabase non ha un loginWithRedirect nativo nello stesso modo di Auth0.
+    // Redirigiamo alla home dove c'è la landing page e i bottoni di login.
+    return '/'
   }
 
-  if (!isAuthenticated.value) {
+  if (!isAuthenticated) {
     cachedUser = null
   }
 
   const requiresAdmin = to.meta.requiresAdmin
   const isGadgetRoute = ['/gadgets', '/gadget-stock', '/warehouses'].includes(to.path)
 
-  if (isAuthenticated.value && (requiresAdmin || isGadgetRoute)) {
+  if (isAuthenticated && (requiresAdmin || isGadgetRoute)) {
     try {
       if (!cachedUser) {
-        const token = await getAccessTokenSilently()
+        const token = session.access_token
         const res = await fetch("http://localhost:8000/users/me", {
           headers: {
             Authorization: `Bearer ${token}`
@@ -115,6 +113,5 @@ router.beforeEach(async (to) => {
 
   return true
 })
-
 
 export default router

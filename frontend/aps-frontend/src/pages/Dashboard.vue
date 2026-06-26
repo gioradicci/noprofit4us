@@ -1,7 +1,7 @@
 <script setup>
-const { getAccessTokenSilently } = useAuth0()
+
 import { ref, onMounted, computed } from 'vue'
-import { useAuth0 } from '@auth0/auth0-vue'
+import { supabase } from '../supabase'
 import { FilterMatchMode } from '@primevue/core/api'
 import { useConfirm } from 'primevue/useconfirm';
 
@@ -46,17 +46,17 @@ const filteredUsers = computed(() => {
 })
 
 async function loadRoles() {
-  const token = await getAccessTokenSilently()
+  const token = (await supabase.auth.getSession()).data.session?.access_token
 
   const payload = JSON.parse(atob(token.split('.')[1]))
 
-  roles.value = payload["https://aps/roles"] || []
+  roles.value = payload.app_metadata?.roles || []
 
   //console.log("ROLES:", roles.value)
 }
 
 async function loadUsers() {
-  const token = await getAccessTokenSilently()
+  const token = (await supabase.auth.getSession()).data.session?.access_token
   const res = await fetch("http://localhost:8000/users/dashboard", {
     headers: {
       Authorization: `Bearer ${token}`
@@ -82,7 +82,7 @@ const counts = computed(() => {
 
 
 async function payAndApprove(id) {
-  const token = await getAccessTokenSilently()
+  const token = (await supabase.auth.getSession()).data.session?.access_token
 
   await fetch(`http://localhost:8000/users/${id}/pay-and-approve`, {
     method: "PUT",
@@ -96,7 +96,7 @@ async function payAndApprove(id) {
 
 //  RINNOVA
 async function renew(id) {
-  const token = await getAccessTokenSilently()
+  const token = (await supabase.auth.getSession()).data.session?.access_token
   await fetch(`http://localhost:8000/users/${id}/renew`, {
     method: "PUT",
     headers: {
@@ -109,7 +109,7 @@ async function renew(id) {
 
 // ESPORTA IN EXCEL
 async function exportUsersCSV() {
-  const token = await getAccessTokenSilently()
+  const token = (await supabase.auth.getSession()).data.session?.access_token
   const res = await fetch("http://localhost:8000/users/export", {
     headers: {
       Authorization: `Bearer ${token}`
@@ -189,7 +189,7 @@ const showRenewConfirmDialog  = (id_user_to_accept) => {
 };
 
 async function rejectUser(id) {
-  const token = await getAccessTokenSilently()
+  const token = (await supabase.auth.getSession()).data.session?.access_token
   try {
     const res = await fetch(`http://localhost:8000/users/${id}/reject`, {
       method: "PUT",
