@@ -117,6 +117,15 @@ def upload_image(
     if content_type not in ["image/jpeg", "image/png", "image/webp", "image/gif"]:
         raise HTTPException(status_code=400, detail="Only image files (JPEG, PNG, WebP, GIF) are allowed")
 
+    # Validate file size (max 5MB)
+    MAX_FILE_SIZE = 5 * 1024 * 1024 # 5 MB
+    file.file.seek(0, 2)
+    file_size = file.file.tell()
+    file.file.seek(0)
+    
+    if file_size > MAX_FILE_SIZE:
+        raise HTTPException(status_code=413, detail="File too large. Maximum size is 5MB")
+
     # Create a unique filename
     ext = os.path.splitext(file.filename)[1]
     if not ext:
