@@ -586,3 +586,104 @@ def pay_and_approve(
         db.rollback()
         raise HTTPException(500, f"Errore durante l'approvazione: {str(e)}")
 
+
+class UserRoleUpdate(BaseModel):
+    role: str
+
+
+@router.put("/{id}/role")
+def update_user_role(
+    id: int,
+    payload: UserRoleUpdate,
+    current_user=Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    import os
+    import requests
+
+    # Solo l'utente con ruolo ADMIN nel database locale (e nel token) può cambiare i ruoli
+    if current_user.role != "ADMIN":
+        raise HTTPException(
+            status_code=403,
+            detail="Forbidden: Solo l'amministratore può modificare i ruoli."
+        )
+
+    target_user = db.query(User).filter(User.id == id).first()
+    if not target_user:
+        raise HTTPException(status_code=404, detail="Utente non trovato")
+
+    if current_user.id == target_user.id:
+        raise HTTPException(
+            status_code=400,
+            detail="Non puoi modificare il tuo stesso ruolo. Solo un altro amministratore può farlo."
+        )
+
+    new_role = payload.role.strip().upper()
+    valid_roles = ["USER", "MEMBER", "SECRETARY", "TREASURER", "ADMIN"]
+    if new_role not in valid_roles:
+        raise HTTPException(status_code=400, detail="Ruolo non valido")
+
+    old_role = target_user.role
+
+    # Sincronizzazione con Supabase Auth (aggiornamento dei metadati)
+    supabase_url = os.getenv("SUPABASE_URL", "")
+    supabase_key = os.getenv("SUPABASE_KEY", "")
+
+    if supabase_url and supabase_key:
+        user_uuid = target_user.auth0_id
+        url = f"{supabase_url.rstrip('/')}/auth/v1/admin/users/{user_uuid}"
+        headers = {
+            "apikey": supabase_key,
+            "Authorization": f"Bearer {supabase_key}",
+            "Content-Type": "application/json"
+        }
+        body = {
+            "app_metadata": {
+                "roles": [new_role]
+            }
+        }
+        
+        supabase_ok = False
+        try:
+            res = requests.put(url, json=body, headers=headers, timeout=5)
+            if res.status_code == 200:
+                supabase_ok = True
+            else:
+                print(f"Supabase update user app_metadata response error: {res.status_code} - {res.text}")
+        except requests.exceptions.SSLError:
+            try:
+                import urllib3
+                urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
+                res = requests.put(url, json=body, headers=headers, timeout=5, verify=False)
+                if res.status_code == 200:
+                    supabase_ok = True
+                else:
+                    print(f"Supabase update user app_metadata (no verify) response error: {res.status_code} - {res.text}")
+            except Exception as e:
+                print(f"Errore durante l'aggiornamento SSL di app_metadata: {e}")
+        except Exception as e:
+            print(f"Errore generico durante l'aggiornamento di app_metadata: {e}")
+
+        if not supabase_ok:
+            raise HTTPException(
+                status_code=502,
+                detail="Errore di sincronizzazione con Supabase Auth. Il ruolo non è stato modificato nel database locale."
+            )
+
+    # Solo dopo il successo della chiamata a Supabase, aggiorniamo il DB locale
+    target_user.role = new_role
+
+    log_action(
+        db=db,
+        action_type="UPDATE_ROLE",
+        entity_type="USER",
+        entity_id=target_user.id,
+        performed_by=current_user.id,
+        details=f"Admin {current_user.id} ha aggiornato il ruolo dell'utente {target_user.id} da {old_role} a {new_role}"
+    )
+
+    db.commit()
+    db.refresh(target_user)
+
+    return serialize_user(target_user, db)
+

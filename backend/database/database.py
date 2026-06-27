@@ -2,6 +2,7 @@ import os
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 from dotenv import load_dotenv
+from database.base import Base
 
 # Costruiamo il percorso assoluto al file .env (che si trova una cartella più in alto rispetto a database.py)
 env_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), '.env')
@@ -30,7 +31,6 @@ def get_db():
     finally: db.close()
 
 def initialize_database():
-    from database.base import Base
     
     # Importiamo tutti i modelli per registrarli nel metadata di Base
     try:
@@ -91,7 +91,7 @@ def initialize_database():
           
           RETURN NEW;
         END;
-        $$ LANGUAGE plpgsql SECURITY DEFINER;
+        $$ LANGUAGE plpgsql SECURITY DEFINER SET search_path = public;
         """
         
         trigger_sql_association = """
@@ -105,9 +105,18 @@ def initialize_database():
             trans = conn.begin()
             try:
                 # Concediamo permessi sullo schema public
-                conn.execute(text("GRANT ALL ON SCHEMA public TO postgres;"))
-                conn.execute(text("GRANT ALL ON SCHEMA public TO PUBLIC;"))
-                
+                #conn.execute(text("GRANT ALL ON SCHEMA public TO postgres;"))
+                #conn.execute(text("GRANT ALL ON SCHEMA public TO PUBLIC;"))
+                #
+                conn.execute(text("alter default privileges for role postgres in schema public \
+                    revoke select, insert, update, delete on tables from anon, authenticated;"))
+                conn.execute(text("alter default privileges for role postgres in schema public \
+                    revoke execute on functions from anon, authenticated;"))
+                conn.execute(text("alter default privileges for role postgres in schema public \
+                    revoke usage, select on sequences from anon, authenticated;"))
+                conn.execute(text("alter default privileges for role postgres in schema public \
+                    revoke execute on functions from public;"))
+
                 # Abilitiamo RLS su tutte le tabelle per sicurezza
                 tables_to_secure = [
                     "users", "members", "memberships", "gadgets", 
@@ -116,6 +125,10 @@ def initialize_database():
                 ]
                 for table in tables_to_secure:
                     conn.execute(text(f"ALTER TABLE public.{table} ENABLE ROW LEVEL SECURITY;"))
+                    # Rimuove e ricrea la policy di negazione totale per silenziare i warning di Supabase
+                    conn.execute(text(f"DROP POLICY IF EXISTS \"Deny all access\" ON public.{table};"))
+                    conn.execute(text(f"CREATE POLICY \"Deny all access\" ON public.{table} FOR ALL TO public USING (false) WITH CHECK (false);"))
+
                 
                 # Creiamo la funzione
                 conn.execute(text(trigger_sql_function))

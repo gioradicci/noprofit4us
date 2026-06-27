@@ -136,7 +136,7 @@ def get_current_user(
         # In Supabase, 'sub' è l'UUID dell'utente
         auth0_id = payload.get("sub")
 
-        # ✅ 🔥 PRENDI I RUOLI DA SUPABASE (app_metadata)
+        #  PRENDI I RUOLI DA SUPABASE (app_metadata)
         app_metadata = payload.get("app_metadata", {})
         roles = app_metadata.get("roles", [])
         

@@ -12,7 +12,6 @@ import Button from 'primevue/button'
 import InputText from 'primevue/inputtext';
 import Card from 'primevue/card';
 import FloatLabel from 'primevue/floatlabel';
-import Dropdown from 'primevue/dropdown';
 import ConfirmDialog from 'primevue/confirmdialog';
 import ConfirmationService from 'primevue/confirmationservice';
 import Select from 'primevue/select';
@@ -35,7 +34,6 @@ app.component('Button', Button)
 app.component('InputText', InputText)
 app.component('Card', Card)
 app.component('FloatLabel', FloatLabel)
-app.component('Dropdown', Dropdown)
 app.component('ConfirmDialog', ConfirmDialog);
 app.component('Select', Select)
 app.component('Image', Image)

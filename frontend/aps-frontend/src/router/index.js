@@ -7,6 +7,7 @@ import Dashboard from '../pages/Dashboard.vue'
 import Gadgets from '../pages/Gadgets.vue'
 import GadgetStock from '../pages/GadgetStock.vue'
 import Warehouses from '../pages/Warehouses.vue'
+import Admin from '../pages/Admin.vue'
 
 const routes = [
   {
@@ -38,6 +39,11 @@ const routes = [
     path: '/warehouses',
     component: Warehouses,
     meta: { requiresAuth: true }
+  },
+  {
+    path: '/admin',
+    component: Admin,
+    meta: { requiresAuth: true, requiresStrictAdmin: true }
   }
 ]
 
@@ -65,9 +71,10 @@ router.beforeEach(async (to) => {
   }
 
   const requiresAdmin = to.meta.requiresAdmin
+  const requiresStrictAdmin = to.meta.requiresStrictAdmin
   const isGadgetRoute = ['/gadgets', '/gadget-stock', '/warehouses'].includes(to.path)
 
-  if (isAuthenticated && (requiresAdmin || isGadgetRoute)) {
+  if (isAuthenticated && (requiresAdmin || requiresStrictAdmin || isGadgetRoute)) {
     try {
       if (!cachedUser) {
         const token = session.access_token
@@ -87,6 +94,14 @@ router.beforeEach(async (to) => {
 
       const role = cachedUser.role
       const hasActiveMembership = cachedUser.has_active_membership
+
+      if (requiresStrictAdmin) {
+        if (role === 'ADMIN') {
+          return true
+        } else {
+          return '/'
+        }
+      }
 
       if (requiresAdmin) {
         if (role === 'ADMIN' || role === 'TREASURER') {

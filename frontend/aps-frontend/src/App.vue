@@ -76,6 +76,9 @@ const items = computed(() => {
   if (isAdminOrTreasurer.value) {
     menu.push({ label: 'Dashboard', icon: 'pi pi-chart-bar', route: '/dashboard' })
   }
+  if (backendUser.value?.role === 'ADMIN') {
+    menu.push({ label: 'Admin', icon: 'pi pi-cog', route: '/admin' })
+  }
   if (canManageGadgets.value) {
     menu.push({
       label: 'Gestione Gadget',

@@ -427,7 +427,7 @@ const showRejectConfirmDialog = (id_user_to_reject) => {
         </template>
 
         <template #filter="{ filterModel, filterCallback }">
-          <Dropdown
+          <Select
             v-model="filterModel.value"
             :options="['PENDING', 'PAID', 'APPROVED', 'INCOMPLETE', 'REJECTED']"
             placeholder="Filtra"
@@ -454,7 +454,7 @@ const showRejectConfirmDialog = (id_user_to_reject) => {
         </template>
 
         <template #filter="{ filterModel, filterCallback }">
-          <Dropdown
+          <Select
             v-model="filterModel.value"
             :options="['ACTIVE', 'EXPIRED', 'RENEWAL_PENDING', 'NONE']"
             placeholder="Filtra"
