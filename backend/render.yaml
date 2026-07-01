@@ -15,5 +15,7 @@ services:
         sync: false # User needs to configure this in the Render dashboard
       - key: SUPABASE_KEY
         sync: false # User needs to configure this in the Render dashboard
+      - key: SUPABASE_JWT_SECRET
+        sync: false # User needs to configure this in the Render dashboard
       - key: CORS_ORIGINS
         sync: false # User needs to configure this in the Render dashboard (e.g., https://aps-frontend.vercel.app)
