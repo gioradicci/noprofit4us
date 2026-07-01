@@ -1,4 +1,5 @@
 <script setup>
+import { API_URL } from '../config.js'
 import { ref, watch, onUnmounted } from 'vue'
 import { supabase } from '../supabase'
 import Button from 'primevue/button'
@@ -45,7 +46,7 @@ const offsetY = ref(0)
 watch(() => props.modelValue, (newVal) => {
   if (newVal) {
     // If it starts with /static, it's relative to the backend
-    previewUrl.value = newVal.startsWith('http') ? newVal : `${import.meta.env.VITE_API_URL}${newVal}`
+    previewUrl.value = newVal.startsWith('http') ? newVal : `${API_URL}${newVal}`
   } else {
     previewUrl.value = ''
   }
@@ -173,7 +174,7 @@ async function applyCrop() {
         const formData = new FormData()
         formData.append('file', finalBlob, filename)
         
-        const response = await fetch(import.meta.env.VITE_API_URL + '/gadgets/upload-image', {
+        const response = await fetch(API_URL + '/gadgets/upload-image', {
           method: 'POST',
           headers: {
             Authorization: `Bearer ${token}`
@@ -186,7 +187,7 @@ async function applyCrop() {
           emit('update:modelValue', data.image_path)
           emit('uploaded', data.image_path)
           
-          previewUrl.value = `${import.meta.env.VITE_API_URL}${data.image_path}`
+          previewUrl.value = `${API_URL}${data.image_path}`
           isEditing.value = false
         } else {
           alert("Impossibile caricare l'immagine sul server.")

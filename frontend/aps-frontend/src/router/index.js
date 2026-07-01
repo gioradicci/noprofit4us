@@ -1,3 +1,4 @@
+import { API_URL } from '../config.js'
 import { createRouter, createWebHistory } from 'vue-router'
 import { supabase } from '../supabase'
 
@@ -78,7 +79,7 @@ router.beforeEach(async (to) => {
     try {
       if (!cachedUser) {
         const token = session.access_token
-        const res = await fetch(import.meta.env.VITE_API_URL + "/users/me", {
+        const res = await fetch(API_URL + "/users/me", {
           headers: {
             Authorization: `Bearer ${token}`
           }

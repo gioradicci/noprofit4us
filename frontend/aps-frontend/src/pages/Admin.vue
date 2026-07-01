@@ -1,4 +1,5 @@
 <script setup>
+import { API_URL } from '../config.js'
 import { ref, onMounted, computed } from 'vue'
 import { supabase } from '../supabase'
 import { useToast } from 'primevue/usetoast'
@@ -37,7 +38,7 @@ async function loadUsers() {
     const { data: { session } } = await supabase.auth.getSession()
     if (!session) return
     const token = session.access_token
-    const res = await fetch(import.meta.env.VITE_API_URL + "/users/", {
+    const res = await fetch(API_URL + "/users/", {
       headers: {
         Authorization: `Bearer ${token}`
       }
@@ -68,7 +69,7 @@ async function updateRole(user) {
     const { data: { session } } = await supabase.auth.getSession()
     if (!session) return
     const token = session.access_token
-    const res = await fetch(`${import.meta.env.VITE_API_URL}/users/${user.id}/role`, {
+    const res = await fetch(`${API_URL}/users/${user.id}/role`, {
       method: 'PUT',
       headers: {
         'Content-Type': 'application/json',

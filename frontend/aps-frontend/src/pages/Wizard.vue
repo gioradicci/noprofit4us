@@ -1,4 +1,5 @@
 <script setup>
+import { API_URL } from '../config.js'
 import { ref, onMounted, computed } from 'vue'
 import { supabase } from '../supabase'
 import { useToast } from 'primevue/usetoast'
@@ -109,7 +110,7 @@ async function loadUser() {
   try {
     const token = (await supabase.auth.getSession()).data.session?.access_token
 
-    const res = await fetch(import.meta.env.VITE_API_URL + "/users/me", {
+    const res = await fetch(API_URL + "/users/me", {
       headers: {
         Authorization: `Bearer ${token}`
       }
@@ -161,7 +162,7 @@ async function submit() {
       payload.document_expiry = payload.document_expiry.toISOString().substring(0, 10)
     }
 
-    const res = await fetch(import.meta.env.VITE_API_URL + "/users/me", {
+    const res = await fetch(API_URL + "/users/me", {
       method: "PUT",
       headers: {
         "Content-Type": "application/json",

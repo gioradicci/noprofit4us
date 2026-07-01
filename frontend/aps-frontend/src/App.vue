@@ -1,4 +1,5 @@
 <script setup>
+import { API_URL } from './config.js'
 import { ref, computed, onMounted } from 'vue'
 import { supabase } from './supabase'
 import Button from 'primevue/button'
@@ -18,7 +19,7 @@ async function loadBackendUser() {
     const { data: { session } } = await supabase.auth.getSession()
     if (!session) return
     const token = session.access_token
-    const res = await fetch(import.meta.env.VITE_API_URL + "/users/me", {
+    const res = await fetch(API_URL + "/users/me", {
       headers: {
         Authorization: `Bearer ${token}`
       }

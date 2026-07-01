@@ -1,4 +1,5 @@
 <script setup>
+import { API_URL } from '../config.js'
 import { ref, onMounted, watch } from 'vue'
 import { supabase } from '../supabase'
 import Button from 'primevue/button'
@@ -50,7 +51,7 @@ async function loadUser() {
     const { data: { session } } = await supabase.auth.getSession()
     if (!session) return
     const token = session.access_token
-    const res = await fetch(import.meta.env.VITE_API_URL + "/users/me", {
+    const res = await fetch(API_URL + "/users/me", {
       headers: {
         Authorization: `Bearer ${token}`
       }
@@ -116,7 +117,7 @@ async function requestRenewal() {
   try {
     const { data: { session } } = await supabase.auth.getSession()
     const token = session.access_token
-    const res = await fetch(import.meta.env.VITE_API_URL + "/users/me/request-renew", {
+    const res = await fetch(API_URL + "/users/me/request-renew", {
       method: "POST",
       headers: {
         Authorization: `Bearer ${token}`,

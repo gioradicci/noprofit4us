@@ -1,4 +1,5 @@
 <script setup>
+import { API_URL } from '../config.js'
 import { ref, onMounted, computed } from 'vue'
 import { supabase } from '../supabase'
 import { useToast } from 'primevue/usetoast'
@@ -81,7 +82,7 @@ async function loadGadgets() {
   loading.value = true
   try {
     const token = (await supabase.auth.getSession()).data.session?.access_token
-    const res = await fetch(import.meta.env.VITE_API_URL + "/gadgets/", {
+    const res = await fetch(API_URL + "/gadgets/", {
       headers: {
         Authorization: `Bearer ${token}`
       }
@@ -106,7 +107,7 @@ async function loadGadgets() {
 async function acquireLock(id) {
   try {
     const token = (await supabase.auth.getSession()).data.session?.access_token
-    const res = await fetch(`${import.meta.env.VITE_API_URL}/gadgets/${id}/lock`, {
+    const res = await fetch(`${API_URL}/gadgets/${id}/lock`, {
       method: 'POST',
       headers: { Authorization: `Bearer ${token}` }
     })
@@ -135,7 +136,7 @@ async function releaseLock(id) {
   if (!id) return
   try {
     const token = (await supabase.auth.getSession()).data.session?.access_token
-    await fetch(`${import.meta.env.VITE_API_URL}/gadgets/${id}/lock`, {
+    await fetch(`${API_URL}/gadgets/${id}/lock`, {
       method: 'DELETE',
       headers: { Authorization: `Bearer ${token}` }
     })
@@ -269,7 +270,7 @@ async function saveGadgetAndVariants() {
     
     if (isEditMode.value) {
       // 1. Update gadget
-      const resGadget = await fetch(`${import.meta.env.VITE_API_URL}/gadgets/${newGadget.value.id}`, {
+      const resGadget = await fetch(`${API_URL}/gadgets/${newGadget.value.id}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -291,7 +292,7 @@ async function saveGadgetAndVariants() {
       }
       
       // 2. Update variants
-      const resVariants = await fetch(`${import.meta.env.VITE_API_URL}/gadgets/${newGadget.value.id}/variants`, {
+      const resVariants = await fetch(`${API_URL}/gadgets/${newGadget.value.id}/variants`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -318,7 +319,7 @@ async function saveGadgetAndVariants() {
       toast.add({ severity: 'success', summary: 'Successo', detail: 'Gadget e varianti modificati con successo', life: 3000 })
     } else {
       // 1. Create gadget
-      const resGadget = await fetch(import.meta.env.VITE_API_URL + "/gadgets/", {
+      const resGadget = await fetch(API_URL + "/gadgets/", {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -336,7 +337,7 @@ async function saveGadgetAndVariants() {
       
       // 2. Create variants
       for (const variant of tempVariants.value) {
-        const resVariant = await fetch(import.meta.env.VITE_API_URL + "/gadgets/variants", {
+        const resVariant = await fetch(API_URL + "/gadgets/variants", {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -397,7 +398,7 @@ function confirmDelete(id, name) {
     accept: async () => {
       try {
         const token = (await supabase.auth.getSession()).data.session?.access_token
-        const res = await fetch(`${import.meta.env.VITE_API_URL}/gadgets/${id}`, {
+        const res = await fetch(`${API_URL}/gadgets/${id}`, {
           method: 'DELETE',
           headers: {
             Authorization: `Bearer ${token}`
@@ -608,7 +609,7 @@ onMounted(() => {
                 <div class="col-12 flex flex-column gap-1 mt-2">
                   <span class="text-xs font-semibold text-color-secondary uppercase">Immagine Principale</span>
                   <div class="border-round border-1 border-light overflow-hidden" style="width: 80px; height: 120px; background-color: var(--code-bg);">
-                    <img v-if="newGadget.image_path" :src="newGadget.image_path.startsWith('http') ? newGadget.image_path : import.meta.env.VITE_API_URL + newGadget.image_path" alt="Gadget image" class="w-full h-full object-fit-cover" />
+                    <img v-if="newGadget.image_path" :src="newGadget.image_path.startsWith('http') ? newGadget.image_path : API_URL + newGadget.image_path" alt="Gadget image" class="w-full h-full object-fit-cover" />
                     <div v-else class="w-full h-full flex align-items-center justify-content-center text-color-secondary"><i class="pi pi-image text-xl"></i></div>
                   </div>
                 </div>
@@ -652,7 +653,7 @@ onMounted(() => {
             <div class="flex align-items-center justify-content-center m-auto border-1 border-light border-round overflow-hidden" style="width: 40px; height: 60px; background-color: var(--code-bg);">
               <Image 
                 v-if="slotProps.data.image_path" 
-                :src="import.meta.env.VITE_API_URL + slotProps.data.image_path" 
+                :src="API_URL + slotProps.data.image_path" 
                 alt="Gadget" 
                 preview 
                 imageClass="object-fit-cover"
@@ -688,7 +689,7 @@ onMounted(() => {
                 <div class="flex align-items-center justify-content-center border-round overflow-hidden border-1 border-300" style="width: 16px; height: 24px; background-color: var(--code-bg);">
                   <img 
                     v-if="v.image_path || slotProps.data.image_path" 
-                    :src="import.meta.env.VITE_API_URL + (v.image_path || slotProps.data.image_path)" 
+                    :src="API_URL + (v.image_path || slotProps.data.image_path)" 
                     alt="Var" 
                     class="w-full h-full object-fit-cover"
                   />
