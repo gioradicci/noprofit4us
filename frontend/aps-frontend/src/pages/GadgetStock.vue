@@ -1,5 +1,5 @@
 <script setup>
-import { API_URL } from '../config.js'
+import { API_URL, getImageUrl } from '../config.js'
 import { ref, onMounted, computed, watch } from 'vue'
 import { supabase } from '../supabase'
 import { useToast } from 'primevue/usetoast'
@@ -397,7 +397,7 @@ onMounted(() => {
                   <Image 
                     v-slot="{ src }"
                     v-if="slotProps.data.image_path" 
-                    :src="API_URL + slotProps.data.image_path" 
+                    :src="getImageUrl(slotProps.data.image_path)" 
                     alt="Gadget" 
                     preview 
                     imageClass="object-fit-cover"
@@ -528,7 +528,7 @@ onMounted(() => {
                 <div class="flex align-items-center justify-content-center m-auto border-1 border-light border-round overflow-hidden" style="width: 40px; height: 60px; background-color: var(--code-bg);">
                   <Image 
                     v-if="slotProps.data.image_path" 
-                    :src="API_URL + slotProps.data.image_path" 
+                    :src="getImageUrl(slotProps.data.image_path)" 
                     alt="Movimento" 
                     preview 
                     imageClass="object-fit-cover"
@@ -594,7 +594,7 @@ onMounted(() => {
           <div class="border-round border-1 border-light overflow-hidden flex align-items-center justify-content-center" style="width: 40px; height: 60px; background-color: var(--bg); flex-shrink: 0;">
             <img 
               v-if="selectedVariantImage" 
-              :src="API_URL + selectedVariantImage" 
+              :src="getImageUrl(selectedVariantImage)" 
               alt="Preview" 
               class="w-full h-full object-fit-cover" 
             />

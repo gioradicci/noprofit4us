@@ -1,5 +1,5 @@
 <script setup>
-import { API_URL } from '../config.js'
+import { API_URL, getImageUrl } from '../config.js'
 import { ref, onMounted, computed } from 'vue'
 import { supabase } from '../supabase'
 import { useToast } from 'primevue/usetoast'
@@ -609,7 +609,7 @@ onMounted(() => {
                 <div class="col-12 flex flex-column gap-1 mt-2">
                   <span class="text-xs font-semibold text-color-secondary uppercase">Immagine Principale</span>
                   <div class="border-round border-1 border-light overflow-hidden" style="width: 80px; height: 120px; background-color: var(--code-bg);">
-                    <img v-if="newGadget.image_path" :src="newGadget.image_path.startsWith('http') ? newGadget.image_path : API_URL + newGadget.image_path" alt="Gadget image" class="w-full h-full object-fit-cover" />
+                    <img v-if="newGadget.image_path" :src="getImageUrl(newGadget.image_path)" alt="Gadget image" class="w-full h-full object-fit-cover" />
                     <div v-else class="w-full h-full flex align-items-center justify-content-center text-color-secondary"><i class="pi pi-image text-xl"></i></div>
                   </div>
                 </div>
@@ -653,7 +653,7 @@ onMounted(() => {
             <div class="flex align-items-center justify-content-center m-auto border-1 border-light border-round overflow-hidden" style="width: 40px; height: 60px; background-color: var(--code-bg);">
               <Image 
                 v-if="slotProps.data.image_path" 
-                :src="API_URL + slotProps.data.image_path" 
+                :src="getImageUrl(slotProps.data.image_path)" 
                 alt="Gadget" 
                 preview 
                 imageClass="object-fit-cover"
@@ -689,7 +689,7 @@ onMounted(() => {
                 <div class="flex align-items-center justify-content-center border-round overflow-hidden border-1 border-300" style="width: 16px; height: 24px; background-color: var(--code-bg);">
                   <img 
                     v-if="v.image_path || slotProps.data.image_path" 
-                    :src="API_URL + (v.image_path || slotProps.data.image_path)" 
+                    :src="getImageUrl(v.image_path || slotProps.data.image_path)" 
                     alt="Var" 
                     class="w-full h-full object-fit-cover"
                   />

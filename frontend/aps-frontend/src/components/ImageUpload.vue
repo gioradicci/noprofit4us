@@ -1,5 +1,5 @@
 <script setup>
-import { API_URL } from '../config.js'
+import { API_URL, getImageUrl } from '../config.js'
 import { ref, watch, onUnmounted } from 'vue'
 import { supabase } from '../supabase'
 import Button from 'primevue/button'
@@ -45,8 +45,7 @@ const offsetY = ref(0)
 // Watch for initial value
 watch(() => props.modelValue, (newVal) => {
   if (newVal) {
-    // If it starts with /static, it's relative to the backend
-    previewUrl.value = newVal.startsWith('http') ? newVal : `${API_URL}${newVal}`
+    previewUrl.value = getImageUrl(newVal)
   } else {
     previewUrl.value = ''
   }
