@@ -12,7 +12,10 @@ Questo è un progetto web per la gestione di un'associazione no-profit (APS), co
 ### Frontend
 - Node.js (v18+)
 - npm / yarn / pnpm
+- Su Vercel
 
 ### Backend
 - Python (v3.10+)
 - Virtualenv (opzionale ma consigliato)
+- Su Render
+
