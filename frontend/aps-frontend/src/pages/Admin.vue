@@ -37,7 +37,7 @@ async function loadUsers() {
     const { data: { session } } = await supabase.auth.getSession()
     if (!session) return
     const token = session.access_token
-    const res = await fetch("http://localhost:8000/users/", {
+    const res = await fetch(import.meta.env.VITE_API_URL + "/users/", {
       headers: {
         Authorization: `Bearer ${token}`
       }
@@ -68,7 +68,7 @@ async function updateRole(user) {
     const { data: { session } } = await supabase.auth.getSession()
     if (!session) return
     const token = session.access_token
-    const res = await fetch(`http://localhost:8000/users/${user.id}/role`, {
+    const res = await fetch(`${import.meta.env.VITE_API_URL}/users/${user.id}/role`, {
       method: 'PUT',
       headers: {
         'Content-Type': 'application/json',

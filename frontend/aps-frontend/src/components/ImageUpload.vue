@@ -45,7 +45,7 @@ const offsetY = ref(0)
 watch(() => props.modelValue, (newVal) => {
   if (newVal) {
     // If it starts with /static, it's relative to the backend
-    previewUrl.value = newVal.startsWith('http') ? newVal : `http://localhost:8000${newVal}`
+    previewUrl.value = newVal.startsWith('http') ? newVal : `${import.meta.env.VITE_API_URL}${newVal}`
   } else {
     previewUrl.value = ''
   }
@@ -173,7 +173,7 @@ async function applyCrop() {
         const formData = new FormData()
         formData.append('file', finalBlob, filename)
         
-        const response = await fetch('http://localhost:8000/gadgets/upload-image', {
+        const response = await fetch(import.meta.env.VITE_API_URL + '/gadgets/upload-image', {
           method: 'POST',
           headers: {
             Authorization: `Bearer ${token}`
@@ -186,7 +186,7 @@ async function applyCrop() {
           emit('update:modelValue', data.image_path)
           emit('uploaded', data.image_path)
           
-          previewUrl.value = `http://localhost:8000${data.image_path}`
+          previewUrl.value = `${import.meta.env.VITE_API_URL}${data.image_path}`
           isEditing.value = false
         } else {
           alert("Impossibile caricare l'immagine sul server.")

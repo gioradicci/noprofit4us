@@ -55,7 +55,7 @@ async function loadWarehouses() {
   loading.value = true
   try {
     const token = (await supabase.auth.getSession()).data.session?.access_token
-    const res = await fetch("http://localhost:8000/gadgets/warehouses", {
+    const res = await fetch(import.meta.env.VITE_API_URL + "/gadgets/warehouses", {
       headers: { Authorization: `Bearer ${token}` }
     })
     if (res.ok) {
@@ -107,8 +107,8 @@ async function saveWarehouse() {
     const token = (await supabase.auth.getSession()).data.session?.access_token
     const method = isEditMode.value ? 'PUT' : 'POST'
     const url = isEditMode.value 
-      ? `http://localhost:8000/gadgets/warehouses/${currentWarehouseId.value}`
-      : 'http://localhost:8000/gadgets/warehouses'
+      ? `${import.meta.env.VITE_API_URL}/gadgets/warehouses/${currentWarehouseId.value}`
+      : import.meta.env.VITE_API_URL + '/gadgets/warehouses'
 
     const res = await fetch(url, {
       method,
@@ -150,7 +150,7 @@ async function saveWarehouse() {
 async function deleteWarehouse(id) {
   try {
     const token = (await supabase.auth.getSession()).data.session?.access_token
-    const res = await fetch(`http://localhost:8000/gadgets/warehouses/${id}`, {
+    const res = await fetch(`${import.meta.env.VITE_API_URL}/gadgets/warehouses/${id}`, {
       method: 'DELETE',
       headers: { Authorization: `Bearer ${token}` }
     })
@@ -206,7 +206,7 @@ async function executeBulkTransfer() {
   transferring.value = true
   try {
     const token = (await supabase.auth.getSession()).data.session?.access_token
-    const res = await fetch('http://localhost:8000/gadgets/warehouses/bulk-transfer', {
+    const res = await fetch(import.meta.env.VITE_API_URL + '/gadgets/warehouses/bulk-transfer', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',

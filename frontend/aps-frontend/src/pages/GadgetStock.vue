@@ -211,15 +211,15 @@ async function loadData() {
     const headers = { Authorization: `Bearer ${token}` }
     
     // Fetch gadgets
-    const resGadgets = await fetch("http://localhost:8000/gadgets/", { headers })
+    const resGadgets = await fetch(import.meta.env.VITE_API_URL + "/gadgets/", { headers })
     if (resGadgets.ok) gadgets.value = await resGadgets.json()
 
     // Fetch warehouses
-    const resWarehouses = await fetch("http://localhost:8000/gadgets/warehouses", { headers })
+    const resWarehouses = await fetch(import.meta.env.VITE_API_URL + "/gadgets/warehouses", { headers })
     if (resWarehouses.ok) warehouses.value = await resWarehouses.json()
 
     // Fetch movements
-    const resMovements = await fetch("http://localhost:8000/gadgets/movements", { headers })
+    const resMovements = await fetch(import.meta.env.VITE_API_URL + "/gadgets/movements", { headers })
     if (resMovements.ok) movements.value = await resMovements.json()
   } catch (err) {
     console.error(err)
@@ -281,7 +281,7 @@ async function submitMovement() {
   submitting.value = true
   try {
     const token = (await supabase.auth.getSession()).data.session?.access_token
-    const res = await fetch("http://localhost:8000/gadgets/movements", {
+    const res = await fetch(import.meta.env.VITE_API_URL + "/gadgets/movements", {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -396,7 +396,7 @@ onMounted(() => {
                   <Image 
                     v-slot="{ src }"
                     v-if="slotProps.data.image_path" 
-                    :src="'http://localhost:8000' + slotProps.data.image_path" 
+                    :src="import.meta.env.VITE_API_URL + slotProps.data.image_path" 
                     alt="Gadget" 
                     preview 
                     imageClass="object-fit-cover"
@@ -527,7 +527,7 @@ onMounted(() => {
                 <div class="flex align-items-center justify-content-center m-auto border-1 border-light border-round overflow-hidden" style="width: 40px; height: 60px; background-color: var(--code-bg);">
                   <Image 
                     v-if="slotProps.data.image_path" 
-                    :src="'http://localhost:8000' + slotProps.data.image_path" 
+                    :src="import.meta.env.VITE_API_URL + slotProps.data.image_path" 
                     alt="Movimento" 
                     preview 
                     imageClass="object-fit-cover"
@@ -593,7 +593,7 @@ onMounted(() => {
           <div class="border-round border-1 border-light overflow-hidden flex align-items-center justify-content-center" style="width: 40px; height: 60px; background-color: var(--bg); flex-shrink: 0;">
             <img 
               v-if="selectedVariantImage" 
-              :src="'http://localhost:8000' + selectedVariantImage" 
+              :src="import.meta.env.VITE_API_URL + selectedVariantImage" 
               alt="Preview" 
               class="w-full h-full object-fit-cover" 
             />

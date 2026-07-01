@@ -50,7 +50,7 @@ async function loadUser() {
     const { data: { session } } = await supabase.auth.getSession()
     if (!session) return
     const token = session.access_token
-    const res = await fetch("http://localhost:8000/users/me", {
+    const res = await fetch(import.meta.env.VITE_API_URL + "/users/me", {
       headers: {
         Authorization: `Bearer ${token}`
       }
@@ -116,7 +116,7 @@ async function requestRenewal() {
   try {
     const { data: { session } } = await supabase.auth.getSession()
     const token = session.access_token
-    const res = await fetch("http://localhost:8000/users/me/request-renew", {
+    const res = await fetch(import.meta.env.VITE_API_URL + "/users/me/request-renew", {
       method: "POST",
       headers: {
         Authorization: `Bearer ${token}`,

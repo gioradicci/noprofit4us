@@ -57,7 +57,7 @@ async function loadRoles() {
 
 async function loadUsers() {
   const token = (await supabase.auth.getSession()).data.session?.access_token
-  const res = await fetch("http://localhost:8000/users/dashboard", {
+  const res = await fetch(import.meta.env.VITE_API_URL + "/users/dashboard", {
     headers: {
       Authorization: `Bearer ${token}`
     }
@@ -84,7 +84,7 @@ const counts = computed(() => {
 async function payAndApprove(id) {
   const token = (await supabase.auth.getSession()).data.session?.access_token
 
-  await fetch(`http://localhost:8000/users/${id}/pay-and-approve`, {
+  await fetch(`${import.meta.env.VITE_API_URL}/users/${id}/pay-and-approve`, {
     method: "PUT",
     headers: { Authorization: `Bearer ${token}` }
   })
@@ -97,7 +97,7 @@ async function payAndApprove(id) {
 //  RINNOVA
 async function renew(id) {
   const token = (await supabase.auth.getSession()).data.session?.access_token
-  await fetch(`http://localhost:8000/users/${id}/renew`, {
+  await fetch(`${import.meta.env.VITE_API_URL}/users/${id}/renew`, {
     method: "PUT",
     headers: {
       Authorization: `Bearer ${token}`
@@ -110,7 +110,7 @@ async function renew(id) {
 // ESPORTA IN EXCEL
 async function exportUsersCSV() {
   const token = (await supabase.auth.getSession()).data.session?.access_token
-  const res = await fetch("http://localhost:8000/users/export", {
+  const res = await fetch(import.meta.env.VITE_API_URL + "/users/export", {
     headers: {
       Authorization: `Bearer ${token}`
     }
@@ -191,7 +191,7 @@ const showRenewConfirmDialog  = (id_user_to_accept) => {
 async function rejectUser(id) {
   const token = (await supabase.auth.getSession()).data.session?.access_token
   try {
-    const res = await fetch(`http://localhost:8000/users/${id}/reject`, {
+    const res = await fetch(`${import.meta.env.VITE_API_URL}/users/${id}/reject`, {
       method: "PUT",
       headers: { Authorization: `Bearer ${token}` }
     })

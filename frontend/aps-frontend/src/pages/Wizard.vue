@@ -109,7 +109,7 @@ async function loadUser() {
   try {
     const token = (await supabase.auth.getSession()).data.session?.access_token
 
-    const res = await fetch("http://localhost:8000/users/me", {
+    const res = await fetch(import.meta.env.VITE_API_URL + "/users/me", {
       headers: {
         Authorization: `Bearer ${token}`
       }
@@ -161,7 +161,7 @@ async function submit() {
       payload.document_expiry = payload.document_expiry.toISOString().substring(0, 10)
     }
 
-    const res = await fetch("http://localhost:8000/users/me", {
+    const res = await fetch(import.meta.env.VITE_API_URL + "/users/me", {
       method: "PUT",
       headers: {
         "Content-Type": "application/json",
