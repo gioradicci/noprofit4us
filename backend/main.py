@@ -1,10 +1,11 @@
 import os
-from fastapi import FastAPI
+from fastapi import FastAPI, Depends
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from sqlalchemy import text
+from sqlalchemy.orm import Session
 
-from database.database import engine, initialize_database
+from database.database import engine, initialize_database, get_db
 from database.base import Base
 from routers import users, members, audit, dashboard, gadgets
 from database.models.gadget import Gadget, GadgetVariant, Warehouse, GadgetVariantStock, StockMovement, GadgetLock
@@ -12,9 +13,14 @@ from database.models.gadget import Gadget, GadgetVariant, Warehouse, GadgetVaria
 app = FastAPI(title="APS Backend v2")
 
 @app.get("/wakeup", tags=["system"])
-async def wakeup():
-    """Endpoint leggero per risvegliare il backend dallo standby su Render free tier."""
-    return {"status": "awake", "message": "Backend is ready"}
+async def wakeup(db: Session = Depends(get_db)):
+    """Endpoint per risvegliare il backend (Render) e il database (Supabase free tier)."""
+    try:
+        # Una semplice query per "svegliare" anche la connessione al database
+        db.execute(text("SELECT 1"))
+        return {"status": "awake", "database": "awake", "message": "Backend and DB are ready"}
+    except Exception as e:
+        return {"status": "awake", "database": "error", "message": str(e)}
 
 # Inizializzazione automatica database (tabelle, permessi e trigger)
 initialize_database()
