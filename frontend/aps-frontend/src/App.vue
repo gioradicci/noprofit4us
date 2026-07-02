@@ -95,6 +95,9 @@ const items = computed(() => {
 })
 
 onMounted(async () => {
+  // PING al backend per svegliarlo in caso di standby (Render free tier)
+  fetch(API_URL + "/wakeup").catch(e => console.log("Wakeup ping failed:", e))
+
   const { data: { session } } = await supabase.auth.getSession()
   isAuthenticated.value = !!session
   isLoading.value = false

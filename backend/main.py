@@ -10,6 +10,12 @@ from routers import users, members, audit, dashboard, gadgets
 from database.models.gadget import Gadget, GadgetVariant, Warehouse, GadgetVariantStock, StockMovement, GadgetLock
 
 app = FastAPI(title="APS Backend v2")
+
+@app.get("/wakeup", tags=["system"])
+async def wakeup():
+    """Endpoint leggero per risvegliare il backend dallo standby su Render free tier."""
+    return {"status": "awake", "message": "Backend is ready"}
+
 # Inizializzazione automatica database (tabelle, permessi e trigger)
 initialize_database()
 
