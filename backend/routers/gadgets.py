@@ -1,10 +1,14 @@
 from fastapi import APIRouter, Depends, HTTPException, UploadFile, File
+from fastapi.responses import StreamingResponse
 from sqlalchemy.orm import Session
 from pydantic import BaseModel
 from typing import Optional, List
 import uuid
 import os
 import shutil
+import openpyxl
+from openpyxl.styles import Font, PatternFill, Alignment
+from io import BytesIO
 from database.database import get_db
 from supabase import create_client, Client
 from database.models.gadget import Gadget, Warehouse, StockMovement, GadgetVariantStock
@@ -13,6 +17,7 @@ from services import gadget_service
 from database.models.member import Member
 from database.models.membership import Membership
 from datetime import date
+
 
 #router = APIRouter(prefix="/gadgets", tags=["gadgets"])
 router = APIRouter()
@@ -575,3 +580,84 @@ def create_movement(payload: MovementCreate, current_user=Depends(get_current_us
         notes=payload.notes
     )
     return {"status": "success", "movement_id": movement.id}
+
+
+@router.get("/export-inventory")
+def export_inventory(
+    current_user=Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    if current_user.role not in ["ADMIN", "SECRETARY"]:
+        raise HTTPException(status_code=403, detail="Not authorized")
+    if current_user.role == "SECRETARY" and not has_active_membership(current_user, db):
+        raise HTTPException(status_code=403, detail="Active membership required")
+
+    warehouses = db.query(Warehouse).filter(Warehouse.is_active == True).order_by(Warehouse.name).all()
+    gadgets = db.query(Gadget).order_by(Gadget.name).all()
+
+    wb = openpyxl.Workbook()
+    ws = wb.active
+    ws.title = "Inventario"
+
+    headers_row = [
+        "Gadget", "Categoria", "SKU", "Taglia", "Colore", "Modello", "Magazzino", "Quantita"
+    ]
+    ws.append(headers_row)
+
+    # Style header row
+    header_fill = PatternFill(start_color="1F4E78", end_color="1F4E78", fill_type="solid")
+    header_font = Font(name="Calibri", size=11, bold=True, color="FFFFFF")
+    header_alignment = Alignment(horizontal="center", vertical="center")
+
+    for col_idx in range(1, len(headers_row) + 1):
+        cell = ws.cell(row=1, column=col_idx)
+        cell.fill = header_fill
+        cell.font = header_font
+        cell.alignment = header_alignment
+
+    for g in gadgets:
+        sorted_variants = sorted(
+            g.variants,
+            key=lambda v: (v.sku or "", v.size or "", v.color or "", v.model or "")
+        )
+        for v in sorted_variants:
+            for w in warehouses:
+                stock_qty = 0
+                for s in v.stocks:
+                    if s.warehouse_id == w.id:
+                        stock_qty = s.quantity
+                        break
+                
+                ws.append([
+                    g.name,
+                    g.category,
+                    v.sku or "",
+                    v.size or "",
+                    v.color or "",
+                    v.model or "",
+                    w.name,
+                    stock_qty
+                ])
+
+    # Auto-adjust column widths
+    for col in ws.columns:
+        max_len = 0
+        col_letter = col[0].column_letter
+        for cell in col:
+            if cell.value is not None:
+                max_len = max(max_len, len(str(cell.value)))
+        ws.column_dimensions[col_letter].width = max(max_len + 3, 10)
+
+    output = BytesIO()
+    wb.save(output)
+    output.seek(0)
+
+    headers = {
+        'Content-Disposition': 'attachment; filename="inventario_gadget.xlsx"'
+    }
+    return StreamingResponse(
+        iter([output.getvalue()]),
+        media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        headers=headers
+    )
+

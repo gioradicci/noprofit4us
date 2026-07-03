@@ -26,6 +26,7 @@ const movements = ref([])
 const loading = ref(false)
 const showMovementDialog = ref(false)
 const submitting = ref(false)
+const exporting = ref(false)
 
 const filters = ref({
   gadget_name: { value: null, matchMode: FilterMatchMode.CONTAINS },
@@ -33,6 +34,13 @@ const filters = ref({
   sku: { value: null, matchMode: FilterMatchMode.CONTAINS },
   variant_details: { value: null, matchMode: FilterMatchMode.CONTAINS }
 })
+
+const movementFilters = ref({
+  movement_type: { value: null, matchMode: FilterMatchMode.EQUALS },
+  gadget_name: { value: null, matchMode: FilterMatchMode.CONTAINS },
+  notes: { value: null, matchMode: FilterMatchMode.CONTAINS }
+})
+
 
 // Form state
 const movementForm = ref({
@@ -51,6 +59,12 @@ const movementTypes = [
   { label: 'Trasferimento (TRANSFER)', value: 'TRANSFER' },
   { label: 'Consegna a socio (DELIVERY)', value: 'DELIVERY' }
 ]
+
+const movementTypeFilterOptions = computed(() => [
+  { label: 'Tutti i tipi', value: null },
+  ...movementTypes
+])
+
 
 // Computed properties
 const variantsOptions = computed(() => {
@@ -319,6 +333,40 @@ function formatDate(dateStr) {
   return new Date(dateStr).toLocaleString('it-IT')
 }
 
+async function exportInventory() {
+  exporting.value = true
+  try {
+    const token = (await supabase.auth.getSession()).data.session?.access_token
+    const res = await fetch(API_URL + "/gadgets/export-inventory", {
+      headers: {
+        Authorization: `Bearer ${token}`
+      }
+    })
+    
+    if (res.ok) {
+      const blob = await res.blob()
+      const url = window.URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = url
+      a.download = 'inventario_gadget.xlsx'
+      document.body.appendChild(a)
+      a.click()
+      a.remove()
+      window.URL.revokeObjectURL(url)
+      toast.add({ severity: 'success', summary: 'Esportato', detail: 'Inventario esportato con successo', life: 3000 })
+    } else {
+      console.error("Errore durante l'esportazione", await res.text())
+      toast.add({ severity: 'error', summary: 'Errore', detail: "Errore durante l'esportazione dell'inventario", life: 4000 })
+    }
+  } catch (err) {
+    console.error(err)
+    toast.add({ severity: 'error', summary: 'Errore', detail: 'Errore di connessione', life: 3000 })
+  } finally {
+    exporting.value = false
+  }
+}
+
+
 onMounted(() => {
   loadData()
 })
@@ -332,7 +380,10 @@ onMounted(() => {
         <h2 class="font-bold text-3xl mb-1 text-900">Gestione Magazzino</h2>
         <p class="text-secondary text-sm m-0">Movimentazione dei gadget, tracciamento stock e storico delle operazioni</p>
       </div>
-      <Button label="Registra Movimento" icon="pi pi-directions" severity="primary" @click="openMovementModal" />
+      <div class="flex gap-2">
+        <Button label="Esporta Inventario" icon="pi pi-download" severity="secondary" outlined @click="exportInventory" :loading="exporting" />
+        <Button label="Registra Movimento" icon="pi pi-directions" severity="primary" @click="openMovementModal" />
+      </div>
     </div>
 
     <!-- KPIs -->
@@ -516,7 +567,15 @@ onMounted(() => {
       <div class="col-12">
         <div class="card p-4 shadow-2 border-round surface-card">
           <h3 class="text-xl font-bold mb-4 text-900">Storico Movimenti</h3>
-          <DataTable :value="movements" :loading="loading" paginator :rows="10" responsiveLayout="scroll">
+          <DataTable 
+            :value="movements" 
+            v-model:filters="movementFilters" 
+            filterDisplay="row" 
+            :loading="loading" 
+            paginator 
+            :rows="10" 
+            responsiveLayout="scroll"
+          >
             <template #empty>
               <div class="text-center py-4">
                 <i class="pi pi-history text-3xl text-400 mb-2"></i>
@@ -527,6 +586,7 @@ onMounted(() => {
               <template #body="slotProps">
                 <div class="flex align-items-center justify-content-center m-auto border-1 border-light border-round overflow-hidden" style="width: 40px; height: 60px; background-color: var(--code-bg);">
                   <Image 
+                    v-slot="{ src }"
                     v-if="slotProps.data.image_path" 
                     :src="getImageUrl(slotProps.data.image_path)" 
                     alt="Movimento" 
@@ -543,7 +603,15 @@ onMounted(() => {
                 {{ formatDate(slotProps.data.timestamp) }}
               </template>
             </Column>
-            <Column field="movement_type" header="Tipo" sortable>
+            <Column 
+              field="movement_type" 
+              header="Tipo" 
+              sortable
+              filter
+              filterField="movement_type"
+              :showFilterMenu="false"
+              :showClearButton="true"
+            >
               <template #body="slotProps">
                 <span :class="['badge border-round px-2 py-1 text-xs text-white font-bold', 
                   slotProps.data.movement_type === 'RESTOCK' ? 'bg-green-500' :
@@ -551,8 +619,36 @@ onMounted(() => {
                   {{ slotProps.data.movement_type }}
                 </span>
               </template>
+              <template #filter="{ filterModel, filterCallback }">
+                <Select
+                  v-model="filterModel.value"
+                  @change="filterCallback()"
+                  :options="movementTypeFilterOptions"
+                  optionLabel="label"
+                  optionValue="value"
+                  placeholder="Filtra tipo"
+                  class="w-full"
+                />
+              </template>
             </Column>
-            <Column field="gadget_name" header="Gadget"></Column>
+            <Column 
+              field="gadget_name" 
+              header="Gadget"
+              sortable
+              filter
+              filterField="gadget_name"
+              :showFilterMenu="false"
+              :showClearButton="true"
+            >
+              <template #filter="{ filterModel, filterCallback }">
+                <InputText
+                  v-model="filterModel.value"
+                  @input="filterCallback()"
+                  placeholder="Cerca gadget..."
+                  class="w-full"
+                />
+              </template>
+            </Column>
             <Column field="variant_sku" header="SKU"></Column>
             <Column header="Percorso">
               <template #body="slotProps">
@@ -568,7 +664,23 @@ onMounted(() => {
                 <span class="font-bold">{{ slotProps.data.quantity }} pz</span>
               </template>
             </Column>
-            <Column field="notes" header="Note"></Column>
+            <Column 
+              field="notes" 
+              header="Note"
+              filter
+              filterField="notes"
+              :showFilterMenu="false"
+              :showClearButton="true"
+            >
+              <template #filter="{ filterModel, filterCallback }">
+                <InputText
+                  v-model="filterModel.value"
+                  @input="filterCallback()"
+                  placeholder="Cerca note..."
+                  class="w-full"
+                />
+              </template>
+            </Column>
           </DataTable>
         </div>
       </div>
