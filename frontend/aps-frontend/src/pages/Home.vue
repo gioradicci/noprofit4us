@@ -194,6 +194,7 @@ function getRoleIcon() {
           <Image src="/logo.svg" alt="Logo" width="100" ></Image>
         </div>
         <h1 class="text-2xl md:text-3xl font-bold mb-3 mt-0 text-primary-gradient">Associazione APS.it</h1>
+        <h2 class="text-1xl md:text-2xl font-bold mb-3 mt-0 text-primary-gradient">Sito DEMO non inserire dati sensibili</h2>
         <p class="text-lg md:text-xl text-color-secondary mb-5 max-w-30rem mx-auto line-height-3">
           Entra a far parte della nostra comunità. Compila il modulo digitale e sostieni i nostri progetti di promozione sociale.
         </p>
