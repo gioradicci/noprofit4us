@@ -692,13 +692,13 @@ onMounted(() => {
         <!-- Gadget -->
         <div class="flex flex-column gap-2">
           <label for="m_gadget" class="font-semibold text-sm">Gadget *</label>
-          <Select id="m_gadget" v-model="movementForm.gadget_id" :options="gadgets" optionLabel="name" optionValue="id" placeholder="Seleziona Gadget" class="w-full" />
+          <Select inputId="m_gadget" v-model="movementForm.gadget_id" :options="gadgets" optionLabel="name" optionValue="id" placeholder="Seleziona Gadget" class="w-full" />
         </div>
 
         <!-- Variant -->
         <div class="flex flex-column gap-2" v-if="movementForm.gadget_id">
           <label for="m_variant" class="font-semibold text-sm">Variante *</label>
-          <Select id="m_variant" v-model="movementForm.variant_id" :options="variantsOptions" optionLabel="label" optionValue="value" placeholder="Seleziona Variante" class="w-full" />
+          <Select inputId="m_variant" v-model="movementForm.variant_id" :options="variantsOptions" optionLabel="label" optionValue="value" placeholder="Seleziona Variante" class="w-full" />
         </div>
 
         <!-- Selected Item Visual Preview Card -->
@@ -722,25 +722,25 @@ onMounted(() => {
         <!-- Type -->
         <div class="flex flex-column gap-2">
           <label for="m_type" class="font-semibold text-sm">Tipo Movimento *</label>
-          <Select id="m_type" v-model="movementForm.movement_type" :options="movementTypes" optionLabel="label" optionValue="value" class="w-full" />
+          <Select inputId="m_type" v-model="movementForm.movement_type" :options="movementTypes" optionLabel="label" optionValue="value" class="w-full" />
         </div>
 
         <!-- From Warehouse -->
         <div class="flex flex-column gap-2" v-if="['TRANSFER', 'DELIVERY'].includes(movementForm.movement_type)">
           <label for="m_from" class="font-semibold text-sm">Magazzino Origine *</label>
-          <Select id="m_from" v-model="movementForm.from_warehouse_id" :options="fromWarehouseOptions.filter(opt => opt.value !== movementForm.to_warehouse_id)" optionLabel="label" optionValue="value" :placeholder="movementForm.variant_id ? 'Seleziona Origine' : 'Seleziona prima una variante'" :disabled="!movementForm.variant_id" class="w-full" />
+          <Select inputId="m_from" v-model="movementForm.from_warehouse_id" :options="fromWarehouseOptions.filter(opt => opt.value !== movementForm.to_warehouse_id)" optionLabel="label" optionValue="value" :placeholder="movementForm.variant_id ? 'Seleziona Origine' : 'Seleziona prima una variante'" :disabled="!movementForm.variant_id" class="w-full" />
         </div>
 
         <!-- To Warehouse -->
         <div class="flex flex-column gap-2" v-if="['RESTOCK', 'TRANSFER'].includes(movementForm.movement_type)">
           <label for="m_to" class="font-semibold text-sm">Magazzino Destinazione *</label>
-          <Select id="m_to" v-model="movementForm.to_warehouse_id" :options="toWarehouseOptions.filter(opt => opt.value !== movementForm.from_warehouse_id)" optionLabel="label" optionValue="value" :placeholder="movementForm.variant_id ? 'Seleziona Destinazione' : 'Seleziona prima una variante'" :disabled="!movementForm.variant_id" class="w-full" />
+          <Select inputId="m_to" v-model="movementForm.to_warehouse_id" :options="toWarehouseOptions.filter(opt => opt.value !== movementForm.from_warehouse_id)" optionLabel="label" optionValue="value" :placeholder="movementForm.variant_id ? 'Seleziona Destinazione' : 'Seleziona prima una variante'" :disabled="!movementForm.variant_id" class="w-full" />
         </div>
 
         <!-- Quantity -->
         <div class="flex flex-column gap-2">
           <label for="m_qty" class="font-semibold text-sm">Quantità *</label>
-          <InputNumber id="m_qty" v-model="movementForm.quantity" :min="1" placeholder="Quantità" class="w-full" showButtons />
+          <InputNumber inputId="m_qty" v-model="movementForm.quantity" :min="1" placeholder="Quantità" class="w-full" showButtons />
         </div>
 
         <!-- Notes -->

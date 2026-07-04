@@ -458,13 +458,13 @@ onMounted(() => {
                 
                 <div class="grid">
                   <div class="col-12 md:col-6 flex flex-column gap-2">
-                    <label for="category" class="font-semibold text-sm">Categoria *</label>
-                    <Select id="category" v-model="newGadget.category" :options="categories" optionLabel="label" optionValue="value" class="w-full" />
+                    <label id="category_label" class="font-semibold text-sm">Categoria *</label>
+                    <Select aria-labelledby="category_label" v-model="newGadget.category" :options="categories" optionLabel="label" optionValue="value" class="w-full" />
                   </div>
                   
                   <div class="col-12 md:col-6 flex flex-column gap-2">
                     <label for="min_donation" class="font-semibold text-sm">Donazione Minima (€) *</label>
-                    <InputNumber id="min_donation" v-model="newGadget.min_donation" :min="0" :minFractionDigits="2" :maxFractionDigits="2" class="w-full" mode="currency" currency="EUR" locale="it-IT" />
+                    <InputNumber inputId="min_donation" v-model="newGadget.min_donation" :min="0" :minFractionDigits="2" :maxFractionDigits="2" class="w-full" mode="currency" currency="EUR" locale="it-IT" />
                   </div>
                 </div>
 
@@ -504,8 +504,8 @@ onMounted(() => {
                   </div>
 
                   <div class="flex flex-column gap-1">
-                    <label for="v_model" class="text-xs font-semibold">Modello</label>
-                    <Select id="v_model" v-model="newVariant.model" :options="modelOptions" optionLabel="label" optionValue="value" placeholder="Seleziona Modello" class="w-full" size="small" />
+                    <label id="v_model_label" class="text-xs font-semibold">Modello</label>
+                    <Select aria-labelledby="v_model_label" v-model="newVariant.model" :options="modelOptions" optionLabel="label" optionValue="value" placeholder="Seleziona Modello" class="w-full" size="small" />
                   </div>
 
                   <div class="flex flex-column gap-1">
@@ -520,7 +520,7 @@ onMounted(() => {
 
                   <div class="flex flex-column gap-1">
                     <label for="v_price" class="text-xs font-semibold">Modificatore Prezzo (€)</label>
-                    <InputNumber id="v_price" v-model="newVariant.price_modifier" :minFractionDigits="2" :maxFractionDigits="2" class="w-full" mode="currency" currency="EUR" locale="it-IT" size="small" />
+                    <InputNumber inputId="v_price" v-model="newVariant.price_modifier" :minFractionDigits="2" :maxFractionDigits="2" class="w-full" mode="currency" currency="EUR" locale="it-IT" size="small" />
                   </div>
 
                   <div class="flex flex-column gap-1 align-items-center mb-2">

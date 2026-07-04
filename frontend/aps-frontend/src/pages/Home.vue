@@ -202,9 +202,9 @@ function getRoleIcon() {
         <div class="card p-4 mx-auto max-w-20rem mt-4 surface-card border-round shadow-2">
           <h3 class="mb-3 mt-0 text-center text-color">{{ isRegistering ? 'Registrati' : 'Accedi' }}</h3>
           
-          <div class="flex flex-column gap-3">
-            <InputText v-model="email" placeholder="Email" type="email" class="w-full" />
-            <InputText v-model="password" placeholder="Password" type="password" class="w-full" />
+          <form class="flex flex-column gap-3">
+            <InputText v-model="email" placeholder="Email" type="email" class="w-full" id="email" autocomplete="on"/>
+            <InputText v-model="password" placeholder="Password" type="password" class="w-full" id="password" autocomplete="off"/>
             
             <small v-if="authError" class="p-error text-center" style="color: red;">{{ authError }}</small>
             
@@ -212,7 +212,7 @@ function getRoleIcon() {
             <Button v-if="isRegistering" label="Registrati" :loading="authLoading" @click="registerWithEmail" class="w-full" />
             
             <Button :label="isRegistering ? 'Hai già un account? Accedi' : 'Nuovo utente? Registrati'" link class="w-full p-0 text-sm" @click="isRegistering = !isRegistering" />
-          </div>
+          </form>
         </div>
       </div>
 
@@ -393,11 +393,11 @@ function getRoleIcon() {
             <div class="flex flex-column gap-3">
               <div class="flex flex-column gap-2">
                 <label for="memberType" class="font-semibold text-sm">Tipo di Quota *</label>
-                <Select id="memberType" v-model="selectedMemberType" :options="memberTypes" optionLabel="label" optionValue="value" placeholder="Seleziona la quota" class="w-full" />
+                <Select inputId="memberType" v-model="selectedMemberType" :options="memberTypes" optionLabel="label" optionValue="value" placeholder="Seleziona la quota" class="w-full" />
               </div>
               <div class="flex flex-column gap-2">
                 <label for="paymentMethod" class="font-semibold text-sm">Metodo di Pagamento *</label>
-                <Select id="paymentMethod" v-model="selectedPaymentMethod" :options="paymentMethods" optionLabel="label" optionValue="value" placeholder="Seleziona un metodo" class="w-full" />
+                <Select inputId="paymentMethod" v-model="selectedPaymentMethod" :options="paymentMethods" optionLabel="label" optionValue="value" placeholder="Seleziona un metodo" class="w-full" />
               </div>
               <Button label="Richiedi Rinnovo" icon="pi pi-refresh" :loading="renewing" @click="requestRenewal" severity="warning" class="w-full mt-2" :disabled="!selectedPaymentMethod || !selectedMemberType" />
             </div>

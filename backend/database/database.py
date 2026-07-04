@@ -42,12 +42,13 @@ def initialize_database():
     except ImportError as e:
         print("WARNING: Errore durante l'importazione dei modelli:", e)
 
-    # 1. Creazione delle tabelle
-    print("Inizializzazione delle tabelle del database...")
-    Base.metadata.create_all(bind=engine)
+    # 1. Creazione delle tabelle (solo se FORCE_DB_SETUP è impostata a "true")
+    if os.getenv("FORCE_DB_SETUP") == "true":
+        print("Inizializzazione delle tabelle del database...")
+        Base.metadata.create_all(bind=engine)
     
-    # 2. Configurazione automatica dei permessi e del trigger se siamo su PostgreSQL
-    if not DATABASE_URL.startswith("sqlite"):
+    # 2. Configurazione automatica dei permessi e del trigger se siamo su PostgreSQL e FORCE_DB_SETUP è impostata a "true"
+    if not DATABASE_URL.startswith("sqlite") and os.getenv("FORCE_DB_SETUP") == "true":
         from sqlalchemy import text
         print("Rilevato PostgreSQL (Supabase). Configurazione automatica dei permessi e del trigger di sincronizzazione...")
         

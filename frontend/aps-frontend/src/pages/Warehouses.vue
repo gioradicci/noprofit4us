@@ -329,7 +329,7 @@ onMounted(() => {
         <!-- Is Active -->
         <div class="flex flex-column gap-2" v-if="isEditMode">
           <label for="w_active" class="font-semibold text-sm">Stato Magazzino</label>
-          <Select id="w_active" v-model="warehouseForm.is_active" :options="activeOptions" optionLabel="label" optionValue="value" class="w-full" />
+          <Select inputId="w_active" v-model="warehouseForm.is_active" :options="activeOptions" optionLabel="label" optionValue="value" class="w-full" />
           <small class="text-color-secondary">I magazzini disattivati non possono ricevere nuovi stock, ma permettono di svuotare le giacenze esistenti.</small>
         </div>
       </div>
@@ -355,7 +355,7 @@ onMounted(() => {
         <div class="flex flex-column gap-2">
           <label for="to_wh" class="font-semibold text-sm">Magazzino di Destinazione *</label>
           <Select 
-            id="to_wh" 
+            inputId="to_wh" 
             v-model="transferForm.to_warehouse_id" 
             :options="targetWarehouseOptions" 
             optionLabel="name" 

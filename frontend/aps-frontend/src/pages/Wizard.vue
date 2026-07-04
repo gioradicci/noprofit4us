@@ -255,7 +255,7 @@ onMounted(() => {
             <div class="flex flex-column gap-4 py-3 text-left" >
               <div class="flex flex-column gap-2">
                 <label for="first_name" class="font-semibold text-sm">Nome *</label>
-                <InputText  id="first_name" v-model="profile.first_name" placeholder="Inserisci il tuo nome" class="w-full" />
+                <InputText autocomplete="on" id="first_name" v-model="profile.first_name" placeholder="Inserisci il tuo nome" class="w-full" />
               </div>
               <div class="flex flex-column gap-2">
                 <label for="last_name" class="font-semibold text-sm">Cognome *</label>
@@ -269,7 +269,7 @@ onMounted(() => {
               <div class="flex flex-column gap-2">
                 <label for="birth_date" class="font-semibold text-sm">Data di Nascita *</label>
                 <DatePicker 
-                  id="birth_date" 
+                  inputId="birth_date" 
                   v-model="profile.birth_date" 
                   dateFormat="dd/mm/yy" 
                   class="w-full" 
@@ -327,9 +327,9 @@ onMounted(() => {
                 <InputText id="municipality" v-model="profile.municipality" placeholder="Comune" class="w-full" />
               </div>
               <div class="flex flex-column gap-2">
-                <label for="municipio_roma" class="font-semibold text-sm">Numero Municipio (I - XV) *</label>
+                <label id="municipio_roma_label" class="font-semibold text-sm">Numero Municipio (I - XV) *</label>
                 <Select 
-                  id="municipio_roma" 
+                  aria-labelledby="municipio_roma_label" 
                   v-model="profile.municipio_roma" 
                   :options="municipiRoma" 
                   optionLabel="label" 
@@ -355,9 +355,9 @@ onMounted(() => {
           <StepPanel v-slot="{ activateCallback }" value="3">
             <div class="flex flex-column gap-4 py-3 text-left">
               <div class="flex flex-column gap-2">
-                <label for="document_type" class="font-semibold text-sm">Tipo Documento *</label>
+                <label id="document_type_label" class="font-semibold text-sm">Tipo Documento *</label>
                 <Select 
-                  id="document_type" 
+                  aria-labelledby="document_type_label" 
                   v-model="profile.document_type" 
                   :options="documentTypes" 
                   optionLabel="label" 
@@ -372,7 +372,7 @@ onMounted(() => {
               </div>
               <div class="flex flex-column gap-2">
                 <label for="document_expiry" class="font-semibold text-sm">Scadenza Documento *</label>
-                <DatePicker id="document_expiry" v-model="profile.document_expiry" dateFormat="dd/mm/yy" class="w-full" />
+                <DatePicker inputId="document_expiry" v-model="profile.document_expiry" dateFormat="dd/mm/yy" class="w-full" />
               </div>
             </div>
             <div class="flex pt-4 justify-content-between border-top-1 border-light">
@@ -395,10 +395,11 @@ onMounted(() => {
                 <InputText id="profession" v-model="profile.profession" placeholder="La tua professione" class="w-full" />
               </div>
               <div class="flex flex-column gap-2">
-                <label for="usage_type" class="font-semibold text-sm">Tipo Uso</label>
+                <label id="usage_type_label" class="font-semibold text-sm">Tipo Uso</label>
                 <MultiSelect 
-                  id="usage_type" 
+                  aria-labelledby="usage_type_label" 
                   v-model="profile.usage_type" 
+                  :pt="{ hiddenInput: { name: 'usage_type' } }"
                   :options="usageTypes" 
                   optionLabel="label" 
                   optionValue="value" 
@@ -409,7 +410,7 @@ onMounted(() => {
               </div>
               <div class="flex flex-column gap-2">
                 <label for="avg_km_per_day" class="font-semibold text-sm">Km media giorno</label>
-                <InputNumber id="avg_km_per_day" v-model="profile.avg_km_per_day" placeholder="Km media giorno" class="w-full" />
+                <InputNumber inputId="avg_km_per_day" v-model="profile.avg_km_per_day" placeholder="Km media giorno" class="w-full" />
               </div>
             </div>
             <div class="flex pt-4 justify-content-between border-top-1 border-light">
@@ -427,9 +428,9 @@ onMounted(() => {
           <StepPanel v-slot="{ activateCallback }" value="5">
             <div class="flex flex-column gap-4 py-3 text-left">
               <div class="flex flex-column gap-2">
-                <label for="member_type" class="font-semibold text-sm">Tipo di Quota *</label>
+                <label id="member_type_label" class="font-semibold text-sm">Tipo di Quota *</label>
                 <Select 
-                  id="member_type" 
+                  aria-labelledby="member_type_label" 
                   v-model="profile.member_type" 
                   :options="memberTypes" 
                   optionLabel="label" 
@@ -441,10 +442,10 @@ onMounted(() => {
               </div>
 
               <div class="flex flex-column gap-2 mt-3">
-                <label for="payment_method" class="text-sm">Paga con bonifico, Satispay o Paypal. <a href="https://APS/" target="_blank" >Qui trovi le coordinate.</a></label>
-                <label for="payment_method" class="font-semibold text-sm mt-2">Metodo di Pagamento *</label>
+                <span class="text-sm">Paga con bonifico, Satispay o Paypal. <a href="https://APS/" target="_blank" >Qui trovi le coordinate.</a></span>
+                <label id="payment_method_label" class="font-semibold text-sm mt-2">Metodo di Pagamento *</label>
                 <Select 
-                  id="payment_method" 
+                  aria-labelledby="payment_method_label" 
                   v-model="profile.payment_method" 
                   :options="paymentMethods" 
                   optionLabel="label" 
