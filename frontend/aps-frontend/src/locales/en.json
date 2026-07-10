@@ -1,0 +1,78 @@
+{
+  "nav": {
+    "home": "Home",
+    "profile": "Profile",
+    "dashboard": "Dashboard",
+    "admin": "Admin",
+    "manageGadgets": "Gadgets Management",
+    "gadgetList": "Gadget List",
+    "gadgetStock": "Gadget Movement",
+    "warehouses": "Warehouses"
+  },
+  "common": {
+    "loading": "Loading...",
+    "logout": "Logout",
+    "paymentMethods": {
+      "bankTransfer": "Bank Transfer",
+      "paypal": "PayPal",
+      "satispay": "Satispay",
+      "cash": "Cash",
+      "pos": "POS at events"
+    },
+    "memberTypes": {
+      "standard": "Standard Member (10€)",
+      "supporting": "Supporting Member (30€)"
+    }
+  },
+  "home": {
+    "title": "APS.it Association",
+    "demoWarning": "DEMO Site - do not enter sensitive data",
+    "subtitle": "Join our community. Fill out the digital form and support our social promotion projects.",
+    "loginCard": {
+      "login": "Login",
+      "register": "Register",
+      "email": "Email",
+      "password": "Password",
+      "hasAccount": "Already have an account? Login",
+      "newUser": "New user? Register",
+      "emailCheck": "Check your email to confirm registration!"
+    },
+    "howItWorks": {
+      "title": "How membership works",
+      "step1Title": "Access & Profile",
+      "step1Desc": "Login with Google or register to create your private area.",
+      "step2Title": "Data & Document",
+      "step2Desc": "Fill in your details in the wizard, entering personal data and a valid document.",
+      "step3Title": "Fee & Confirmation",
+      "step3Desc": "Pay the fee with the accepted payment methods and select the amount and method in the request. Valid for 12 months."
+    },
+    "benefits": {
+      "title": "Benefits for our members",
+      "resourceTitle": "Access to Resources",
+      "resourceDesc": "Get immediate access to all tools, educational materials and services provided by the association.",
+      "communityTitle": "Active Community",
+      "communityDesc": "Participate in group events, assemblies and social activities together with other enthusiasts.",
+      "supportTitle": "Social Support",
+      "supportDesc": "Actively participate by proposing initiatives and giving us your support for local volunteer projects."
+    },
+    "statusIncomplete": {
+      "title": "Profile to complete",
+      "desc": "Welcome! To submit your application and get your membership card, you must complete the steps of the registration form.",
+      "btnStart": "Start registration"
+    },
+    "statusPending": {
+      "title": "Request processing",
+      "welcome": "Thanks for submitting your request, {name}!",
+      "desc": "Your registration is awaiting payment verification and formal approval from the board of directors. You will receive a notification email once approved.",
+      "method": "Chosen method:",
+      "status": "Status:",
+      "verifying": "Under Review",
+      "btnEdit": "Edit personal details"
+    },
+    "statusRejected": {
+      "title": "Request rejected",
+      "desc": "Your application to join the association has been rejected.",
+      "info": "For more information, contact the secretary office."
+    }
+  }
+}

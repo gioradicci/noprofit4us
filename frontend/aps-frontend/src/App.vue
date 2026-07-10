@@ -6,12 +6,21 @@ import Button from 'primevue/button'
 import Avatar from 'primevue/avatar'
 import Badge from 'primevue/badge'
 
+import { useI18n } from 'vue-i18n'
+
+const { t, locale } = useI18n()
+
 const isAuthenticated = ref(false)
 const isLoading = ref(true)
 
 import Menubar from 'primevue/menubar'
 
 const backendUser = ref(null)
+
+function changeLanguage(lang) {
+  locale.value = lang
+  localStorage.setItem('lang', lang)
+}
 
 async function loadBackendUser() {
   if (!isAuthenticated.value) return
@@ -71,23 +80,23 @@ const canManageGadgets = computed(() => {
 
 const items = computed(() => {
   const menu = [
-    { label: 'Home', icon: 'pi pi-home', route: '/' },
-    { label: 'Profilo', icon: 'pi pi-id-card', route: '/wizard' }
+    { label: t('nav.home'), icon: 'pi pi-home', route: '/' },
+    { label: t('nav.profile'), icon: 'pi pi-id-card', route: '/wizard' }
   ]
   if (isAdminOrTreasurer.value) {
-    menu.push({ label: 'Dashboard', icon: 'pi pi-chart-bar', route: '/dashboard' })
+    menu.push({ label: t('nav.dashboard'), icon: 'pi pi-chart-bar', route: '/dashboard' })
   }
   if (backendUser.value?.role === 'ADMIN') {
-    menu.push({ label: 'Admin', icon: 'pi pi-cog', route: '/admin' })
+    menu.push({ label: t('nav.admin'), icon: 'pi pi-cog', route: '/admin' })
   }
   if (canManageGadgets.value) {
     menu.push({
-      label: 'Gestione Gadget',
+      label: t('nav.manageGadgets'),
       icon: 'pi pi-box',
       items: [
-        { label: 'Elenco Gadget', icon: 'pi pi-box', route: '/gadgets' },
-        { label: 'Movimentazione gadget', icon: 'pi pi-warehouse', route: '/gadget-stock' },
-        { label: 'Magazzini', icon: 'pi pi-building', route: '/warehouses' }
+        { label: t('nav.gadgetList'), icon: 'pi pi-box', route: '/gadgets' },
+        { label: t('nav.gadgetStock'), icon: 'pi pi-warehouse', route: '/gadget-stock' },
+        { label: t('nav.warehouses'), icon: 'pi pi-building', route: '/warehouses' }
       ]
     })
   }
@@ -130,8 +139,8 @@ async function doLogout() {
   </div>
   
   <div v-else class="app-layout">
-    <!-- Navbar globale visibile solo ad utente autenticato -->
-    <Menubar v-if="isAuthenticated" :model="items" class="py-2 px-4 border-none border-bottom-1 border-light border-round-none shadow-1 mb-0">
+    <!-- Navbar globale -->
+    <Menubar :model="isAuthenticated ? items : []" class="py-2 px-4 border-none border-bottom-1 border-light border-round-none shadow-1 mb-0">
       <template #start>
         <router-link to="/" class="mr-4 flex align-items-center">
           <Image src="/logo.svg" alt="Logo" width="50" />
@@ -152,11 +161,33 @@ async function doLogout() {
       </template>
       <template #end>
         <div class="flex align-items-center gap-2">
-          <div v-if="backendUser" class="flex align-items-center gap-2 mr-2">
-            <Avatar :label="userInitials" shape="circle" style="background-color: #ea580c; color: #ffffff;" class="font-bold" />
-            <div style="font-size: 9px;">{{ userRole }}</div>
+          <!-- Selettore Lingua -->
+          <div class="flex gap-1 mr-3 border-round p-1" style="background-color: var(--code-bg); border: 1px solid var(--border);">
+            <Button 
+              label="IT" 
+              :severity="locale === 'it' ? 'primary' : 'secondary'" 
+              size="small" 
+              text 
+              class="p-1 px-2 text-xs font-bold min-w-0" 
+              @click="changeLanguage('it')"
+            />
+            <Button 
+              label="EN" 
+              :severity="locale === 'en' ? 'primary' : 'secondary'" 
+              size="small" 
+              text 
+              class="p-1 px-2 text-xs font-bold min-w-0" 
+              @click="changeLanguage('en')"
+            />
           </div>
-          <Button label="Logout" icon="pi pi-sign-out" severity="danger" size="small" outlined @click="doLogout" />
+
+          <template v-if="isAuthenticated">
+            <div v-if="backendUser" class="flex align-items-center gap-2 mr-2">
+              <Avatar :label="userInitials" shape="circle" style="background-color: #ea580c; color: #ffffff;" class="font-bold" />
+              <div style="font-size: 9px;">{{ userRole }}</div>
+            </div>
+            <Button :label="t('common.logout')" icon="pi pi-sign-out" severity="danger" size="small" outlined @click="doLogout" />
+          </template>
         </div>
       </template>
     </Menubar>

@@ -1,0 +1,78 @@
+{
+  "nav": {
+    "home": "Home",
+    "profile": "Profilo",
+    "dashboard": "Dashboard",
+    "admin": "Admin",
+    "manageGadgets": "Gestione Gadget",
+    "gadgetList": "Elenco Gadget",
+    "gadgetStock": "Movimentazione gadget",
+    "warehouses": "Magazzini"
+  },
+  "common": {
+    "loading": "Caricamento in corso...",
+    "logout": "Logout",
+    "paymentMethods": {
+      "bankTransfer": "Bonifico Bancario",
+      "paypal": "PayPal",
+      "satispay": "Satispay",
+      "cash": "Contanti",
+      "pos": "POS negli eventi"
+    },
+    "memberTypes": {
+      "standard": "Socio Ordinario (10€)",
+      "supporting": "Socio Sostenitore (30€)"
+    }
+  },
+  "home": {
+    "title": "Associazione APS.it",
+    "demoWarning": "Sito DEMO non inserire dati sensibili",
+    "subtitle": "Entra a far parte della nostra comunità. Compila il modulo digitale e sostieni i nostri progetti di promozione sociale.",
+    "loginCard": {
+      "login": "Accedi",
+      "register": "Registrati",
+      "email": "Email",
+      "password": "Password",
+      "hasAccount": "Hai già un account? Accedi",
+      "newUser": "Nuovo utente? Registrati",
+      "emailCheck": "Controlla la tua email per confermare la registrazione!"
+    },
+    "howItWorks": {
+      "title": "Come funziona l'iscrizione",
+      "step1Title": "Accesso & Profilo",
+      "step1Desc": "Accedi con Google o registrati per creare la tua area riservata.",
+      "step2Title": "Dati & Documento",
+      "step2Desc": "Compila l'anagrafica nel wizard, inserendo dati personali e documento valido.",
+      "step3Title": "Quota & Conferma",
+      "step3Desc": "Paga la quota con i metodi di pagamento previsti e indica l'importo e metodo di pagamento nella richiesta. Validità per 12 mesi."
+    },
+    "benefits": {
+      "title": "I vantaggi per i nostri soci",
+      "resourceTitle": "Accesso Risorse",
+      "resourceDesc": "Ottieni accesso immediato a tutti gli strumenti, materiali didattici e servizi messi a disposizione dall'associazione.",
+      "communityTitle": "Community Attiva",
+      "communityDesc": "Partecipa ad eventi, assemblee ed attività sociali di gruppo insieme ad altri appassionati.",
+      "supportTitle": "Sostegno Sociale",
+      "supportDesc": "Partecipa attivamente proponendo iniziative e regalandoci il tuo supporto per progetti di volontariato sul territorio."
+    },
+    "statusIncomplete": {
+      "title": "Profilo da completare",
+      "desc": "Benvenuto! Per inoltrare la tua candidatura ed ottenere la tessera socio, devi completare i passaggi del modulo di iscrizione.",
+      "btnStart": "Inizia l'iscrizione"
+    },
+    "statusPending": {
+      "title": "Richiesta in elaborazione",
+      "welcome": "Grazie per aver inviato la tua richiesta, {name}!",
+      "desc": "La tua iscrizione è in attesa di verifica del pagamento e dell'approvazione formale da parte del consiglio direttivo. Riceverai una mail di notifica ad approvazione completata.",
+      "method": "Metodo scelto:",
+      "status": "Stato:",
+      "verifying": "In Verifica",
+      "btnEdit": "Modifica dati anagrafici"
+    },
+    "statusRejected": {
+      "title": "Richiesta respinta",
+      "desc": "La tua richiesta di iscrizione all'associazione è stata respinta.",
+      "info": "Per maggiori informazioni scrivere alla segreteria."
+    }
+  }
+}

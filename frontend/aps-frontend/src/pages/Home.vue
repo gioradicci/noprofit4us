@@ -1,10 +1,13 @@
 <script setup>
 import { API_URL } from '../config.js'
-import { ref, onMounted, watch } from 'vue'
+import { ref, onMounted, watch, computed } from 'vue'
 import { supabase } from '../supabase'
 import Button from 'primevue/button'
 import Select from 'primevue/select'
 import InputText from 'primevue/inputtext'
+import { useI18n } from 'vue-i18n'
+
+const { t, locale } = useI18n()
 
 const isAuthenticated = ref(false)
 const isLoading = ref(true)
@@ -34,7 +37,7 @@ async function registerWithEmail() {
     password: password.value
   })
   if (error) authError.value = error.message
-  else authError.value = 'Controlla la tua email per confermare la registrazione!'
+  else authError.value = t('home.loginCard.emailCheck')
   authLoading.value = false
 }
 
@@ -66,12 +69,13 @@ async function loadUser() {
   }
 }
 
-// ✅ Formatta data in formato italiano
+// ✅ Formatta data in base alla lingua attiva
 function formatDate(dateStr) {
   if (!dateStr) return '-'
   try {
     const d = new Date(dateStr)
-    return d.toLocaleDateString('it-IT', { day: '2-digit', month: '2-digit', year: 'numeric' })
+    const activeLocale = locale.value === 'it' ? 'it-IT' : 'en-US'
+    return d.toLocaleDateString(activeLocale, { day: '2-digit', month: '2-digit', year: 'numeric' })
   } catch (e) {
     return dateStr
   }
@@ -95,18 +99,18 @@ onMounted(async () => {
     }
   })
 })
-const memberTypes = ref([
-  { label: "Socio Ordinario (10€)", value: "ORDINARIO" },
-  { label: "Socio Sostenitore (30€)", value: "SOSTENITORE" }
+const memberTypes = computed(() => [
+  { label: t('common.memberTypes.standard'), value: "ORDINARIO" },
+  { label: t('common.memberTypes.supporting'), value: "SOSTENITORE" }
 ])
 const selectedMemberType = ref(null)
 
-const paymentMethods = ref([
-  { label: "Bonifico Bancario", value: "Bonifico Bancario" },
-  { label: "PayPal", value: "PayPal" },
-  { label: "Satispay", value: "Satispay" },
-  { label: "Contanti", value: "Contanti" },
-  { label: "POS negli eventi", value: "POS" }
+const paymentMethods = computed(() => [
+  { label: t('common.paymentMethods.bankTransfer'), value: "Bonifico Bancario" },
+  { label: t('common.paymentMethods.paypal'), value: "PayPal" },
+  { label: t('common.paymentMethods.satispay'), value: "Satispay" },
+  { label: t('common.paymentMethods.cash'), value: "Contanti" },
+  { label: t('common.paymentMethods.pos'), value: "POS" }
 ])
 const selectedPaymentMethod = ref(null)
 const renewing = ref(false)
@@ -179,7 +183,7 @@ function getRoleIcon() {
   <!-- ⏳ Stato Caricamento -->
   <div v-if="isLoading || (isAuthenticated && loadingBackend)" class="flex flex-column align-items-center justify-content-center min-h-30rem gap-3">
     <i class="pi pi-spin pi-spinner text-4xl text-primary"></i>
-    <span class="text-color-secondary text-sm">Caricamento in corso...</span>
+    <span class="text-color-secondary text-sm">{{ t('common.loading') }}</span>
   </div>
 
   <div v-else class="home-container py-5 px-2">
@@ -193,53 +197,53 @@ function getRoleIcon() {
         <div class="mb-3 " >
           <Image src="/logo.svg" alt="Logo" width="100" ></Image>
         </div>
-        <h1 class="text-2xl md:text-3xl font-bold mb-3 mt-0 text-primary-gradient">Associazione APS.it</h1>
-        <h2 class="text-1xl md:text-2xl font-bold mb-3 mt-0 text-primary-gradient">Sito DEMO non inserire dati sensibili</h2>
+        <h1 class="text-2xl md:text-3xl font-bold mb-3 mt-0 text-primary-gradient">{{ t('home.title') }}</h1>
+        <h2 class="text-1xl md:text-2xl font-bold mb-3 mt-0 text-primary-gradient">{{ t('home.demoWarning') }}</h2>
         <p class="text-lg md:text-xl text-color-secondary mb-5 max-w-30rem mx-auto line-height-3">
-          Entra a far parte della nostra comunità. Compila il modulo digitale e sostieni i nostri progetti di promozione sociale.
+          {{ t('home.subtitle') }}
         </p>
         
         <div class="card p-4 mx-auto max-w-20rem mt-4 surface-card border-round shadow-2">
-          <h3 class="mb-3 mt-0 text-center text-color">{{ isRegistering ? 'Registrati' : 'Accedi' }}</h3>
+          <h3 class="mb-3 mt-0 text-center text-color">{{ isRegistering ? t('home.loginCard.register') : t('home.loginCard.login') }}</h3>
           
           <form class="flex flex-column gap-3">
-            <InputText v-model="email" placeholder="Email" type="email" class="w-full" id="email" autocomplete="on"/>
-            <InputText v-model="password" placeholder="Password" type="password" class="w-full" id="password" autocomplete="off"/>
+            <InputText v-model="email" :placeholder="t('home.loginCard.email')" type="email" class="w-full" id="email" autocomplete="on"/>
+            <InputText v-model="password" :placeholder="t('home.loginCard.password')" type="password" class="w-full" id="password" autocomplete="off"/>
             
             <small v-if="authError" class="p-error text-center" style="color: red;">{{ authError }}</small>
             
-            <Button v-if="!isRegistering" label="Accedi" :loading="authLoading" @click="loginWithEmail" class="w-full" />
-            <Button v-if="isRegistering" label="Registrati" :loading="authLoading" @click="registerWithEmail" class="w-full" />
+            <Button v-if="!isRegistering" :label="t('home.loginCard.login')" :loading="authLoading" @click="loginWithEmail" class="w-full" />
+            <Button v-if="isRegistering" :label="t('home.loginCard.register')" :loading="authLoading" @click="registerWithEmail" class="w-full" />
             
-            <Button :label="isRegistering ? 'Hai già un account? Accedi' : 'Nuovo utente? Registrati'" link class="w-full p-0 text-sm" @click="isRegistering = !isRegistering" />
+            <Button :label="isRegistering ? t('home.loginCard.hasAccount') : t('home.loginCard.newUser')" link class="w-full p-0 text-sm" @click="isRegistering = !isRegistering" />
           </form>
         </div>
       </div>
 
       <!-- Sezione Come Funziona -->
       <div class="mb-6" >
-        <h2 class="text-2xl md:text-3xl font-bold text-center mb-5">Come funziona l'iscrizione</h2>
+        <h2 class="text-2xl md:text-3xl font-bold text-center mb-5">{{ t('home.howItWorks.title') }}</h2>
         
         <div class="grid justify-content-center">
           <div class="col-12 md:col-3">
             <div class="step-card p-2 border-round-xl border-1 border-light surface-card text-left h-full">
               <span class="step-num text-3xl font-bold text-primary opacity-50 block mb-3">01</span>
-              <h3 class="font-semibold text-base mb-2">Accesso & Profilo</h3>
-              <p class="text-sm text-color-secondary m-0">Accedi con Google o registrati per creare la tua area riservata.</p>
+              <h3 class="font-semibold text-base mb-2">{{ t('home.howItWorks.step1Title') }}</h3>
+              <p class="text-sm text-color-secondary m-0">{{ t('home.howItWorks.step1Desc') }}</p>
             </div>
           </div>
           <div class="col-12 md:col-3">
             <div class="step-card p-2 border-round-xl border-1 border-light surface-card text-left h-full">
               <span class="step-num text-3xl font-bold text-primary opacity-50 block mb-3">02</span>
-              <h3 class="font-semibold text-base mb-2">Dati & Documento</h3>
-              <p class="text-sm text-color-secondary m-0">Compila l'anagrafica nel wizard, inserendo dati personali e documento valido.</p>
+              <h3 class="font-semibold text-base mb-2">{{ t('home.howItWorks.step2Title') }}</h3>
+              <p class="text-sm text-color-secondary m-0">{{ t('home.howItWorks.step2Desc') }}</p>
             </div>
           </div>
           <div class="col-12 md:col-3">
             <div class="step-card p-2 border-round-xl border-1 border-light surface-card text-left h-full">
               <span class="step-num text-3xl font-bold text-primary opacity-50 block mb-3">03</span>
-              <h3 class="font-semibold text-base mb-2">Quota & Conferma</h3>
-              <p class="text-sm text-color-secondary m-0">Paga la quota con i metodi di pagamento previsti e indica l'importo e metodo di pagamento nella richiesta. Validità per 12 mesi.</p>
+              <h3 class="font-semibold text-base mb-2">{{ t('home.howItWorks.step3Title') }}</h3>
+              <p class="text-sm text-color-secondary m-0">{{ t('home.howItWorks.step3Desc') }}</p>
             </div>
           </div>
         </div>
@@ -247,32 +251,32 @@ function getRoleIcon() {
 
       <!-- Sezione Vantaggi -->
       <div>
-        <h2 class="text-2xl md:text-3xl font-bold text-center mb-5">I vantaggi per i nostri soci</h2>
+        <h2 class="text-2xl md:text-3xl font-bold text-center mb-5">{{ t('home.benefits.title') }}</h2>
         <div class="grid justify-content-center">
           <div class="col-12 md:col-3">
             <div class="benefit-card p-4 border-round-xl border-1 border-light surface-card h-full text-left shadow-1">
               <i class="pi pi-compass text-3xl text-primary mb-3 block"></i>
-              <h3 class="font-bold text-lg mb-2">Accesso Risorse</h3>
+              <h3 class="font-bold text-lg mb-2">{{ t('home.benefits.resourceTitle') }}</h3>
               <p class="text-sm text-color-secondary m-0 leading-relaxed">
-                Ottieni accesso immediato a tutti gli strumenti, materiali didattici e servizi messi a disposizione dall'associazione.
+                {{ t('home.benefits.resourceDesc') }}
               </p>
             </div>
           </div>
           <div class="col-12 md:col-3">
             <div class="benefit-card p-4 border-round-xl border-1 border-light surface-card h-full text-left shadow-1">
               <i class="pi pi-users text-3xl text-primary mb-3 block"></i>
-              <h3 class="font-bold text-lg mb-2">Community Attiva</h3>
+              <h3 class="font-bold text-lg mb-2">{{ t('home.benefits.communityTitle') }}</h3>
               <p class="text-sm text-color-secondary m-0 leading-relaxed">
-                Partecipa ad eventi, assemblee ed attività sociali di gruppo insieme ad altri appassionati.
+                {{ t('home.benefits.communityDesc') }}
               </p>
             </div>
           </div>
           <div class="col-12 md:col-3">
             <div class="benefit-card p-4 border-round-xl border-1 border-light surface-card h-full text-left shadow-1">
               <i class="pi pi-heart text-3xl text-primary mb-3 block"></i>
-              <h3 class="font-bold text-lg mb-2">Sostegno Sociale</h3>
+              <h3 class="font-bold text-lg mb-2">{{ t('home.benefits.supportTitle') }}</h3>
               <p class="text-sm text-color-secondary m-0 leading-relaxed">
-                Partecipa attivamente proponendo iniziative e regalandoci il tuo supporto per progetti di volontariato sul territorio.
+                {{ t('home.benefits.supportDesc') }}
               </p>
             </div>
           </div>
@@ -285,12 +289,12 @@ function getRoleIcon() {
     <div v-else-if="backendUser?.status === 'INCOMPLETE'" class="flex justify-content-center py-5">
       <div class="card p-5 text-center shadow-3 border-round-xl border-top-3 border-warning max-w-30rem surface-card">
         <i class="pi pi-user-plus text-5xl text-warning mb-3 block"></i>
-        <h2 class="text-2xl font-bold mb-2">Profilo da completare</h2>
+        <h2 class="text-2xl font-bold mb-2">{{ t('home.statusIncomplete.title') }}</h2>
         <p class="text-color-secondary mb-4 line-height-3">
-          Benvenuto! Per inoltrare la tua candidatura ed ottenere la tessera socio, devi completare i passaggi del modulo di iscrizione.
+          {{ t('home.statusIncomplete.desc') }}
         </p>
         <router-link to="/wizard">
-          <Button label="Inizia l'iscrizione" icon="pi pi-arrow-right" iconPos="right" size="large" class="w-full" />
+          <Button :label="t('home.statusIncomplete.btnStart')" icon="pi pi-arrow-right" iconPos="right" size="large" class="w-full" />
         </router-link>
       </div>
     </div>
@@ -299,27 +303,27 @@ function getRoleIcon() {
     <div v-else-if="backendUser?.status === 'PENDING'" class="flex justify-content-center py-5">
       <div class="card p-5 text-center shadow-3 border-round-xl border-top-3 border-info max-w-30rem surface-card">
         <i class="pi pi-hourglass text-5xl text-info mb-3 block"></i>
-        <h2 class="text-2xl font-bold mb-2">Richiesta in elaborazione</h2>
+        <h2 class="text-2xl font-bold mb-2">{{ t('home.statusPending.title') }}</h2>
         <p class="text-color-secondary mb-3">
-          Grazie per aver inviato la tua richiesta, <strong>{{ backendUser.first_name }}</strong>!
+          {{ t('home.statusPending.welcome', { name: backendUser.first_name }) }}
         </p>
         <p class="text-color-secondary mb-4 text-sm line-height-3">
-          La tua iscrizione è in attesa di verifica del pagamento e dell'approvazione formale da parte del consiglio direttivo. Riceverai una mail di notifica ad approvazione completata.
+          {{ t('home.statusPending.desc') }}
         </p>
         
         <div class="surface-ground p-3 border-round text-left mb-4 border-1 border-light">
           <div class="flex justify-content-between py-2 border-bottom-1 border-light">
-            <span class="text-xs text-color-secondary font-medium uppercase">Metodo scelto:</span>
+            <span class="text-xs text-color-secondary font-medium uppercase">{{ t('home.statusPending.method') }}</span>
             <span class="font-semibold text-xs">{{ backendUser.payment_method }}</span>
           </div>
           <div class="flex justify-content-between py-2">
-            <span class="text-xs text-color-secondary font-medium uppercase">Stato:</span>
-            <span class="font-semibold text-xs text-info uppercase">In Verifica</span>
+            <span class="text-xs text-color-secondary font-medium uppercase">{{ t('home.statusPending.status') }}</span>
+            <span class="font-semibold text-xs text-info uppercase">{{ t('home.statusPending.verifying') }}</span>
           </div>
         </div>
 
         <router-link to="/wizard">
-          <Button label="Modifica dati anagrafici" icon="pi pi-pencil" severity="secondary" outlined class="w-full" />
+          <Button :label="t('home.statusPending.btnEdit')" icon="pi pi-pencil" severity="secondary" outlined class="w-full" />
         </router-link>
       </div>
     </div>
@@ -328,12 +332,12 @@ function getRoleIcon() {
     <div v-else-if="backendUser?.status === 'REJECTED'" class="flex justify-content-center py-5">
       <div class="card p-5 text-center shadow-3 border-round-xl border-top-3 border-danger max-w-30rem surface-card">
         <i class="pi pi-times-circle text-5xl text-danger mb-3 block"></i>
-        <h2 class="text-2xl font-bold mb-2">Richiesta respinta</h2>
+        <h2 class="text-2xl font-bold mb-2">{{ t('home.statusRejected.title') }}</h2>
         <p class="text-color-secondary mb-4 line-height-3">
-          La tua richiesta di iscrizione all'associazione è stata respinta.
+          {{ t('home.statusRejected.desc') }}
         </p>
         <p class="text-color-secondary text-sm font-medium">
-          Per maggiori informazioni scrivere alla segreteria.
+          {{ t('home.statusRejected.info') }}
         </p>
       </div>
     </div>

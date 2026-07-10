@@ -23,8 +23,7 @@ import ToastService from 'primevue/toastservice';
 import { createApp } from 'vue'
 import App from './App.vue'
 import './style.css'
-
-
+import i18n from './i18n'
 
 const app = createApp(App)
 
@@ -41,6 +40,7 @@ app.component('Toast', Toast)
 
 
 app.use(router)
+app.use(i18n)
 app.use(PrimeVue, {
   theme: {
     preset: Aura
