@@ -3,15 +3,173 @@
     "home": "Home",
     "profile": "Profilo",
     "dashboard": "Dashboard",
-    "admin": "Admin",
-    "manageGadgets": "Gestione Gadget",
-    "gadgetList": "Elenco Gadget",
-    "gadgetStock": "Movimentazione gadget",
-    "warehouses": "Magazzini"
+    "gadgetManagement": "Gestione Gadget",
+    "warehouses": "Magazzini",
+    "gadgetList": "Lista Gadget",
+    "gadgetStock": "Stock Gadget",
+    "wizard": "Iscrizione",
+    "aboutUs": "Chi Siamo",
+    "membership": "Tessere Associative",
+    "login": "Accedi",
+    "register": "Registrati",
+    "logout": "Esci",
+    "language": "Lingua",
+    "admin": "Amministrazione"
   },
-  "common": {
-    "loading": "Caricamento in corso...",
-    "logout": "Logout",
+  "home": {
+    "title": "Benvenuto su NoProfit4Us",
+    "demoWarning": "⚠️ Sito in fase di test - Ambiente dimostrativo",
+    "subtitle": "La piattaforma per la gestione della tua associazione",
+    "description": "Gestisci soci, gadget, tessere associative e molto altro in modo semplice e intuitivo.",
+    "getStarted": "Inizia Ora",
+    "learnMore": "Scopri di Più",
+    "paymentMethods": {
+      "cash": "Contanti",
+      "creditCard": "Carta di Credito",
+      "bankTransfer": "Bonifico Bancario",
+      "paypal": "PayPal",
+      "satispay": "Satispay"
+    },
+    "memberTypes": {
+      "honorary": "Socio Onorario",
+      "ordinary": "Socio Ordinario",
+      "benefactor": "Socio Benemerito",
+      "supporter": "Socio Sostenitore"
+    },
+    "loadingGadgets": "Caricamento gadget in corso...",
+    "viewDetails": "Visualizza Dettagli",
+    "loginCard": {
+      "login": "Accedi",
+      "register": "Registrati",
+      "email": "Email",
+      "password": "Password",
+      "emailCheck": "Controlla la tua email per verificare l'account",
+      "hasAccount": "Hai già un account? Accedi",
+      "newUser": "Nuovo utente? Registrati"
+    },
+    "howItWorks": {
+      "title": "Come Funziona",
+      "step1Title": "Registrati",
+      "step1Desc": "Crea il tuo account in pochi secondi con la tua email.",
+      "step2Title": "Compila il profilo",
+      "step2Desc": "Inserisci i tuoi dati per richiedere l'iscrizione all'associazione.",
+      "step3Title": "Inizia ad usare i servizi",
+      "step3Desc": "Accedi a gadget, magazzino e tutti i servizi riservati ai soci."
+    },
+    "benefits": {
+      "title": "Perché Sceglierci",
+      "resourceTitle": "Risorse Condivise",
+      "resourceDesc": "Gestisci gadget, magazzino e risorse dell'associazione in modo semplice e trasparente.",
+      "communityTitle": "Community Attiva",
+      "communityDesc": "Entra a far parte di una community di appassionati e volontari.",
+      "supportTitle": "Supporto Dedicato",
+      "supportDesc": "Il nostro team è sempre disponibile per aiutarti in ogni fase."
+    },
+    "statusIncomplete": {
+      "title": "Benvenuto!",
+      "desc": "Il tuo account è stato creato, ma devi ancora completare la richiesta di iscrizione. Clicca qui sotto per iniziare.",
+      "btnStart": "Avvia Iscrizione"
+    },
+    "statusPending": {
+      "title": "Iscrizione Inviata",
+      "welcome": "Ciao {name}!",
+      "desc": "La tua richiesta di iscrizione è stata inviata con successo ed è in attesa di approvazione da parte del direttivo. Riceverai una notifica appena sarà stata esaminata.",
+      "method": "Metodo di Pagamento",
+      "status": "Stato",
+      "verifying": "In Verifica",
+      "btnEdit": "Modifica Dati"
+    },
+    "statusRejected": {
+      "title": "Iscrizione Non Approvata",
+      "desc": "La tua richiesta di iscrizione non è stata approvata. Per maggiori informazioni, contatta il direttivo dell'associazione.",
+      "info": "Puoi modificare i tuoi dati e riprovare."
+    }
+  },
+  "login": {
+    "title": "Accedi",
+    "email": "Email",
+    "password": "Password",
+    "loginButton": "Accedi",
+    "forgotPassword": "Password dimenticata?",
+    "noAccount": "Non hai un account?",
+    "registerLink": "Registrati",
+    "error": "Credenziali non valide",
+    "success": "Accesso effettuato con successo",
+    "loading": "Accesso in corso..."
+  },
+  "wizard": {
+    "title": {
+      "newMember": "Iscrizione Nuovo Socio",
+      "memberProfile": "Profilo Socio"
+    },
+    "subtitle": "Inserisci tutti i dettagli richiesti per completare l'anagrafica soci",
+    "steps": {
+      "anagraphics": "Anagrafica",
+      "contacts": "Contatti",
+      "document": "Documento",
+      "profile": "Profilo",
+      "payment": "Pagamento",
+      "complete": "Completa"
+    },
+    "status": {
+      "registrationComplete": "Iscrizione completata",
+      "pendingApproval": "La tua richiesta è in attesa di approvazione da parte del direttivo."
+    },
+    "form": {
+      "firstName": "Nome",
+      "lastName": "Cognome",
+      "taxCode": "Codice Fiscale",
+      "birthDate": "Data di Nascita",
+      "birthPlace": "Luogo di Nascita",
+      "phone": "Telefono",
+      "address": "Indirizzo di Residenza",
+      "city": "Città",
+      "zipCode": "CAP",
+      "province": "Provincia",
+      "municipality": "Comune",
+      "municipio": "Numero Municipio (I - XV)",
+      "documentType": "Tipo Documento",
+      "documentNumber": "Numero Documento",
+      "documentExpiry": "Scadenza Documento",
+      "profession": "Professione",
+      "usageType": "Tipo Uso",
+      "avgKmPerDay": "Km media giorno",
+      "memberType": "Tipo di Quota",
+      "paymentMethod": "Metodo di Pagamento"
+    },
+    "placeholders": {
+      "firstName": "Inserisci il tuo nome",
+      "lastName": "Inserisci il tuo cognome",
+      "taxCode": "Inserisci il codice fiscale",
+      "birthPlace": "Città di nascita",
+      "phone": "Inserisci il numero di telefono",
+      "address": "Via e Numero Civico",
+      "city": "Città",
+      "zipCode": "Codice Avviamento Postale",
+      "province": "Sigla Provincia (es. RM)",
+      "municipality": "Comune",
+      "selectMunicipio": "Seleziona il Municipio",
+      "selectDocument": "Seleziona tipo documento",
+      "documentNumber": "Inserisci il numero del documento",
+      "profession": "La tua professione",
+      "selectUsage": "Seleziona i tipi di uso",
+      "avgKmPerDay": "Km media giorno",
+      "selectMemberType": "Seleziona la quota",
+      "selectPayment": "Seleziona il metodo di pagamento"
+    },
+    "usageTypes": {
+      "homeWork": "Casa/Lavoro",
+      "travel": "Viaggio",
+      "sport": "Sport",
+      "children": "Accompagnare figli",
+      "shopping": "Spesa",
+      "workTool": "Strumento Lavoro"
+    },
+    "documentTypes": {
+      "idCard": "Carta d'Identità",
+      "drivingLicense": "Patente di Guida",
+      "passport": "Passaporto"
+    },
     "paymentMethods": {
       "bankTransfer": "Bonifico Bancario",
       "paypal": "PayPal",
@@ -20,59 +178,373 @@
       "pos": "POS negli eventi"
     },
     "memberTypes": {
-      "standard": "Socio Ordinario (10€)",
-      "supporting": "Socio Sostenitore (30€)"
+      "ordinary": "Socio Ordinario",
+      "supporter": "Socio Sostenitore"
+    },
+    "buttons": {
+      "next": "Avanti",
+      "back": "Indietro",
+      "completeRegistration": "Completa Iscrizione",
+      "updateProfile": "Aggiorna Profilo"
+    },
+    "summary": {
+      "title": "Sintesi dati inseriti",
+      "nameSurname": "Nome e Cognome",
+      "birthInfo": "Data e Luogo Nascita",
+      "residence": "Residenza",
+      "municipio": "Municipio",
+      "expiry": "Scad",
+      "payment": "Quota e Pagamento",
+      "infoMessage": "Inviando la richiesta, la tua candidatura sarà sottoposta ad approvazione del consiglio direttivo."
+    },
+    "paymentInfo": "Paga con bonifico, Satispay o Paypal.",
+    "paymentLink": "Qui trovi le coordinate.",
+    "activeMemberInfo": "Sei un socio attivo. Puoi modificare la quota e il metodo di pagamento solo in fase di iscrizione o rinnovo.",
+    "success": "Successo",
+    "dataSaved": "Dati salvati correttamente",
+    "error": "Errore",
+    "errors": {
+      "saveError": "Errore salvataggio",
+      "generic": "Si è verificato un errore durante il salvataggio"
     }
   },
-  "home": {
-    "title": "Associazione APS.it",
-    "demoWarning": "Sito DEMO non inserire dati sensibili",
-    "subtitle": "Entra a far parte della nostra comunità. Compila il modulo digitale e sostieni i nostri progetti di promozione sociale.",
-    "loginCard": {
-      "login": "Accedi",
-      "register": "Registrati",
-      "email": "Email",
-      "password": "Password",
-      "hasAccount": "Hai già un account? Accedi",
-      "newUser": "Nuovo utente? Registrati",
-      "emailCheck": "Controlla la tua email per confermare la registrazione!"
+  "dashboard": {
+    "title": "Dashboard Soci",
+    "stats": {
+      "total": "Soci totali",
+      "pending": "Soci in attesa",
+      "active": "Soci attivi",
+      "expired": "Soci scaduti"
     },
-    "howItWorks": {
-      "title": "Come funziona l'iscrizione",
-      "step1Title": "Accesso & Profilo",
-      "step1Desc": "Accedi con Google o registrati per creare la tua area riservata.",
-      "step2Title": "Dati & Documento",
-      "step2Desc": "Compila l'anagrafica nel wizard, inserendo dati personali e documento valido.",
-      "step3Title": "Quota & Conferma",
-      "step3Desc": "Paga la quota con i metodi di pagamento previsti e indica l'importo e metodo di pagamento nella richiesta. Validità per 12 mesi."
+    "filters": {
+      "all": "Tutti",
+      "pending": "Attesa accettazione",
+      "active": "Attivi",
+      "expired": "Scaduti"
     },
-    "benefits": {
-      "title": "I vantaggi per i nostri soci",
-      "resourceTitle": "Accesso Risorse",
-      "resourceDesc": "Ottieni accesso immediato a tutti gli strumenti, materiali didattici e servizi messi a disposizione dall'associazione.",
-      "communityTitle": "Community Attiva",
-      "communityDesc": "Partecipa ad eventi, assemblee ed attività sociali di gruppo insieme ad altri appassionati.",
-      "supportTitle": "Sostegno Sociale",
-      "supportDesc": "Partecipa attivamente proponendo iniziative e regalandoci il tuo supporto per progetti di volontariato sul territorio."
+    "buttons": {
+      "export": "Esporta libro soci",
+      "approvePayment": "Conferma Pagamento e registra socio",
+      "reject": "Rifiuta socio",
+      "approveRenewal": "Conferma Pagamento e Rinnova"
     },
-    "statusIncomplete": {
-      "title": "Profilo da completare",
-      "desc": "Benvenuto! Per inoltrare la tua candidatura ed ottenere la tessera socio, devi completare i passaggi del modulo di iscrizione.",
-      "btnStart": "Inizia l'iscrizione"
+    "table": {
+      "cardNumber": "#tessera",
+      "firstName": "Nome",
+      "lastName": "Cognome",
+      "searchFirstName": "Cerca nome",
+      "searchLastName": "Cerca cognome",
+      "status": "Status",
+      "membership": "Membership",
+      "expiry": "Scadenza",
+      "actions": "Azioni",
+      "filter": "Filtra"
     },
-    "statusPending": {
-      "title": "Richiesta in elaborazione",
-      "welcome": "Grazie per aver inviato la tua richiesta, {name}!",
-      "desc": "La tua iscrizione è in attesa di verifica del pagamento e dell'approvazione formale da parte del consiglio direttivo. Riceverai una mail di notifica ad approvazione completata.",
-      "method": "Metodo scelto:",
-      "status": "Stato:",
-      "verifying": "In Verifica",
-      "btnEdit": "Modifica dati anagrafici"
+    "confirmMessages": {
+      "approve": "Vuoi confermare il pagamento e accettare l'iscrizione del socio?",
+      "approveHeader": "Conferma iscrizione socio",
+      "approveAccept": "Il socio ha pagato, accetta l'iscrizione",
+      "renew": "Vuoi confermare il pagamento e accettare il rinnovo del socio?",
+      "renewHeader": "Conferma rinnovo socio",
+      "renewAccept": "Il socio ha pagato, accetta il rinnovo",
+      "reject": "Vuoi rifiutare la richiesta di iscrizione del socio?",
+      "rejectHeader": "Rifiuta iscrizione socio",
+      "rejectAccept": "Rifiuta iscrizione",
+      "cancel": "Annulla"
     },
-    "statusRejected": {
-      "title": "Richiesta respinta",
-      "desc": "La tua richiesta di iscrizione all'associazione è stata respinta.",
-      "info": "Per maggiori informazioni scrivere alla segreteria."
+    "errors": {
+      "exportFailed": "Errore durante l'esportazione",
+      "rejectFailed": "Errore durante il rifiuto dell'utente",
+      "networkError": "Errore di rete durante il rifiuto dell'utente"
+    }
+  },
+  "gadgets": {
+    "title": "Gestione Gadget",
+    "subtitle": "Visualizza, crea e organizza i gadget dell'associazione e le loro varianti",
+    "newGadget": "Nuovo Gadget",
+    "empty": "Nessun gadget presente nel database. Clicca su \"Nuovo Gadget\" per iniziare.",
+    "createButton": "Crea Gadget & Varianti",
+    "categories": {
+      "cap": "Cappellino",
+      "keychain": "Portachiavi",
+      "pin": "Spilla",
+      "sticker": "Adesivo",
+      "bottleOpener": "Apribottiglie",
+      "neckWarmer": "Scaldacollo",
+      "poster": "Poster",
+      "shopper": "Shopper",
+      "bags": "Borse",
+      "other": "Altro"
+    },
+    "models": {
+      "none": "Nessuno / Vuoto",
+      "man": "Uomo",
+      "woman": "Donna",
+      "unisex": "Unisex"
+    },
+    "wizard": {
+      "editTitle": "Modifica Gadget & Caratteristiche",
+      "createTitle": "Nuovo Gadget & Caratteristiche",
+      "step1": "1. Dati Generali",
+      "step2": "2. Varianti & Caratteristiche",
+      "step3": "3. Conferma"
+    },
+    "form": {
+      "name": "Nome Gadget",
+      "category": "Categoria",
+      "minDonation": "Donazione Minima (€)",
+      "description": "Descrizione",
+      "image": "Immagine Gadget",
+      "imageLabel": "Foto Gadget"
+    },
+    "placeholders": {
+      "name": "Es. T-Shirt Ufficiale APS",
+      "description": "Descrizione o dettagli aggiuntivi...",
+      "size": "Es. S, M, L, XL",
+      "color": "Es. Rosso, Blu",
+      "selectModel": "Seleziona Modello",
+      "variantType": "Es. Cotone Bio, Spilla Metallo",
+      "sku": "Lascia vuoto per autogenerare"
+    },
+    "variant": {
+      "add": "Aggiungi Variante",
+      "size": "Taglia (Size)",
+      "color": "Colore",
+      "model": "Modello",
+      "type": "Tipo Variante / Extra",
+      "sku": "SKU (Codice Univoco)",
+      "priceModifier": "Modificatore Prezzo (€)",
+      "image": "Immagine Variante (Opzionale)",
+      "addButton": "Aggiungi Variante",
+      "list": "Varianti ({count})",
+      "empty": "Nessuna variante aggiunta. I gadget semplici possono avere anche una singola variante generica."
+    },
+    "summary": {
+      "editTitle": "Riepilogo Modifiche Gadget",
+      "createTitle": "Riepilogo Nuovo Gadget",
+      "variantsModified": "Varianti modificate",
+      "variantsToCreate": "Varianti da creare",
+      "finalPrice": "Prezzo Finale"
+    },
+    "table": {
+      "image": "Foto",
+      "name": "Nome",
+      "category": "Categoria",
+      "minDonation": "Donazione Min.",
+      "description": "Descrizione",
+      "variants": "Varianti Attive",
+      "totalStock": "Totale Giacenza",
+      "pcs": "pz"
+    },
+    "variantAdded": "Variante Aggiunta",
+    "variantAddedDesc": "Variante aggiunta alla lista temporanea",
+    "editSuccess": "Gadget e varianti modificati con successo",
+    "createSuccess": "Gadget e varianti creati con successo",
+    "deleteBlocked": "Eliminazione Bloccata",
+    "confirmDeleteMessage": "Sei sicuro di voler eliminare il gadget \"{name}\" e tutte le sue varianti?",
+    "confirmDeleteHeader": "Conferma Eliminazione",
+    "confirmDeleteAccept": "Sì, elimina",
+    "deleteSuccess": "Gadget eliminato con successo",
+    "lock": {
+      "denied": "Accesso Negato",
+      "inUse": "Articolo in modifica da un altro utente",
+      "failed": "Impossibile acquisire il blocco per la modifica"
+    },
+    "errors": {
+      "loadFailed": "Errore nel caricamento dei gadget",
+      "connectionFailed": "Impossibile connettersi al server",
+      "cannotDeleteVariant": "Impossibile eliminare la variante SKU: {sku} poiché ha {stock} pezzi in magazzino.",
+      "cannotDeleteWithStock": "Impossibile eliminare \"{name}\" perché ci sono ancora pezzi in magazzino.",
+      "updateFailed": "Errore durante la modifica del gadget",
+      "variantUpdateFailed": "Errore durante l'aggiornamento delle varianti",
+      "createFailed": "Errore durante la creazione del gadget",
+      "variantCreateFailed": "Impossibile creare la variante con SKU: {sku}",
+      "generic": "Si è verificato un errore",
+      "deleteFailed": "Impossibile eliminare il gadget"
+    }
+  },
+  "gadgetStock": {
+    "title": "Gestione Magazzino",
+    "subtitle": "Movimentazione dei gadget, tracciamento stock e storico delle operazioni",
+    "exportInventory": "Esporta Inventario",
+    "registerMovement": "Registra Movimento",
+    "totalStockPieces": "Pezzi Totali Stock",
+    "registeredMovements": "Movimenti Registrati",
+    "activeWarehouses": "Magazzini Attivi",
+    "stocksPerVariant": "Giacenze per Variante",
+    "movementHistory": "Storico Movimenti",
+    "noData": "Nessun gadget o variante caricata nel database.",
+    "noMovements": "Nessun movimento registrato.",
+    "allTypes": "Tutti i tipi",
+    "stock": "Stock",
+    "pcs": "pz",
+    "disabled": "DISATTIVATO",
+    "size": "Taglia",
+    "color": "Colore",
+    "model": "Modello",
+    "selectVariant": "Seleziona una variante...",
+    "uniqueVariant": "Variante Unica",
+    "photo": "Foto",
+    "gadget": "Gadget",
+    "variantDetails": "Dettagli Variante",
+    "category": "Categoria",
+    "sku": "SKU",
+    "totalStock": "Totale Giacenza",
+    "dateTime": "Data e Ora",
+    "type": "Tipo",
+    "path": "Percorso",
+    "external": "Esterno",
+    "deliveredToMember": "Socio (Consegnato)",
+    "quantity": "Quantità",
+    "notes": "Note",
+    "searchGadget": "Cerca gadget...",
+    "searchDetails": "Cerca dettagli...",
+    "searchCategory": "Cerca categoria...",
+    "searchSku": "Cerca SKU...",
+    "searchNotes": "Cerca note...",
+    "filterType": "Filtra tipo",
+    "movementTypes": {
+      "restock": "Rifornimento (RESTOCK)",
+      "transfer": "Trasferimento (TRANSFER)",
+      "delivery": "Consegna a socio (DELIVERY)"
+    },
+    "movementDialogTitle": "Registra Movimento Magazzino",
+    "exported": "Esportato",
+    "exportSuccess": "Inventario esportato con successo",
+    "registered": "Registrato",
+    "movementSuccess": "Movimento di magazzino registrato con successo",
+    "form": {
+      "gadget": "Gadget",
+      "selectGadget": "Seleziona Gadget",
+      "variant": "Variante",
+      "selectVariant": "Seleziona Variante",
+      "selectedItem": "Articolo Selezionato",
+      "movementType": "Tipo Movimento",
+      "sourceWarehouse": "Magazzino Origine",
+      "destinationWarehouse": "Magazzino Destinazione",
+      "selectSource": "Seleziona Origine",
+      "selectDestination": "Seleziona Destinazione",
+      "selectVariantFirst": "Seleziona prima una variante",
+      "quantity": "Quantità",
+      "quantityPlaceholder": "Quantità",
+      "notes": "Note",
+      "notesPlaceholder": "Eventuali annotazioni...",
+      "register": "Registra"
+    },
+    "errors": {
+      "loadFailed": "Errore nel caricamento dei dati",
+      "requiredFields": "Compila tutti i campi obbligatori",
+      "selectBothWarehouses": "Seleziona sia il magazzino di origine che di destinazione",
+      "differentWarehouses": "Il magazzino di origine e destinazione devono essere differenti",
+      "selectDestination": "Seleziona il magazzino di destinazione",
+      "selectSource": "Seleziona il magazzino di origine",
+      "insufficientStock": "Stock Insufficiente",
+      "insufficientStockDetail": "Il magazzino selezionato ha solo {stock} unità di questa variante",
+      "movementFailed": "Impossibile registrare il movimento",
+      "connectionFailed": "Errore di connessione",
+      "exportFailed": "Errore durante l'esportazione dell'inventario"
+    }
+  },
+  "warehouses": {
+    "title": "Gestione Magazzini",
+    "subtitle": "Crea, modifica e gestisci i magazzini dell'associazione",
+    "newWarehouse": "Nuovo Magazzino",
+    "editWarehouse": "Modifica Magazzino",
+    "empty": "Nessun magazzino presente. Clicca su \"Nuovo Magazzino\" per iniziare.",
+    "name": "Nome",
+    "code": "Codice",
+    "address": "Indirizzo",
+    "active": "Attivo",
+    "inactive": "Disattivato",
+    "activated": "Magazzino attivato con successo",
+    "deactivated": "Magazzino disattivato con successo",
+    "createSuccess": "Magazzino creato con successo",
+    "editSuccess": "Magazzino modificato con successo",
+    "form": {
+      "name": "Nome Magazzino",
+      "code": "Codice Magazzino",
+      "address": "Indirizzo",
+      "active": "Magazzino Attivo"
+    },
+    "placeholders": {
+      "name": "Es. Magazzino Centrale",
+      "code": "Es. WH-001",
+      "address": "Via Roma 1, Milano"
+    },
+    "errors": {
+      "loadFailed": "Errore nel caricamento dei magazzini",
+      "connectionFailed": "Errore di connessione",
+      "requiredFields": "Nome e codice sono obbligatori",
+      "saveFailed": "Errore durante il salvataggio",
+      "toggleFailed": "Errore durante la modifica dello stato"
+    }
+  },
+  "admin": {
+    "title": "Gestione Ruoli & Permessi",
+    "subtitle": "Visualizza l'elenco degli utenti registrati e gestisci i ruoli per l'applicazione.",
+    "refresh": "Aggiorna",
+    "searchPlaceholder": "Cerca per email, nome, ruolo...",
+    "pageReport": "Mostrati {first} a {last} di {totalRecords} utenti",
+    "noUsers": "Nessun utente trovato.",
+    "you": "Tu",
+    "email": "Email",
+    "nameSurname": "Nome e Cognome",
+    "phone": "Telefono",
+    "role": "Ruolo Applicazione",
+    "selectRole": "Seleziona ruolo",
+    "saveChanges": "Salva modifiche",
+    "cancelChanges": "Annulla modifiche",
+    "profileNotComplete": "Profilo non compilato",
+    "roleUpdated": "Ruolo Aggiornato",
+    "roleUpdatedDetail": "Impostato ruolo {role} per {email}",
+    "updateFailed": "Aggiornamento Fallito",
+    "confirmMessage": "Sei sicuro di voler cambiare il ruolo di {email} da {fromRole} a {toRole}?",
+    "confirmHeader": "Conferma Cambio Ruolo",
+    "roles": {
+      "user": "Utente (USER)",
+      "member": "Socio (MEMBER)",
+      "secretary": "Segretario (SECRETARY)",
+      "treasurer": "Tesoriere (TREASURER)",
+      "admin": "Amministratore (ADMIN)"
+    },
+    "errors": {
+      "loadFailed": "Impossibile caricare gli utenti",
+      "connectionFailed": "Errore di connessione al server",
+      "updateFailed": "Impossibile modificare il ruolo"
+    }
+  },
+  "common": {
+    "loading": "Caricamento in corso...",
+    "error": "Si è verificato un errore",
+    "success": "Operazione completata",
+    "warning": "Attenzione",
+    "save": "Salva",
+    "cancel": "Annulla",
+    "confirm": "Conferma",
+    "delete": "Elimina",
+    "edit": "Modifica",
+    "view": "Visualizza",
+    "search": "Cerca",
+    "next": "Avanti",
+    "back": "Indietro",
+    "noResults": "Nessun risultato trovato",
+    "close": "Chiudi",
+    "required": "Campo obbligatorio",
+    "invalidEmail": "Email non valida",
+    "minLength": "Lunghezza minima: {min} caratteri",
+    "maxLength": "Lunghezza massima: {max} caratteri",
+    "deleted": "Eliminato",
+    "actions": "Azioni",
+    "memberTypes": {
+      "standard": "Socio Ordinario",
+      "supporting": "Socio Sostenitore"
+    },
+    "paymentMethods": {
+      "bankTransfer": "Bonifico Bancario",
+      "paypal": "PayPal",
+      "satispay": "Satispay",
+      "cash": "Contanti",
+      "pos": "POS"
     }
   }
 }

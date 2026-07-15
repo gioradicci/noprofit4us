@@ -10,3 +10,5 @@ def get_members(user=Depends(get_current_user)):
     
     #TODO add list of members
     return []
+
+

@@ -3,15 +3,173 @@
     "home": "Home",
     "profile": "Profile",
     "dashboard": "Dashboard",
-    "admin": "Admin",
-    "manageGadgets": "Gadgets Management",
+    "gadgetManagement": "Gadget Management",
+    "warehouses": "Warehouses",
     "gadgetList": "Gadget List",
-    "gadgetStock": "Gadget Movement",
-    "warehouses": "Warehouses"
-  },
-  "common": {
-    "loading": "Loading...",
+    "gadgetStock": "Gadget Stock",
+    "wizard": "Registration",
+    "aboutUs": "About Us",
+    "membership": "Memberships",
+    "login": "Login",
+    "register": "Register",
     "logout": "Logout",
+    "language": "Language",
+    "admin": "Administration"
+  },
+  "home": {
+    "title": "Welcome to NoProfit4Us",
+    "demoWarning": "⚠️ Site under testing - Demo environment",
+    "subtitle": "The platform for managing your association",
+    "description": "Manage members, gadgets, membership cards and much more simply and intuitively.",
+    "getStarted": "Get Started",
+    "learnMore": "Learn More",
+    "paymentMethods": {
+      "cash": "Cash",
+      "creditCard": "Credit Card",
+      "bankTransfer": "Bank Transfer",
+      "paypal": "PayPal",
+      "satispay": "Satispay"
+    },
+    "memberTypes": {
+      "honorary": "Honorary Member",
+      "ordinary": "Ordinary Member",
+      "benefactor": "Benefactor Member",
+      "supporter": "Supporter Member"
+    },
+    "loadingGadgets": "Loading gadgets...",
+    "viewDetails": "View Details",
+    "loginCard": {
+      "login": "Login",
+      "register": "Register",
+      "email": "Email",
+      "password": "Password",
+      "emailCheck": "Check your email to verify your account",
+      "hasAccount": "Already have an account? Login",
+      "newUser": "New user? Register"
+    },
+    "howItWorks": {
+      "title": "How It Works",
+      "step1Title": "Register",
+      "step1Desc": "Create your account in seconds with your email.",
+      "step2Title": "Complete your profile",
+      "step2Desc": "Enter your details to request association membership.",
+      "step3Title": "Start using services",
+      "step3Desc": "Access gadgets, warehouse and all member services."
+    },
+    "benefits": {
+      "title": "Why Choose Us",
+      "resourceTitle": "Shared Resources",
+      "resourceDesc": "Manage gadgets, warehouse and association resources simply and transparently.",
+      "communityTitle": "Active Community",
+      "communityDesc": "Join a community of enthusiasts and volunteers.",
+      "supportTitle": "Dedicated Support",
+      "supportDesc": "Our team is always available to help you at every stage."
+    },
+    "statusIncomplete": {
+      "title": "Welcome!",
+      "desc": "Your account has been created, but you still need to complete the membership request. Click below to start.",
+      "btnStart": "Start Registration"
+    },
+    "statusPending": {
+      "title": "Registration Submitted",
+      "welcome": "Hello {name}!",
+      "desc": "Your membership request has been submitted successfully and is pending approval from the board. You will receive a notification once it has been reviewed.",
+      "method": "Payment Method",
+      "status": "Status",
+      "verifying": "Verifying",
+      "btnEdit": "Edit Data"
+    },
+    "statusRejected": {
+      "title": "Membership Not Approved",
+      "desc": "Your membership request has not been approved. For more information, contact the association board.",
+      "info": "You can edit your data and try again."
+    }
+  },
+  "login": {
+    "title": "Login",
+    "email": "Email",
+    "password": "Password",
+    "loginButton": "Login",
+    "forgotPassword": "Forgot password?",
+    "noAccount": "Don't have an account?",
+    "registerLink": "Register",
+    "error": "Invalid credentials",
+    "success": "Login successful",
+    "loading": "Logging in..."
+  },
+  "wizard": {
+    "title": {
+      "newMember": "New Member Registration",
+      "memberProfile": "Member Profile"
+    },
+    "subtitle": "Enter all required details to complete the member registry",
+    "steps": {
+      "anagraphics": "Personal Info",
+      "contacts": "Contacts",
+      "document": "Document",
+      "profile": "Profile",
+      "payment": "Payment",
+      "complete": "Complete"
+    },
+    "status": {
+      "registrationComplete": "Registration Complete",
+      "pendingApproval": "Your request is pending approval from the board."
+    },
+    "form": {
+      "firstName": "First Name",
+      "lastName": "Last Name",
+      "taxCode": "Tax Code",
+      "birthDate": "Date of Birth",
+      "birthPlace": "Place of Birth",
+      "phone": "Phone",
+      "address": "Residence Address",
+      "city": "City",
+      "zipCode": "ZIP Code",
+      "province": "Province",
+      "municipality": "Municipality",
+      "municipio": "Municipio Number (I - XV)",
+      "documentType": "Document Type",
+      "documentNumber": "Document Number",
+      "documentExpiry": "Document Expiry",
+      "profession": "Profession",
+      "usageType": "Usage Type",
+      "avgKmPerDay": "Avg km per day",
+      "memberType": "Membership Type",
+      "paymentMethod": "Payment Method"
+    },
+    "placeholders": {
+      "firstName": "Enter your first name",
+      "lastName": "Enter your last name",
+      "taxCode": "Enter your tax code",
+      "birthPlace": "City of birth",
+      "phone": "Enter your phone number",
+      "address": "Street and Number",
+      "city": "City",
+      "zipCode": "Postal Code",
+      "province": "Province code (e.g. RM)",
+      "municipality": "Municipality",
+      "selectMunicipio": "Select the Municipio",
+      "selectDocument": "Select document type",
+      "documentNumber": "Enter document number",
+      "profession": "Your profession",
+      "selectUsage": "Select usage types",
+      "avgKmPerDay": "Avg km per day",
+      "selectMemberType": "Select membership type",
+      "selectPayment": "Select payment method"
+    },
+    "usageTypes": {
+      "homeWork": "Home/Work",
+      "travel": "Travel",
+      "sport": "Sport",
+      "children": "Accompany children",
+      "shopping": "Shopping",
+      "workTool": "Work Tool"
+    },
+    "documentTypes": {
+      "idCard": "ID Card",
+      "drivingLicense": "Driver's License",
+      "passport": "Passport"
+    },
     "paymentMethods": {
       "bankTransfer": "Bank Transfer",
       "paypal": "PayPal",
@@ -20,59 +178,373 @@
       "pos": "POS at events"
     },
     "memberTypes": {
-      "standard": "Standard Member (10€)",
-      "supporting": "Supporting Member (30€)"
+      "ordinary": "Ordinary Member",
+      "supporter": "Supporter Member"
+    },
+    "buttons": {
+      "next": "Next",
+      "back": "Back",
+      "completeRegistration": "Complete Registration",
+      "updateProfile": "Update Profile"
+    },
+    "summary": {
+      "title": "Data Summary",
+      "nameSurname": "Name and Surname",
+      "birthInfo": "Date and Place of Birth",
+      "residence": "Residence",
+      "municipio": "Municipio",
+      "expiry": "Exp",
+      "payment": "Fee and Payment",
+      "infoMessage": "By submitting the request, your application will be subject to approval by the board of directors."
+    },
+    "paymentInfo": "Pay by bank transfer, Satispay or Paypal.",
+    "paymentLink": "Find payment details here.",
+    "activeMemberInfo": "You are an active member. You can modify the fee and payment method only during registration or renewal.",
+    "success": "Success",
+    "dataSaved": "Data saved successfully",
+    "error": "Error",
+    "errors": {
+      "saveError": "Save error",
+      "generic": "An error occurred while saving"
     }
   },
-  "home": {
-    "title": "APS.it Association",
-    "demoWarning": "DEMO Site - do not enter sensitive data",
-    "subtitle": "Join our community. Fill out the digital form and support our social promotion projects.",
-    "loginCard": {
-      "login": "Login",
-      "register": "Register",
-      "email": "Email",
-      "password": "Password",
-      "hasAccount": "Already have an account? Login",
-      "newUser": "New user? Register",
-      "emailCheck": "Check your email to confirm registration!"
+  "dashboard": {
+    "title": "Members Dashboard",
+    "stats": {
+      "total": "Total Members",
+      "pending": "Pending",
+      "active": "Active",
+      "expired": "Expired"
     },
-    "howItWorks": {
-      "title": "How membership works",
-      "step1Title": "Access & Profile",
-      "step1Desc": "Login with Google or register to create your private area.",
-      "step2Title": "Data & Document",
-      "step2Desc": "Fill in your details in the wizard, entering personal data and a valid document.",
-      "step3Title": "Fee & Confirmation",
-      "step3Desc": "Pay the fee with the accepted payment methods and select the amount and method in the request. Valid for 12 months."
+    "filters": {
+      "all": "All",
+      "pending": "Pending Approval",
+      "active": "Active",
+      "expired": "Expired"
     },
-    "benefits": {
-      "title": "Benefits for our members",
-      "resourceTitle": "Access to Resources",
-      "resourceDesc": "Get immediate access to all tools, educational materials and services provided by the association.",
-      "communityTitle": "Active Community",
-      "communityDesc": "Participate in group events, assemblies and social activities together with other enthusiasts.",
-      "supportTitle": "Social Support",
-      "supportDesc": "Actively participate by proposing initiatives and giving us your support for local volunteer projects."
+    "buttons": {
+      "export": "Export Members List",
+      "approvePayment": "Confirm Payment & Register Member",
+      "reject": "Reject Member",
+      "approveRenewal": "Confirm Payment & Renew"
     },
-    "statusIncomplete": {
-      "title": "Profile to complete",
-      "desc": "Welcome! To submit your application and get your membership card, you must complete the steps of the registration form.",
-      "btnStart": "Start registration"
+    "table": {
+      "cardNumber": "#card",
+      "firstName": "First Name",
+      "lastName": "Last Name",
+      "searchFirstName": "Search first name",
+      "searchLastName": "Search last name",
+      "status": "Status",
+      "membership": "Membership",
+      "expiry": "Expiry",
+      "actions": "Actions",
+      "filter": "Filter"
     },
-    "statusPending": {
-      "title": "Request processing",
-      "welcome": "Thanks for submitting your request, {name}!",
-      "desc": "Your registration is awaiting payment verification and formal approval from the board of directors. You will receive a notification email once approved.",
-      "method": "Chosen method:",
-      "status": "Status:",
-      "verifying": "Under Review",
-      "btnEdit": "Edit personal details"
+    "confirmMessages": {
+      "approve": "Do you want to confirm the payment and accept the member registration?",
+      "approveHeader": "Confirm member registration",
+      "approveAccept": "Member has paid, accept registration",
+      "renew": "Do you want to confirm the payment and accept the member renewal?",
+      "renewHeader": "Confirm member renewal",
+      "renewAccept": "Member has paid, accept renewal",
+      "reject": "Do you want to reject the member registration request?",
+      "rejectHeader": "Reject member registration",
+      "rejectAccept": "Reject registration",
+      "cancel": "Cancel"
     },
-    "statusRejected": {
-      "title": "Request rejected",
-      "desc": "Your application to join the association has been rejected.",
-      "info": "For more information, contact the secretary office."
+    "errors": {
+      "exportFailed": "Export error",
+      "rejectFailed": "Error rejecting user",
+      "networkError": "Network error while rejecting user"
+    }
+  },
+  "gadgets": {
+    "title": "Gadget Management",
+    "subtitle": "View, create and organize association gadgets and their variants",
+    "newGadget": "New Gadget",
+    "empty": "No gadgets in database. Click \"New Gadget\" to start.",
+    "createButton": "Create Gadget & Variants",
+    "categories": {
+      "cap": "Cap",
+      "keychain": "Keychain",
+      "pin": "Pin",
+      "sticker": "Sticker",
+      "bottleOpener": "Bottle Opener",
+      "neckWarmer": "Neck Warmer",
+      "poster": "Poster",
+      "shopper": "Shopper Bag",
+      "bags": "Bags",
+      "other": "Other"
+    },
+    "models": {
+      "none": "None / Empty",
+      "man": "Men",
+      "woman": "Women",
+      "unisex": "Unisex"
+    },
+    "wizard": {
+      "editTitle": "Edit Gadget & Features",
+      "createTitle": "New Gadget & Features",
+      "step1": "1. General Info",
+      "step2": "2. Variants & Features",
+      "step3": "3. Confirmation"
+    },
+    "form": {
+      "name": "Gadget Name",
+      "category": "Category",
+      "minDonation": "Minimum Donation (€)",
+      "description": "Description",
+      "image": "Gadget Image",
+      "imageLabel": "Gadget Photo"
+    },
+    "placeholders": {
+      "name": "e.g. Official APS T-Shirt",
+      "description": "Description or additional details...",
+      "size": "e.g. S, M, L, XL",
+      "color": "e.g. Red, Blue",
+      "selectModel": "Select Model",
+      "variantType": "e.g. Organic Cotton, Metal Pin",
+      "sku": "Leave empty to auto-generate"
+    },
+    "variant": {
+      "add": "Add Variant",
+      "size": "Size",
+      "color": "Color",
+      "model": "Model",
+      "type": "Variant Type / Extra",
+      "sku": "SKU (Unique Code)",
+      "priceModifier": "Price Modifier (€)",
+      "image": "Variant Image (Optional)",
+      "addButton": "Add Variant",
+      "list": "Variants ({count})",
+      "empty": "No variants added. Simple gadgets can have a single generic variant."
+    },
+    "summary": {
+      "editTitle": "Gadget Edit Summary",
+      "createTitle": "New Gadget Summary",
+      "variantsModified": "Modified Variants",
+      "variantsToCreate": "Variants to Create",
+      "finalPrice": "Final Price"
+    },
+    "table": {
+      "image": "Photo",
+      "name": "Name",
+      "category": "Category",
+      "minDonation": "Min. Donation",
+      "description": "Description",
+      "variants": "Active Variants",
+      "totalStock": "Total Stock",
+      "pcs": "pcs"
+    },
+    "variantAdded": "Variant Added",
+    "variantAddedDesc": "Variant added to temporary list",
+    "editSuccess": "Gadget and variants updated successfully",
+    "createSuccess": "Gadget and variants created successfully",
+    "deleteBlocked": "Deletion Blocked",
+    "confirmDeleteMessage": "Are you sure you want to delete the gadget \"{name}\" and all its variants?",
+    "confirmDeleteHeader": "Confirm Deletion",
+    "confirmDeleteAccept": "Yes, delete",
+    "deleteSuccess": "Gadget deleted successfully",
+    "lock": {
+      "denied": "Access Denied",
+      "inUse": "Item being edited by another user",
+      "failed": "Unable to acquire lock for editing"
+    },
+    "errors": {
+      "loadFailed": "Error loading gadgets",
+      "connectionFailed": "Unable to connect to server",
+      "cannotDeleteVariant": "Cannot delete variant SKU: {sku} as it has {stock} pieces in stock.",
+      "cannotDeleteWithStock": "Cannot delete \"{name}\" because there are still pieces in stock.",
+      "updateFailed": "Error updating gadget",
+      "variantUpdateFailed": "Error updating variants",
+      "createFailed": "Error creating gadget",
+      "variantCreateFailed": "Could not create variant with SKU: {sku}",
+      "generic": "An error occurred",
+      "deleteFailed": "Could not delete gadget"
+    }
+  },
+  "gadgetStock": {
+    "title": "Warehouse Management",
+    "subtitle": "Track gadget movements, stock levels and operation history",
+    "exportInventory": "Export Inventory",
+    "registerMovement": "Register Movement",
+    "totalStockPieces": "Total Stock Pieces",
+    "registeredMovements": "Registered Movements",
+    "activeWarehouses": "Active Warehouses",
+    "stocksPerVariant": "Stock per Variant",
+    "movementHistory": "Movement History",
+    "noData": "No gadgets or variants loaded in database.",
+    "noMovements": "No movements recorded.",
+    "allTypes": "All types",
+    "stock": "Stock",
+    "pcs": "pcs",
+    "disabled": "DISABLED",
+    "size": "Size",
+    "color": "Color",
+    "model": "Model",
+    "selectVariant": "Select a variant...",
+    "uniqueVariant": "Unique Variant",
+    "photo": "Photo",
+    "gadget": "Gadget",
+    "variantDetails": "Variant Details",
+    "category": "Category",
+    "sku": "SKU",
+    "totalStock": "Total Stock",
+    "dateTime": "Date and Time",
+    "type": "Type",
+    "path": "Path",
+    "external": "External",
+    "deliveredToMember": "Member (Delivered)",
+    "quantity": "Quantity",
+    "notes": "Notes",
+    "searchGadget": "Search gadget...",
+    "searchDetails": "Search details...",
+    "searchCategory": "Search category...",
+    "searchSku": "Search SKU...",
+    "searchNotes": "Search notes...",
+    "filterType": "Filter type",
+    "movementTypes": {
+      "restock": "Restock (RESTOCK)",
+      "transfer": "Transfer (TRANSFER)",
+      "delivery": "Delivery to member (DELIVERY)"
+    },
+    "movementDialogTitle": "Register Warehouse Movement",
+    "exported": "Exported",
+    "exportSuccess": "Inventory exported successfully",
+    "registered": "Registered",
+    "movementSuccess": "Warehouse movement registered successfully",
+    "form": {
+      "gadget": "Gadget",
+      "selectGadget": "Select Gadget",
+      "variant": "Variant",
+      "selectVariant": "Select Variant",
+      "selectedItem": "Selected Item",
+      "movementType": "Movement Type",
+      "sourceWarehouse": "Source Warehouse",
+      "destinationWarehouse": "Destination Warehouse",
+      "selectSource": "Select Source",
+      "selectDestination": "Select Destination",
+      "selectVariantFirst": "Select a variant first",
+      "quantity": "Quantity",
+      "quantityPlaceholder": "Quantity",
+      "notes": "Notes",
+      "notesPlaceholder": "Any notes...",
+      "register": "Register"
+    },
+    "errors": {
+      "loadFailed": "Error loading data",
+      "requiredFields": "Fill in all required fields",
+      "selectBothWarehouses": "Select both source and destination warehouses",
+      "differentWarehouses": "Source and destination warehouses must be different",
+      "selectDestination": "Select destination warehouse",
+      "selectSource": "Select source warehouse",
+      "insufficientStock": "Insufficient Stock",
+      "insufficientStockDetail": "The selected warehouse has only {stock} units of this variant",
+      "movementFailed": "Unable to register movement",
+      "connectionFailed": "Connection error",
+      "exportFailed": "Error exporting inventory"
+    }
+  },
+  "warehouses": {
+    "title": "Warehouse Management",
+    "subtitle": "Create, edit and manage association warehouses",
+    "newWarehouse": "New Warehouse",
+    "editWarehouse": "Edit Warehouse",
+    "empty": "No warehouses. Click \"New Warehouse\" to start.",
+    "name": "Name",
+    "code": "Code",
+    "address": "Address",
+    "active": "Active",
+    "inactive": "Inactive",
+    "activated": "Warehouse activated successfully",
+    "deactivated": "Warehouse deactivated successfully",
+    "createSuccess": "Warehouse created successfully",
+    "editSuccess": "Warehouse updated successfully",
+    "form": {
+      "name": "Warehouse Name",
+      "code": "Warehouse Code",
+      "address": "Address",
+      "active": "Active Warehouse"
+    },
+    "placeholders": {
+      "name": "e.g. Main Warehouse",
+      "code": "e.g. WH-001",
+      "address": "Via Roma 1, Milan"
+    },
+    "errors": {
+      "loadFailed": "Error loading warehouses",
+      "connectionFailed": "Connection error",
+      "requiredFields": "Name and code are required",
+      "saveFailed": "Error saving warehouse",
+      "toggleFailed": "Error changing warehouse status"
+    }
+  },
+  "admin": {
+    "title": "Roles & Permissions Management",
+    "subtitle": "View registered users and manage application roles.",
+    "refresh": "Refresh",
+    "searchPlaceholder": "Search by email, name, role...",
+    "pageReport": "Showing {first} to {last} of {totalRecords} users",
+    "noUsers": "No users found.",
+    "you": "You",
+    "email": "Email",
+    "nameSurname": "Name and Surname",
+    "phone": "Phone",
+    "role": "Application Role",
+    "selectRole": "Select role",
+    "saveChanges": "Save changes",
+    "cancelChanges": "Cancel changes",
+    "profileNotComplete": "Profile not completed",
+    "roleUpdated": "Role Updated",
+    "roleUpdatedDetail": "Set role {role} for {email}",
+    "updateFailed": "Update Failed",
+    "confirmMessage": "Are you sure you want to change the role of {email} from {fromRole} to {toRole}?",
+    "confirmHeader": "Confirm Role Change",
+    "roles": {
+      "user": "User (USER)",
+      "member": "Member (MEMBER)",
+      "secretary": "Secretary (SECRETARY)",
+      "treasurer": "Treasurer (TREASURER)",
+      "admin": "Administrator (ADMIN)"
+    },
+    "errors": {
+      "loadFailed": "Unable to load users",
+      "connectionFailed": "Server connection error",
+      "updateFailed": "Unable to change role"
+    }
+  },
+  "common": {
+    "loading": "Loading...",
+    "error": "An error occurred",
+    "success": "Operation completed",
+    "warning": "Warning",
+    "save": "Save",
+    "cancel": "Cancel",
+    "confirm": "Confirm",
+    "delete": "Delete",
+    "edit": "Edit",
+    "view": "View",
+    "search": "Search",
+    "next": "Next",
+    "back": "Back",
+    "noResults": "No results found",
+    "close": "Close",
+    "required": "Required field",
+    "invalidEmail": "Invalid email",
+    "minLength": "Minimum length: {min} characters",
+    "maxLength": "Maximum length: {max} characters",
+    "deleted": "Deleted",
+    "actions": "Actions",
+    "memberTypes": {
+      "standard": "Ordinary Member",
+      "supporting": "Supporter Member"
+    },
+    "paymentMethods": {
+      "bankTransfer": "Bank Transfer",
+      "paypal": "PayPal",
+      "satispay": "Satispay",
+      "cash": "Cash",
+      "pos": "POS"
     }
   }
 }

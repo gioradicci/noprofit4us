@@ -5,14 +5,12 @@ import { supabase } from './supabase'
 import Button from 'primevue/button'
 import Avatar from 'primevue/avatar'
 import Badge from 'primevue/badge'
-
 import { useI18n } from 'vue-i18n'
 
 const { t, locale } = useI18n()
 
 const isAuthenticated = ref(false)
 const isLoading = ref(true)
-
 import Menubar from 'primevue/menubar'
 
 const backendUser = ref(null)
@@ -29,9 +27,7 @@ async function loadBackendUser() {
     if (!session) return
     const token = session.access_token
     const res = await fetch(API_URL + "/users/me", {
-      headers: {
-        Authorization: `Bearer ${token}`
-      }
+      headers: { Authorization: `Bearer ${token}` }
     })
     if (res.ok) {
       backendUser.value = await res.json()
@@ -59,14 +55,6 @@ const userRole = computed(() => {
   return backendUser.value?.role || ''
 })
 
-const roleBadgeSeverity = computed(() => {
-  const role = backendUser.value?.role
-  if (role === 'ADMIN') return 'contrast'
-  if (role === 'TREASURER') return 'success'
-  if (role === 'SECRETARY') return 'info'
-  return 'secondary'
-})
-
 const canManageGadgets = computed(() => {
   const role = backendUser.value?.role
   const hasActiveMembership = backendUser.value?.has_active_membership
@@ -83,15 +71,18 @@ const items = computed(() => {
     { label: t('nav.home'), icon: 'pi pi-home', route: '/' },
     { label: t('nav.profile'), icon: 'pi pi-id-card', route: '/wizard' }
   ]
+
   if (isAdminOrTreasurer.value) {
     menu.push({ label: t('nav.dashboard'), icon: 'pi pi-chart-bar', route: '/dashboard' })
   }
+
   if (backendUser.value?.role === 'ADMIN') {
     menu.push({ label: t('nav.admin'), icon: 'pi pi-cog', route: '/admin' })
   }
+
   if (canManageGadgets.value) {
     menu.push({
-      label: t('nav.manageGadgets'),
+      label: t('nav.gadgetManagement'),
       icon: 'pi pi-box',
       items: [
         { label: t('nav.gadgetList'), icon: 'pi pi-box', route: '/gadgets' },
@@ -100,21 +91,21 @@ const items = computed(() => {
       ]
     })
   }
+
   return menu
 })
 
 onMounted(async () => {
-  // PING al backend per svegliarlo in caso di standby (Render free tier)
   fetch(API_URL + "/wakeup").catch(e => console.log("Wakeup ping failed:", e))
 
   const { data: { session } } = await supabase.auth.getSession()
   isAuthenticated.value = !!session
   isLoading.value = false
+
   if (isAuthenticated.value) {
     loadBackendUser()
   }
 
-  // Listen for auth changes
   supabase.auth.onAuthStateChange((event, _session) => {
     isAuthenticated.value = !!_session
     if (isAuthenticated.value) {
@@ -132,102 +123,97 @@ async function doLogout() {
 </script>
 
 <template>
-  <Toast position="top-center" />
-  <ConfirmDialog />
-  <div v-if="isLoading" class="flex align-items-center justify-content-center min-h-screen">
-    <i class="pi pi-spin pi-spinner text-3xl text-primary"></i>
-  </div>
-  
-  <div v-else class="app-layout">
-    <!-- Navbar globale -->
-    <Menubar :model="isAuthenticated ? items : []" class="py-2 px-4 border-none border-bottom-1 border-light border-round-none shadow-1 mb-0">
-      <template #start>
-        <router-link to="/" class="mr-4 flex align-items-center">
-          <Image src="/logo.svg" alt="Logo" width="50" />
-        </router-link>
-      </template>
-      <template #item="{ item, props, hasSubmenu }">
-        <router-link v-if="item.route" v-slot="{ href, navigate }" :to="item.route" custom>
-            <a :href="href" v-bind="props.action" @click="navigate">
-                <span :class="item.icon" />
-                <span class="ml-2">{{ item.label }}</span>
-            </a>
-        </router-link>
-        <a v-else :href="item.url" :target="item.target" v-bind="props.action">
-            <span :class="item.icon" />
-            <span class="ml-2">{{ item.label }}</span>
-            <span v-if="hasSubmenu" class="pi pi-angle-down ml-auto" />
+<Toast position="top-center" />
+<ConfirmDialog />
+
+<div v-if="isLoading" class="flex align-items-center justify-content-center min-h-screen">
+  <i class="pi pi-spin pi-spinner text-3xl text-primary"></i>
+</div>
+
+<div v-else class="app-layout">
+  <Menubar :model="isAuthenticated ? items : []" class="py-2 px-4 border-none border-bottom-1 border-light border-round-none shadow-1 mb-0">
+    <template #start>
+      <router-link to="/" class="mr-4 flex align-items-center">
+        <Image src="/logo.svg" alt="Logo" width="50" />
+      </router-link>
+    </template>
+
+    <template #item="{ item, props, hasSubmenu }">
+      <router-link v-if="item.route" v-slot="{ href, navigate }" :to="item.route" custom>
+        <a :href="href" v-bind="props.action" @click="navigate">
+          <span :class="item.icon" />
+          <span class="ml-2">{{ item.label }}</span>
         </a>
-      </template>
-      <template #end>
-        <div class="flex align-items-center gap-2">
-          <!-- Selettore Lingua -->
-          <div class="flex gap-1 mr-3 border-round p-1" style="background-color: var(--code-bg); border: 1px solid var(--border);">
-            <Button 
-              label="IT" 
-              :severity="locale === 'it' ? 'primary' : 'secondary'" 
-              size="small" 
-              text 
-              class="p-1 px-2 text-xs font-bold min-w-0" 
-              @click="changeLanguage('it')"
-            />
-            <Button 
-              label="EN" 
-              :severity="locale === 'en' ? 'primary' : 'secondary'" 
-              size="small" 
-              text 
-              class="p-1 px-2 text-xs font-bold min-w-0" 
-              @click="changeLanguage('en')"
-            />
-          </div>
+      </router-link>
+      <a v-else :href="item.url" :target="item.target" v-bind="props.action">
+        <span :class="item.icon" />
+        <span class="ml-2">{{ item.label }}</span>
+        <span v-if="hasSubmenu" class="pi pi-angle-down ml-auto" />
+      </a>
+    </template>
 
-          <template v-if="isAuthenticated">
-            <div v-if="backendUser" class="flex align-items-center gap-2 mr-2">
-              <Avatar :label="userInitials" shape="circle" style="background-color: #ea580c; color: #ffffff;" class="font-bold" />
-              <div style="font-size: 9px;">{{ userRole }}</div>
-            </div>
-            <Button :label="t('common.logout')" icon="pi pi-sign-out" severity="danger" size="small" outlined @click="doLogout" />
-          </template>
+    <template #end>
+      <div class="flex align-items-center gap-2">
+        <div class="flex gap-1 mr-3 border-round p-1" style="background-color: var(--code-bg); border: 1px solid var(--border);">
+          <Button 
+            label="IT" 
+            :severity="locale === 'it' ? 'primary' : 'secondary'" 
+            size="small" 
+            text 
+            class="p-1 px-2 text-xs font-bold min-w-0" 
+            @click="changeLanguage('it')"
+          />
+          <Button 
+            label="EN" 
+            :severity="locale === 'en' ? 'primary' : 'secondary'" 
+            size="small" 
+            text 
+            class="p-1 px-2 text-xs font-bold min-w-0" 
+            @click="changeLanguage('en')"
+          />
         </div>
-      </template>
-    </Menubar>
 
-    <!-- ✅ CONTENUTO PAGINE -->
-    <main class="content">
-      <router-view />
-    </main>
-  </div>
+        <template v-if="isAuthenticated">
+          <div v-if="backendUser" class="flex align-items-center gap-2 mr-2">
+            <Avatar :label="userInitials" shape="circle" style="background-color: #ea580c; color: #ffffff;" class="font-bold" />
+            <div style="font-size: 9px;">{{ userRole }}</div>
+          </div>
+          <Button :label="t('nav.logout')" icon="pi pi-sign-out" severity="danger" size="small" outlined @click="doLogout" />
+        </template>
+      </div>
+    </template>
+  </Menubar>
+
+  <main class="content">
+    <router-view />
+  </main>
+</div>
 </template>
 
 <style scoped>
 .app-layout {
-  display: flex;
-  flex-direction: column;
-  min-height: 100vh;
+display: flex;
+flex-direction: column;
+min-height: 100vh;
 }
-
 .navbar {
-  border-bottom: 1px solid var(--border);
+border-bottom: 1px solid var(--border);
 }
-
 .nav-link {
-  padding: 0.5rem 0.75rem;
-  border-radius: 6px;
-  transition: background-color 0.2s, color 0.2s;
+padding: 0.5rem 0.75rem;
+border-radius: 6px;
+transition: background-color 0.2s, color 0.2s;
 }
-
 .nav-link:hover {
-  background-color: var(--code-bg);
-  color: var(--text-h);
+background-color: var(--code-bg);
+color: var(--text-h);
 }
-
 .router-link-active.nav-link {
-  color: #ea580c;
-  background-color: var(--accent-bg);
-  font-weight: 600;
+color: #ea580c;
+background-color: var(--accent-bg);
+font-weight: 600;
 }
-
 .content {
-  flex-grow: 1;
+flex-grow: 1;
 }
 </style>
