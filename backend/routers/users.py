@@ -65,6 +65,10 @@ class UserUpdate(BaseModel):
             raise ValueError("Codice Fiscale o Partita IVA non valido")
         return v
 
+class AdminUserUpdate(BaseModel):
+    first_name: Optional[str] = None
+    last_name: Optional[str] = None
+    phone: Optional[str] = None
 
 # Entity serialization helpers
 def serialize_user(user: User, db: Session) -> dict:
@@ -687,3 +691,43 @@ def update_user_role(
 
     return serialize_user(target_user, db)
 
+@router.put("/{id}")
+def admin_update_user(
+    id: int,
+    payload: AdminUserUpdate,
+    current_user=Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    # Solo ADMIN può modificare altri utenti
+    if current_user.role != "ADMIN":
+        raise HTTPException(
+            status_code=403,
+            detail="Forbidden: Solo l'amministratore può modificare gli utenti."
+        )
+
+    target_user = db.query(User).filter(User.id == id).first()
+    if not target_user:
+        raise HTTPException(status_code=404, detail="Utente non trovato")
+
+    changed_fields = []
+    update_data = payload.dict(exclude_unset=True)
+
+    for key, value in update_data.items():
+        original_val = getattr(target_user, key)
+        if original_val != value:
+            changed_fields.append(key)
+            setattr(target_user, key, value)
+
+    if changed_fields:
+        log_action(
+            db=db,
+            action_type="ADMIN_UPDATE_USER",
+            entity_type="USER",
+            entity_id=target_user.id,
+            performed_by=current_user.id,
+            details=f"Admin {current_user.id} updated fields {', '.join(changed_fields)} for user {target_user.id}"
+        )
+        db.commit()
+        db.refresh(target_user)
+
+    return serialize_user(target_user, db)

@@ -500,6 +500,12 @@
     "updateFailed": "Update Failed",
     "confirmMessage": "Are you sure you want to change the role of {email} from {fromRole} to {toRole}?",
     "confirmHeader": "Confirm Role Change",
+    "editSuccess": "User updated successfully",
+    "editUser": "Edit user",
+    "firstName": "First Name",
+    "lastName": "Last Name",
+    "confirmEditMessage": "Are you sure you want to edit the data of {email}?",
+    "confirmEditHeader": "Confirm User Edit",
     "roles": {
       "user": "User (USER)",
       "member": "Member (MEMBER)",
@@ -510,7 +516,8 @@
     "errors": {
       "loadFailed": "Unable to load users",
       "connectionFailed": "Server connection error",
-      "updateFailed": "Unable to change role"
+      "updateFailed": "Unable to change role",
+      "editFailed": "Unable to edit user"
     }
   },
   "common": {

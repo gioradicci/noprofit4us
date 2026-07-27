@@ -500,6 +500,12 @@
     "updateFailed": "Aggiornamento Fallito",
     "confirmMessage": "Sei sicuro di voler cambiare il ruolo di {email} da {fromRole} a {toRole}?",
     "confirmHeader": "Conferma Cambio Ruolo",
+    "editSuccess": "Utente modificato con successo",
+    "editUser": "Modifica utente",
+    "firstName": "Nome",
+    "lastName": "Cognome",
+    "confirmEditMessage": "Sei sicuro di voler modificare i dati di {email}?",
+    "confirmEditHeader": "Conferma Modifica Utente",
     "roles": {
       "user": "Utente (USER)",
       "member": "Socio (MEMBER)",
@@ -510,7 +516,8 @@
     "errors": {
       "loadFailed": "Impossibile caricare gli utenti",
       "connectionFailed": "Errore di connessione al server",
-      "updateFailed": "Impossibile modificare il ruolo"
+      "updateFailed": "Impossibile modificare il ruolo",
+      "editFailed": "Impossibile modificare l'utente"
     }
   },
   "common": {
