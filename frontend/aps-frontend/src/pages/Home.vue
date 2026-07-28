@@ -33,14 +33,14 @@ async function registerWithEmail() {
   authError.value = ''
   authLoading.value = true
   
-  // Determina l'URL di redirect in base all'ambiente
-  const redirectUrl = window.location.origin + '/'
+ // URL del frontend, prende dall'ambiente Vite
+const FRONTEND_URL = import.meta.env.VITE_FRONTEND_URL || window.location.origin
   
   const { data, error } = await supabase.auth.signUp({
     email: email.value,
     password: password.value,
     options: {
-      emailRedirectTo: redirectUrl
+      emailRedirectTo: FRONTEND_URL
     }
   })
   
