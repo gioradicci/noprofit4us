@@ -32,21 +32,27 @@ async function loginWithEmail() {
 async function registerWithEmail() {
   authError.value = ''
   authLoading.value = true
+  
+  // Determina l'URL di redirect in base all'ambiente
+  const redirectUrl = window.location.origin + '/'
+  
   const { data, error } = await supabase.auth.signUp({
     email: email.value,
-    password: password.value
+    password: password.value,
+    options: {
+      emailRedirectTo: redirectUrl
+    }
   })
+  
   if (error) authError.value = error.message
   else authError.value = t('home.loginCard.emailCheck')
   authLoading.value = false
 }
 
-// ✅ Utente caricato dal backend
 const backendUser = ref(null)
 const loadingBackend = ref(false)
-const mese_inizio_rinnovo_anticipato = 10 //Novembre=10  
+const mese_inizio_rinnovo_anticipato = 10
 
-// ✅ Carica dettagli utente
 async function loadUser() {
   if (!isAuthenticated.value) return
   loadingBackend.value = true
@@ -55,9 +61,7 @@ async function loadUser() {
     if (!session) return
     const token = session.access_token
     const res = await fetch(API_URL + "/users/me", {
-      headers: {
-        Authorization: `Bearer ${token}`
-      }
+      headers: { Authorization: `Bearer ${token}` }
     })
     if (res.ok) {
       backendUser.value = await res.json()
@@ -69,7 +73,6 @@ async function loadUser() {
   }
 }
 
-// ✅ Formatta data in base alla lingua attiva
 function formatDate(dateStr) {
   if (!dateStr) return '-'
   try {
@@ -81,7 +84,6 @@ function formatDate(dateStr) {
   }
 }
 
-//  Monitora l'autenticazione Supabase
 onMounted(async () => {
   const { data: { session } } = await supabase.auth.getSession()
   isAuthenticated.value = !!session
@@ -99,6 +101,7 @@ onMounted(async () => {
     }
   })
 })
+
 const memberTypes = computed(() => [
   { label: t('common.memberTypes.standard'), value: "ORDINARIO" },
   { label: t('common.memberTypes.supporting'), value: "SOSTENITORE" }
@@ -176,7 +179,6 @@ function getRoleIcon() {
   if (role === 'SECRETARY' || roles.includes('SECRETARY')) return 'pi-envelope';
   return 'pi-user';
 }
-
 </script>
 
 <template>
@@ -187,15 +189,14 @@ function getRoleIcon() {
   </div>
 
   <div v-else class="home-container py-5 px-2">
-    
 
-    <!-- 🟢 CASO 1: UTENTE NON LOGGATO (Landing Page Pubblica) -->
+    <!-- 🟢 CASO 1: UTENTE NON LOGGATO -->
     <div v-if="!isAuthenticated">
       
       <!-- Hero Banner -->
       <div class="hero-section text-center py-4 px-4 mb-5 border-round-3xl shadow-1 relative overflow-hidden">
-        <div class="mb-3 " >
-          <Image src="/logo.svg" alt="Logo" width="100" ></Image>
+        <div class="mb-3">
+          <Image src="/logo.svg" alt="Logo" width="100"></Image>
         </div>
         <h1 class="text-2xl md:text-3xl font-bold mb-3 mt-0 text-primary-gradient">{{ t('home.title') }}</h1>
         <h2 class="text-1xl md:text-2xl font-bold mb-3 mt-0 text-primary-gradient">{{ t('home.demoWarning') }}</h2>
@@ -221,7 +222,7 @@ function getRoleIcon() {
       </div>
 
       <!-- Sezione Come Funziona -->
-      <div class="mb-6" >
+      <div class="mb-6">
         <h2 class="text-2xl md:text-3xl font-bold text-center mb-5">{{ t('home.howItWorks.title') }}</h2>
         
         <div class="grid justify-content-center">
@@ -257,27 +258,21 @@ function getRoleIcon() {
             <div class="benefit-card p-4 border-round-xl border-1 border-light surface-card h-full text-left shadow-1">
               <i class="pi pi-compass text-3xl text-primary mb-3 block"></i>
               <h3 class="font-bold text-lg mb-2">{{ t('home.benefits.resourceTitle') }}</h3>
-              <p class="text-sm text-color-secondary m-0 leading-relaxed">
-                {{ t('home.benefits.resourceDesc') }}
-              </p>
+              <p class="text-sm text-color-secondary m-0 leading-relaxed">{{ t('home.benefits.resourceDesc') }}</p>
             </div>
           </div>
           <div class="col-12 md:col-3">
             <div class="benefit-card p-4 border-round-xl border-1 border-light surface-card h-full text-left shadow-1">
               <i class="pi pi-users text-3xl text-primary mb-3 block"></i>
               <h3 class="font-bold text-lg mb-2">{{ t('home.benefits.communityTitle') }}</h3>
-              <p class="text-sm text-color-secondary m-0 leading-relaxed">
-                {{ t('home.benefits.communityDesc') }}
-              </p>
+              <p class="text-sm text-color-secondary m-0 leading-relaxed">{{ t('home.benefits.communityDesc') }}</p>
             </div>
           </div>
           <div class="col-12 md:col-3">
             <div class="benefit-card p-4 border-round-xl border-1 border-light surface-card h-full text-left shadow-1">
               <i class="pi pi-heart text-3xl text-primary mb-3 block"></i>
               <h3 class="font-bold text-lg mb-2">{{ t('home.benefits.supportTitle') }}</h3>
-              <p class="text-sm text-color-secondary m-0 leading-relaxed">
-                {{ t('home.benefits.supportDesc') }}
-              </p>
+              <p class="text-sm text-color-secondary m-0 leading-relaxed">{{ t('home.benefits.supportDesc') }}</p>
             </div>
           </div>
         </div>
@@ -285,31 +280,25 @@ function getRoleIcon() {
 
     </div>
 
-    <!-- 🟡 CASO 2: UTENTE LOGGATO CON STATO "INCOMPLETE" -->
+    <!-- 🟡 CASO 2: INCOMPLETE -->
     <div v-else-if="backendUser?.status === 'INCOMPLETE'" class="flex justify-content-center py-5">
       <div class="card p-5 text-center shadow-3 border-round-xl border-top-3 border-warning max-w-30rem surface-card">
         <i class="pi pi-user-plus text-5xl text-warning mb-3 block"></i>
         <h2 class="text-2xl font-bold mb-2">{{ t('home.statusIncomplete.title') }}</h2>
-        <p class="text-color-secondary mb-4 line-height-3">
-          {{ t('home.statusIncomplete.desc') }}
-        </p>
+        <p class="text-color-secondary mb-4 line-height-3">{{ t('home.statusIncomplete.desc') }}</p>
         <router-link to="/wizard">
           <Button :label="t('home.statusIncomplete.btnStart')" icon="pi pi-arrow-right" iconPos="right" size="large" class="w-full" />
         </router-link>
       </div>
     </div>
 
-    <!-- 🔵 CASO 3: UTENTE LOGGATO CON STATO "PENDING" -->
+    <!-- 🔵 CASO 3: PENDING -->
     <div v-else-if="backendUser?.status === 'PENDING'" class="flex justify-content-center py-5">
       <div class="card p-5 text-center shadow-3 border-round-xl border-top-3 border-info max-w-30rem surface-card">
         <i class="pi pi-hourglass text-5xl text-info mb-3 block"></i>
         <h2 class="text-2xl font-bold mb-2">{{ t('home.statusPending.title') }}</h2>
-        <p class="text-color-secondary mb-3">
-          {{ t('home.statusPending.welcome', { name: backendUser.first_name }) }}
-        </p>
-        <p class="text-color-secondary mb-4 text-sm line-height-3">
-          {{ t('home.statusPending.desc') }}
-        </p>
+        <p class="text-color-secondary mb-3">{{ t('home.statusPending.welcome', { name: backendUser.first_name }) }}</p>
+        <p class="text-color-secondary mb-4 text-sm line-height-3">{{ t('home.statusPending.desc') }}</p>
         
         <div class="surface-ground p-3 border-round text-left mb-4 border-1 border-light">
           <div class="flex justify-content-between py-2 border-bottom-1 border-light">
@@ -328,25 +317,21 @@ function getRoleIcon() {
       </div>
     </div>
 
-    <!-- 🔴 CASO 3.5: UTENTE LOGGATO CON STATO "REJECTED" -->
+    <!-- 🔴 CASO 3.5: REJECTED -->
     <div v-else-if="backendUser?.status === 'REJECTED'" class="flex justify-content-center py-5">
       <div class="card p-5 text-center shadow-3 border-round-xl border-top-3 border-danger max-w-30rem surface-card">
         <i class="pi pi-times-circle text-5xl text-danger mb-3 block"></i>
         <h2 class="text-2xl font-bold mb-2">{{ t('home.statusRejected.title') }}</h2>
-        <p class="text-color-secondary mb-4 line-height-3">
-          {{ t('home.statusRejected.desc') }}
-        </p>
-        <p class="text-color-secondary text-sm font-medium">
-          {{ t('home.statusRejected.info') }}
-        </p>
+        <p class="text-color-secondary mb-4 line-height-3">{{ t('home.statusRejected.desc') }}</p>
+        <p class="text-color-secondary text-sm font-medium">{{ t('home.statusRejected.info') }}</p>
       </div>
     </div>
 
-    <!-- 🏆 CASO 4: UTENTE APPROVATO (Socio Attivo con Tessera) -->
+    <!-- 🏆 CASO 4: APPROVATO -->
     <div v-else-if="backendUser?.status === 'APPROVED'" class="flex flex-column align-items-center py-4">
       
       <div class="max-w-28rem w-full">
-        <!-- Tessera Socio Digitale (Premium Glassmorphism Effect) -->
+        <!-- Tessera Socio Digitale -->
         <div class="p-4 text-white border-round-2xl shadow-4 relative overflow-hidden mb-4"
           :class="[ memberNoActive() ? 'membership-card_inactive' : (memberExpiring() ? 'membership-card_expiring' : 'membership-card') ]"
         >
@@ -355,95 +340,86 @@ function getRoleIcon() {
           <div class="flex justify-content-between align-items-center mb-5">
             <div class="flex align-items-center gap-2">
               <i :class="['pi', getRoleIcon(), 'text-2xl']"></i>
-              <span class="font-bold tracking-wider text-xs uppercase">Tessera Socio APS</span>
+              <span class="font-bold tracking-wider text-xs uppercase">{{ t('home.membershipCard.title') }}</span>
             </div>
-            <span v-if="memberNoActive()" class="bg-blue-500 text-white text-xxs px-2.5 py-1 font-bold border-round-lg uppercase shadow-1">Socio non attivo</span>
-            <span v-else-if="memberExpiring()" class="bg-blue-500 text-white text-xxs px-2.5 py-1 font-bold border-round-lg uppercase shadow-1">In scadenza</span>
-            <span v-else class="bg-blue-500 text-white text-xxs px-2.5 py-1 font-bold border-round-lg uppercase shadow-1">Socio attivo</span>
-            
+            <span v-if="memberNoActive()" class="bg-blue-500 text-white text-xxs px-2.5 py-1 font-bold border-round-lg uppercase shadow-1">{{ t('home.membershipCard.inactive') }}</span>
+            <span v-else-if="memberExpiring()" class="bg-blue-500 text-white text-xxs px-2.5 py-1 font-bold border-round-lg uppercase shadow-1">{{ t('home.membershipCard.expiring') }}</span>
+            <span v-else class="bg-blue-500 text-white text-xxs px-2.5 py-1 font-bold border-round-lg uppercase shadow-1">{{ t('home.membershipCard.active') }}</span>
           </div>
 
           <div class="mb-5">
             <h3 class="text-2xl font-bold m-0 letter-spacing-1" style="color: black !important;">{{ backendUser.first_name }} {{ backendUser.last_name }}</h3>
-            <p class="text-xxs text-white-alpha-70 m-0 mt-1 uppercase font-semibold">Socio {{ backendUser.member_type || 'Ordinario' }}</p>
+            <p class="text-xxs text-white-alpha-70 m-0 mt-1 uppercase font-semibold">{{ t('home.membershipCard.member') }} {{ backendUser.member_type || t('home.membershipCard.ordinary') }}</p>
           </div>
 
           <div class="flex justify-content-between border-top-1 border-white-alpha-20 pt-3">
             <div class="flex flex-column text-left">
-              <span class="text-xxs text-white-alpha-50 uppercase">Tessera N.</span>
+              <span class="text-xxs text-white-alpha-50 uppercase">{{ t('home.membershipCard.cardNumber') }}</span>
               <span class="text-lg font-bold text-white">{{ backendUser.membership_number }}</span>
             </div>
             <div class="flex flex-column text-right">
-              <span class="text-xxs text-white-alpha-50 uppercase">Valida fino al</span>
+              <span class="text-xxs text-white-alpha-50 uppercase">{{ t('home.membershipCard.validUntil') }}</span>
               <span class="text-lg font-bold text-white">{{ formatDate(backendUser.end_date) }}</span>
             </div>
           </div>
         </div>
+
         <!-- PENDING RENEWAL STATE -->
         <div class="mb-5">
           <div v-if="backendUser.is_renewal_pending" class="card p-4 shadow-2 border-round-xl surface-card text-center mt-4 border-top-3 border-info">
             <i class="pi pi-hourglass text-4xl text-info mb-3 block"></i>
-            <h4 class="font-bold text-lg mb-2">Richiesta di rinnovo in elaborazione per il {{ getRenewalYear() }}</h4>
-            <p class="text-sm text-color-secondary m-0">La tua richiesta di rinnovo è in attesa di verifica del pagamento da parte del tesoriere.</p>
+            <h4 class="font-bold text-lg mb-2">{{ t('home.renewal.pendingTitle', { year: getRenewalYear() }) }}</h4>
+            <p class="text-sm text-color-secondary m-0">{{ t('home.renewal.pendingDesc') }}</p>
           </div>
-
 
           <!-- RENEW REQUEST FORM -->
           <div v-else-if="!backendUser.end_date || new Date(backendUser.end_date) < new Date() || memberExpiring()" class="card p-4 shadow-2 border-round-xl surface-card text-left mt-4 border-top-3 border-orange-500">
             <h4 class="font-bold text-base mb-3 text-color uppercase tracking-wide">
-              {{ memberExpiring() ? 'RINNOVA LA TUA ISCRIZIONE anticipatamente' : 'Rinnova la tua iscrizione' }}
+              {{ memberExpiring() ? t('home.renewal.earlyRenewalTitle') : t('home.renewal.renewalTitle') }}
             </h4>
-            <p class="text-sm text-color-secondary mb-3">La tua iscrizione è scaduta o in scadenza. Scegli il metodo di pagamento e richiedi il rinnovo.</p>
+            <p class="text-sm text-color-secondary mb-3">{{ t('home.renewal.renewalDesc') }}</p>
             <div class="flex flex-column gap-3">
               <div class="flex flex-column gap-2">
-                <label for="memberType" class="font-semibold text-sm">Tipo di Quota *</label>
-                <Select inputId="memberType" v-model="selectedMemberType" :options="memberTypes" optionLabel="label" optionValue="value" placeholder="Seleziona la quota" class="w-full" />
+                <label for="memberType" class="font-semibold text-sm">{{ t('home.renewal.memberType') }} *</label>
+                <Select inputId="memberType" v-model="selectedMemberType" :options="memberTypes" optionLabel="label" optionValue="value" :placeholder="t('home.renewal.selectMemberType')" class="w-full" />
               </div>
               <div class="flex flex-column gap-2">
-                <label for="paymentMethod" class="font-semibold text-sm">Metodo di Pagamento *</label>
-                <Select inputId="paymentMethod" v-model="selectedPaymentMethod" :options="paymentMethods" optionLabel="label" optionValue="value" placeholder="Seleziona un metodo" class="w-full" />
+                <label for="paymentMethod" class="font-semibold text-sm">{{ t('home.renewal.paymentMethod') }} *</label>
+                <Select inputId="paymentMethod" v-model="selectedPaymentMethod" :options="paymentMethods" optionLabel="label" optionValue="value" :placeholder="t('home.renewal.selectPaymentMethod')" class="w-full" />
               </div>
-              <Button label="Richiedi Rinnovo" icon="pi pi-refresh" :loading="renewing" @click="requestRenewal" severity="warning" class="w-full mt-2" :disabled="!selectedPaymentMethod || !selectedMemberType" />
+              <Button :label="t('home.renewal.requestRenewal')" icon="pi pi-refresh" :loading="renewing" @click="requestRenewal" severity="warning" class="w-full mt-2" :disabled="!selectedPaymentMethod || !selectedMemberType" />
             </div>
           </div>
         </div>
-        <!-- Box Riepilogo Dati Iscrizione -->
+
+        <!-- Box Dettagli Iscrizione -->
         <div class="card p-4 shadow-2 border-round-xl surface-card text-left">
-          <h4 class="font-bold text-base mb-3 text-color uppercase tracking-wide">Dettagli Iscrizione</h4>
+          <h4 class="font-bold text-base mb-3 text-color uppercase tracking-wide">{{ t('home.membershipDetails.title') }}</h4>
           
           <div class="flex flex-column gap-3">
             <div class="flex align-items-center gap-3">
               <i class="pi pi-calendar text-primary text-lg"></i>
               <div>
-                <p class="text-xxs text-color-secondary m-0 uppercase font-semibold">Data Emissione</p>
+                <p class="text-xxs text-color-secondary m-0 uppercase font-semibold">{{ t('home.membershipDetails.issueDate') }}</p>
                 <p class="text-sm font-semibold m-0 text-color">{{ formatDate(backendUser.start_date) }}</p>
               </div>
             </div>
             <div class="flex align-items-center gap-3">
               <i class="pi pi-wallet text-primary text-lg"></i>
               <div>
-                <p class="text-xxs text-color-secondary m-0 uppercase font-semibold">Metodo Pagamento</p>
+                <p class="text-xxs text-color-secondary m-0 uppercase font-semibold">{{ t('home.membershipDetails.paymentMethod') }}</p>
                 <p class="text-sm font-semibold m-0 text-color">{{ backendUser.payment_method }}</p>
               </div>
             </div>
-            <!-- <div class="flex align-items-center gap-3">
-              <i class="pi pi-id-card text-primary text-lg"></i>
-              <div>
-                <p class="text-xxs text-color-secondary m-0 uppercase font-semibold">Codice Fiscale</p>
-                <p class="text-sm font-semibold m-0 text-color uppercase">{{ backendUser.tax_code }}</p>
-              </div>
-            </div> -->
           </div>
 
           <div class="mt-4 pt-3 border-top-1 border-light flex justify-content-between align-items-center">
-            <span class="text-xs text-color-secondary">Hai bisogno di aggiornare i tuoi dati?</span>
+            <span class="text-xs text-color-secondary">{{ t('home.membershipDetails.updatePrompt') }}</span>
             <router-link to="/wizard">
-              <Button label="Modifica dati" icon="pi pi-pencil" size="small" severity="secondary" outlined />
+              <Button :label="t('home.membershipDetails.editData')" icon="pi pi-pencil" size="small" severity="secondary" outlined />
             </router-link>
           </div>
         </div>
-
-
 
       </div>
 
@@ -464,8 +440,9 @@ function getRoleIcon() {
 }
 
 .text-primary-gradient {
- background: #ef7b14;
+  background: #ef7b14;
   -webkit-background-clip: text;
+  background-clip: text;
   -webkit-text-fill-color: transparent;
 }
 
@@ -479,7 +456,6 @@ function getRoleIcon() {
   box-shadow: var(--shadow);
 }
 
-/* 🏆 Premium Membership Card CSS */
 .membership-card {
   background: linear-gradient(0deg, #ec8e5b 20%,  #ea580c 100%);
   border-radius: 20px;

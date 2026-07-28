@@ -4,15 +4,15 @@
     "profile": "Profile",
     "dashboard": "Dashboard",
     "gadgetManagement": "Gadget Management",
-    "warehouses": "Warehouses",
     "gadgetList": "Gadget List",
+    "warehouses": "Warehouses",
     "gadgetStock": "Gadget Stock",
     "wizard": "Registration",
     "aboutUs": "About Us",
     "membership": "Memberships",
     "login": "Login",
     "register": "Register",
-    "logout": "Exit",
+    "logout": "Logout",
     "language": "Language",
     "admin": "Administration"
   },
@@ -83,6 +83,35 @@
       "title": "Membership Not Approved",
       "desc": "Your membership request has not been approved. For more information, contact the association board.",
       "info": "You can edit your data and try again."
+    },
+    "membershipCard": {
+      "title": "APS Member Card",
+      "inactive": "Inactive member",
+      "expiring": "Expiring",
+      "active": "Active member",
+      "member": "Member",
+      "ordinary": "Ordinary",
+      "cardNumber": "Card N.",
+      "validUntil": "Valid until"
+    },
+    "renewal": {
+      "pendingTitle": "Renewal request in progress for {year}",
+      "pendingDesc": "Your renewal request is pending payment verification by the treasurer.",
+      "earlyRenewalTitle": "RENEW YOUR MEMBERSHIP early",
+      "renewalTitle": "Renew your membership",
+      "renewalDesc": "Your membership has expired or is expiring. Choose the payment method and request renewal.",
+      "memberType": "Membership Type",
+      "paymentMethod": "Payment Method",
+      "selectMemberType": "Select membership type",
+      "selectPaymentMethod": "Select a method",
+      "requestRenewal": "Request Renewal"
+    },
+    "membershipDetails": {
+      "title": "Membership Details",
+      "issueDate": "Issue Date",
+      "paymentMethod": "Payment Method",
+      "updatePrompt": "Need to update your data?",
+      "editData": "Edit data"
     }
   },
   "login": {
@@ -525,6 +554,7 @@
     "error": "An error occurred",
     "success": "Operation completed",
     "warning": "Warning",
+    "logout": "Logout",
     "save": "Save",
     "cancel": "Cancel",
     "confirm": "Confirm",

@@ -4,8 +4,8 @@
     "profile": "Profilo",
     "dashboard": "Dashboard",
     "gadgetManagement": "Gestione Gadget",
-    "warehouses": "Magazzini",
     "gadgetList": "Lista Gadget",
+    "warehouses": "Magazzini",
     "gadgetStock": "Stock Gadget",
     "wizard": "Iscrizione",
     "aboutUs": "Chi Siamo",
@@ -83,6 +83,35 @@
       "title": "Iscrizione Non Approvata",
       "desc": "La tua richiesta di iscrizione non è stata approvata. Per maggiori informazioni, contatta il direttivo dell'associazione.",
       "info": "Puoi modificare i tuoi dati e riprovare."
+    },
+    "membershipCard": {
+      "title": "Tessera Socio APS",
+      "inactive": "Socio non attivo",
+      "expiring": "In scadenza",
+      "active": "Socio attivo",
+      "member": "Socio",
+      "ordinary": "Ordinario",
+      "cardNumber": "Tessera N.",
+      "validUntil": "Valida fino al"
+    },
+    "renewal": {
+      "pendingTitle": "Richiesta di rinnovo in elaborazione per il {year}",
+      "pendingDesc": "La tua richiesta di rinnovo è in attesa di verifica del pagamento da parte del tesoriere.",
+      "earlyRenewalTitle": "RINNOVA LA TUA ISCRIZIONE anticipatamente",
+      "renewalTitle": "Rinnova la tua iscrizione",
+      "renewalDesc": "La tua iscrizione è scaduta o in scadenza. Scegli il metodo di pagamento e richiedi il rinnovo.",
+      "memberType": "Tipo di Quota",
+      "paymentMethod": "Metodo di Pagamento",
+      "selectMemberType": "Seleziona la quota",
+      "selectPaymentMethod": "Seleziona un metodo",
+      "requestRenewal": "Richiedi Rinnovo"
+    },
+    "membershipDetails": {
+      "title": "Dettagli Iscrizione",
+      "issueDate": "Data Emissione",
+      "paymentMethod": "Metodo Pagamento",
+      "updatePrompt": "Hai bisogno di aggiornare i tuoi dati?",
+      "editData": "Modifica dati"
     }
   },
   "login": {
@@ -525,6 +554,7 @@
     "error": "Si è verificato un errore",
     "success": "Operazione completata",
     "warning": "Attenzione",
+    "logout": "Esci",
     "save": "Salva",
     "cancel": "Annulla",
     "confirm": "Conferma",

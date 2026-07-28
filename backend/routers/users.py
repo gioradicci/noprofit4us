@@ -605,6 +605,7 @@ def update_user_role(
     import os
     import requests
 
+    # type: ignore[comparison-overlap]
     # Solo l'utente con ruolo ADMIN nel database locale (e nel token) può cambiare i ruoli
     if current_user.role != "ADMIN":
         raise HTTPException(

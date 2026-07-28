@@ -1,3 +1,6 @@
+# database/models/user.py
+from typing import Optional
+from datetime import date
 from sqlalchemy import Column, Integer, String, Boolean, Date
 from database.base import Base
 
@@ -37,19 +40,8 @@ class User(Base):
 
     member_type = Column(String)
     payment_method = Column(String)
-    
 
     # workflow
-    status = Column(String, default="PENDING")  
-    # PENDING / APPROVED / REJECTED
-
-    role = Column(String, default="USER")
-    # USER, MEMBER, TREASURER, ADMIN, 
-    is_active = Column(Boolean, default=True)
-
     status = Column(String, default="INCOMPLETE")
-    # INCOMPLETE → appena login Google
-    # PENDING → ha compilato profilo
-    # APPROVED → approvato
-    # REJECTED 
-    # EXPIRED
+    role = Column(String, default="USER")
+    is_active = Column(Boolean, default=True)
