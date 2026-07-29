@@ -36,16 +36,17 @@ async function registerWithEmail() {
  // URL del frontend, prende dall'ambiente Vite
 const FRONTEND_URL = import.meta.env.VITE_FRONTEND_URL || window.location.origin
   
+  console.log(FRONTEND_URL)
   const { data, error } = await supabase.auth.signUp({
     email: email.value,
     password: password.value,
     options: {
       emailRedirectTo: FRONTEND_URL
     }
-  })
+   })
   
-  if (error) authError.value = error.message
-  else authError.value = t('home.loginCard.emailCheck')
+  //if (error) authError.value = error.message
+  //else authError.value = t('home.loginCard.emailCheck')
   authLoading.value = false
 }
 

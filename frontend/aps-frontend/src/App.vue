@@ -178,7 +178,7 @@ async function doLogout() {
             <Avatar :label="userInitials" shape="circle" style="background-color: #ea580c; color: #ffffff;" class="font-bold" />
             <div style="font-size: 9px;">{{ userRole }}</div>
           </div>
-          <Button :label="t('nav.logout')" icon="pi pi-sign-out" severity="danger" size="small" outlined @click="doLogout" />
+          <Button :title="t('nav.logout')" icon="pi pi-sign-out" severity="danger" size="small" outlined @click="doLogout" />
         </template>
       </div>
     </template>
