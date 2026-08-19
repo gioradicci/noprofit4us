@@ -317,14 +317,14 @@ onMounted(() => {
 <template>
 <div class="stock-container py-5 px-3">
   <!-- Header -->
-  <div class="flex justify-content-between align-items-center mb-5">
+  <div class="flex flex-column sm:flex-row justify-content-between align-items-start sm:align-items-center gap-3 mb-5">
     <div>
       <h2 class="font-bold text-3xl mb-1 text-900">{{ t('gadgetStock.title') }}</h2>
       <p class="text-secondary text-sm m-0">{{ t('gadgetStock.subtitle') }}</p>
     </div>
-    <div class="flex gap-2">
-      <Button :label="t('gadgetStock.exportInventory')" icon="pi pi-download" severity="secondary" outlined @click="exportInventory" :loading="exporting" />
-      <Button :label="t('gadgetStock.registerMovement')" icon="pi pi-directions" severity="primary" @click="openMovementModal" />
+    <div class="flex flex-column sm:flex-row gap-2 w-full sm:w-auto">
+      <Button :label="t('gadgetStock.exportInventory')" icon="pi pi-download" severity="secondary" outlined @click="exportInventory" :loading="exporting" class="w-full sm:w-auto" />
+      <Button :label="t('gadgetStock.registerMovement')" icon="pi pi-directions" severity="primary" @click="openMovementModal" class="w-full sm:w-auto" />
     </div>
   </div>
 

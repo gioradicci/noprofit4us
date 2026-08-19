@@ -270,12 +270,12 @@ onMounted(() => {
 <template>
 <div class="gadgets-container py-5 px-3">
   <!-- Header -->
-  <div class="flex justify-content-between align-items-center mb-5">
+  <div class="flex flex-column sm:flex-row justify-content-between align-items-start sm:align-items-center gap-3 mb-5">
     <div>
       <h2 class="font-bold text-3xl mb-1 text-900">{{ t('gadgets.title') }}</h2>
       <p class="text-secondary text-sm m-0">{{ t('gadgets.subtitle') }}</p>
     </div>
-    <Button :label="t('gadgets.newGadget')" icon="pi pi-plus" severity="primary" @click="startCreate" />
+    <Button :label="t('gadgets.newGadget')" icon="pi pi-plus" severity="primary" @click="startCreate" class="w-full sm:w-auto" />
   </div>
 
   <!-- Dialog Creazione/Modifica -->
