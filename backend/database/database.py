@@ -37,7 +37,7 @@ def initialize_database():
         from database.models.user import User
         from database.models.member import Member
         from database.models.membership import Membership
-        from database.models.gadget import Gadget, GadgetVariant, Warehouse, GadgetVariantStock, StockMovement, GadgetLock
+        from database.models.gadget import Gadget, Warehouse, GadgetVariantStock, StockMovement, GadgetLock
         from database.models.audit import AuditLog
     except ImportError as e:
         print("WARNING: Errore durante l'importazione dei modelli:", e)

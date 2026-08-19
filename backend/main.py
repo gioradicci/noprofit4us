@@ -8,7 +8,7 @@ from sqlalchemy.orm import Session
 from database.database import engine, initialize_database, get_db
 from database.base import Base
 from routers import users, members, audit, dashboard, gadgets
-from database.models.gadget import Gadget, GadgetVariant, Warehouse, GadgetVariantStock, StockMovement, GadgetLock
+from database.models.gadget import Gadget, Warehouse, GadgetVariantStock, StockMovement, GadgetLock
 
 app = FastAPI(title="APS Backend v2")
 

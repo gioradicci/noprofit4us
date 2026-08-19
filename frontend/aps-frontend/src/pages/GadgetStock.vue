@@ -42,7 +42,6 @@ const movementFilters = ref({
 
 const movementForm = ref({
   gadget_id: null,
-  variant_id: null,
   movement_type: 'RESTOCK',
   from_warehouse_id: null,
   to_warehouse_id: null,
@@ -61,26 +60,21 @@ const movementTypeFilterOptions = computed(() => [
   ...movementTypes
 ])
 
-const variantsOptions = computed(() => {
-  if (!movementForm.value.gadget_id) return []
-  const gadget = gadgets.value.find(g => g.id === movementForm.value.gadget_id)
-  if (!gadget) return []
-  return gadget.variants.map(v => ({
-    label: `${v.size || ''} ${v.color || ''} ${v.model || ''} [SKU: ${v.sku || v.id}] (${t('gadgetStock.stock')}: ${v.stock_quantity})`,
-    value: v.id,
-    sku: v.sku,
-    stocks: v.stocks
+const gadgetOptions = computed(() => {
+  return gadgets.value.map(g => ({
+    label: `${g.name} ${g.sku ? `[SKU: ${g.sku}]` : ''} (${t('gadgetStock.stock')}: ${g.stock_quantity || 0})`,
+    value: g.id,
+    sku: g.sku,
+    stocks: g.stocks
   }))
 })
 
 const fromWarehouseOptions = computed(() => {
-  if (!movementForm.value.variant_id) return []
+  if (!movementForm.value.gadget_id) return []
   const gadget = gadgets.value.find(g => g.id === movementForm.value.gadget_id)
-  if (!gadget) return []
-  const variant = gadget.variants.find(v => v.id === movementForm.value.variant_id)
-  if (!variant) return []
+  if (!gadget || !gadget.stocks) return []
   const options = []
-  variant.stocks.forEach(stock => {
+  gadget.stocks.forEach(stock => {
     if (stock.quantity > 0) {
       const wh = warehouses.value.find(w => w.id === stock.warehouse_id)
       if (wh) {
@@ -98,7 +92,7 @@ const fromWarehouseOptions = computed(() => {
 const toWarehouseOptions = computed(() => {
   if (!warehouses.value) return []
   const activeWarehouses = warehouses.value.filter(w => w.is_active !== false)
-  if (!movementForm.value.variant_id) {
+  if (!movementForm.value.gadget_id) {
     return activeWarehouses.map(w => ({
       label: `${w.name} (0 ${t('gadgetStock.pcs')})`,
       value: w.id,
@@ -106,11 +100,9 @@ const toWarehouseOptions = computed(() => {
     }))
   }
   const gadget = gadgets.value.find(g => g.id === movementForm.value.gadget_id)
-  if (!gadget) return []
-  const variant = gadget.variants.find(v => v.id === movementForm.value.variant_id)
-  if (!variant) return []
+  if (!gadget || !gadget.stocks) return []
   return activeWarehouses.map(w => {
-    const stock = variant.stocks.find(s => s.warehouse_id === w.id)
+    const stock = gadget.stocks.find(s => s.warehouse_id === w.id)
     const quantity = stock ? stock.quantity : 0
     return {
       label: `${w.name} (${quantity} ${t('gadgetStock.pcs')})`,
@@ -121,46 +113,37 @@ const toWarehouseOptions = computed(() => {
 })
 
 const flattenedStocks = computed(() => {
-  const list = []
-  gadgets.value.forEach(g => {
-    g.variants.forEach(v => {
-      const stockMap = {}
-      warehouses.value.forEach(w => {
-        const found = v.stocks.find(s => s.warehouse_id === w.id)
-        stockMap[w.code] = found ? found.quantity : 0
-      })
-      const parts = []
-      if (v.size) parts.push(`${t('gadgetStock.size')}: ${v.size}`)
-      if (v.color) parts.push(`${t('gadgetStock.color')}: ${v.color}`)
-      if (v.model) parts.push(`${t('gadgetStock.model')}: ${v.model}`)
-      const variant_details = parts.join(' | ')
-      list.push({
-        id: v.id,
-        gadget_name: g.name,
-        category: g.category,
-        sku: v.sku,
-        size: v.size,
-        color: v.color,
-        model: v.model,
-        variant_details,
-        total_stock: v.stock_quantity,
-        image_path: v.image_path || g.image_path || '',
-        ...stockMap
-      })
+  return gadgets.value.map(g => {
+    const stockMap = {}
+    warehouses.value.forEach(w => {
+      const found = (g.stocks || []).find(s => s.warehouse_id === w.id)
+      stockMap[w.code] = found ? found.quantity : 0
     })
+    const parts = []
+    if (g.size) parts.push(`${t('gadgetStock.size')}: ${g.size}`)
+    if (g.color) parts.push(`${t('gadgetStock.color')}: ${g.color}`)
+    if (g.model) parts.push(`${t('gadgetStock.model')}: ${g.model}`)
+    const variant_details = parts.join(' | ') || '-'
+    return {
+      id: g.id,
+      gadget_name: g.name,
+      category: g.category,
+      sku: g.sku,
+      size: g.size,
+      color: g.color,
+      model: g.model,
+      variant_details,
+      total_stock: g.stock_quantity || 0,
+      image_path: g.image_path || '',
+      ...stockMap
+    }
   })
-  return list
 })
 
-const selectedVariantImage = computed(() => {
+const selectedGadgetImage = computed(() => {
   if (!movementForm.value.gadget_id) return null
   const gadget = gadgets.value.find(g => g.id === movementForm.value.gadget_id)
-  if (!gadget) return null
-  if (movementForm.value.variant_id) {
-    const variant = gadget.variants.find(v => v.id === movementForm.value.variant_id)
-    if (variant && variant.image_path) return variant.image_path
-  }
-  return gadget.image_path || null
+  return gadget ? gadget.image_path : null
 })
 
 const selectedGadgetName = computed(() => {
@@ -169,17 +152,16 @@ const selectedGadgetName = computed(() => {
   return gadget ? gadget.name : ''
 })
 
-const selectedVariantName = computed(() => {
-  if (!movementForm.value.gadget_id || !movementForm.value.variant_id) return t('gadgetStock.selectVariant')
+const selectedGadgetDetails = computed(() => {
+  if (!movementForm.value.gadget_id) return ''
   const gadget = gadgets.value.find(g => g.id === movementForm.value.gadget_id)
   if (!gadget) return ''
-  const variant = gadget.variants.find(v => v.id === movementForm.value.variant_id)
-  if (!variant) return ''
   const parts = []
-  if (variant.size) parts.push(`${t('gadgetStock.size')}: ${variant.size}`)
-  if (variant.color) parts.push(`${t('gadgetStock.color')}: ${variant.color}`)
-  if (variant.model) parts.push(`${t('gadgetStock.model')}: ${variant.model}`)
-  return parts.join(' | ') || t('gadgetStock.uniqueVariant')
+  if (gadget.sku) parts.push(`SKU: ${gadget.sku}`)
+  if (gadget.size) parts.push(`${t('gadgetStock.size')}: ${gadget.size}`)
+  if (gadget.color) parts.push(`${t('gadgetStock.color')}: ${gadget.color}`)
+  if (gadget.model) parts.push(`${t('gadgetStock.model')}: ${gadget.model}`)
+  return parts.join(' | ')
 })
 
 const totalStockPieces = computed(() => {
@@ -187,10 +169,6 @@ const totalStockPieces = computed(() => {
 })
 
 watch(() => movementForm.value.gadget_id, () => {
-  movementForm.value.variant_id = null
-})
-
-watch(() => movementForm.value.variant_id, () => {
   movementForm.value.from_warehouse_id = null
   movementForm.value.to_warehouse_id = null
 })
@@ -225,7 +203,6 @@ async function loadData() {
 function openMovementModal() {
   movementForm.value = {
     gadget_id: null,
-    variant_id: null,
     movement_type: 'RESTOCK',
     from_warehouse_id: null,
     to_warehouse_id: null,
@@ -236,7 +213,7 @@ function openMovementModal() {
 }
 
 async function submitMovement() {
-  if (!movementForm.value.variant_id || !movementForm.value.quantity) {
+  if (!movementForm.value.gadget_id || !movementForm.value.quantity) {
     toast.add({ severity: 'warn', summary: t('common.warning'), detail: t('gadgetStock.errors.requiredFields'), life: 3000 })
     return
   }
@@ -259,8 +236,8 @@ async function submitMovement() {
     return
   }
   if (movementForm.value.movement_type !== 'RESTOCK') {
-    const selectedVar = variantsOptions.value.find(v => v.value === movementForm.value.variant_id)
-    const sourceStock = selectedVar?.stocks?.find(s => s.warehouse_id === movementForm.value.from_warehouse_id)?.quantity || 0
+    const gadget = gadgets.value.find(g => g.id === movementForm.value.gadget_id)
+    const sourceStock = gadget?.stocks?.find(s => s.warehouse_id === movementForm.value.from_warehouse_id)?.quantity || 0
     if (sourceStock < movementForm.value.quantity) {
       toast.add({ severity: 'error', summary: t('gadgetStock.errors.insufficientStock'), detail: t('gadgetStock.errors.insufficientStockDetail', { stock: sourceStock }), life: 4000 })
       return
@@ -273,7 +250,7 @@ async function submitMovement() {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
       body: JSON.stringify({
-        variant_id: movementForm.value.variant_id,
+        gadget_id: movementForm.value.gadget_id,
         from_warehouse_id: movementForm.value.from_warehouse_id,
         to_warehouse_id: movementForm.value.to_warehouse_id,
         quantity: movementForm.value.quantity,
@@ -387,10 +364,10 @@ onMounted(() => {
 
   <!-- Main Content -->
   <div class="grid">
-    <!-- Stocks per Variant -->
+    <!-- Stocks Table -->
     <div class="col-12 mb-5">
       <div class="card p-4 shadow-2 border-round surface-card">
-        <h3 class="text-xl font-bold mb-4 text-900">{{ t('gadgetStock.stocksPerVariant') }}</h3>
+        <h3 class="text-xl font-bold mb-4 text-900">Giacenze per Gadget</h3>
         <DataTable :value="flattenedStocks" v-model:filters="filters" filterDisplay="row" :loading="loading" paginator :rows="10" scrollable responsiveLayout="scroll">
           <template #empty>
             <div class="text-center py-4">
@@ -401,7 +378,7 @@ onMounted(() => {
           <Column frozen :header="t('gadgetStock.photo')" class="w-5rem text-center" style="min-width: 60px">
             <template #body="slotProps">
               <div class="flex align-items-center justify-content-center m-auto border-1 border-light border-round overflow-hidden" style="width: 40px; height: 60px; background-color: var(--code-bg);">
-                <Image v-if="slotProps.data.image_path" :src="getImageUrl(slotProps.data.image_path)" alt="Gadget" preview imageClass="object-fit-cover" style="width: 100%; height: 100%;" />
+                <img v-if="slotProps.data.image_path" :src="getImageUrl(slotProps.data.image_path)" alt="Gadget" class="w-full h-full object-fit-cover" />
                 <i v-else class="pi pi-image text-color-secondary text-lg"></i>
               </div>
             </template>
@@ -458,7 +435,7 @@ onMounted(() => {
           <Column :header="t('gadgetStock.photo')" class="w-5rem text-center">
             <template #body="slotProps">
               <div class="flex align-items-center justify-content-center m-auto border-1 border-light border-round overflow-hidden" style="width: 40px; height: 60px; background-color: var(--code-bg);">
-                <Image v-if="slotProps.data.image_path" :src="getImageUrl(slotProps.data.image_path)" alt="Movimento" preview imageClass="object-fit-cover" style="width: 100%; height: 100%;" />
+                <img v-if="slotProps.data.image_path" :src="getImageUrl(slotProps.data.image_path)" alt="Movimento" class="w-full h-full object-fit-cover" />
                 <i v-else class="pi pi-image text-color-secondary text-lg"></i>
               </div>
             </template>
@@ -479,7 +456,7 @@ onMounted(() => {
               <InputText v-model="filterModel.value" @input="filterCallback()" :placeholder="t('gadgetStock.searchGadget')" class="w-full" />
             </template>
           </Column>
-          <Column field="variant_sku" :header="t('gadgetStock.sku')"></Column>
+          <Column field="gadget_sku" :header="t('gadgetStock.sku')"></Column>
           <Column :header="t('gadgetStock.path')">
             <template #body="slotProps">
               <span class="text-sm">
@@ -507,21 +484,17 @@ onMounted(() => {
     <div class="flex flex-column gap-4 py-2 text-left">
       <div class="flex flex-column gap-2">
         <label for="m_gadget" class="font-semibold text-sm">{{ t('gadgetStock.form.gadget') }} *</label>
-        <Select inputId="m_gadget" v-model="movementForm.gadget_id" :options="gadgets" optionLabel="name" optionValue="id" :placeholder="t('gadgetStock.form.selectGadget')" class="w-full" />
-      </div>
-      <div class="flex flex-column gap-2" v-if="movementForm.gadget_id">
-        <label for="m_variant" class="font-semibold text-sm">{{ t('gadgetStock.form.variant') }} *</label>
-        <Select inputId="m_variant" v-model="movementForm.variant_id" :options="variantsOptions" optionLabel="label" optionValue="value" :placeholder="t('gadgetStock.form.selectVariant')" class="w-full" />
+        <Select inputId="m_gadget" v-model="movementForm.gadget_id" :options="gadgetOptions" optionLabel="label" optionValue="value" :placeholder="t('gadgetStock.form.selectGadget')" class="w-full" />
       </div>
       <div v-if="movementForm.gadget_id" class="flex align-items-center gap-3 p-3 border-round" style="background-color: var(--code-bg); border: 1px solid var(--border);">
         <div class="border-round border-1 border-light overflow-hidden flex align-items-center justify-content-center" style="width: 40px; height: 60px; background-color: var(--bg); flex-shrink: 0;">
-          <img v-if="selectedVariantImage" :src="getImageUrl(selectedVariantImage)" alt="Preview" class="w-full h-full object-fit-cover" />
+          <img v-if="selectedGadgetImage" :src="getImageUrl(selectedGadgetImage)" alt="Preview" class="w-full h-full object-fit-cover" />
           <i v-else class="pi pi-image text-color-secondary text-lg"></i>
         </div>
         <div class="flex flex-column gap-1 text-left">
           <span class="text-xxs font-semibold text-color-secondary uppercase" style="letter-spacing: 0.5px;">{{ t('gadgetStock.form.selectedItem') }}</span>
           <span class="text-sm font-bold text-900 line-height-2">{{ selectedGadgetName }}</span>
-          <span class="text-xs text-500 font-medium">{{ selectedVariantName }}</span>
+          <span class="text-xs text-500 font-medium">{{ selectedGadgetDetails }}</span>
         </div>
       </div>
       <div class="flex flex-column gap-2">
@@ -530,11 +503,11 @@ onMounted(() => {
       </div>
       <div class="flex flex-column gap-2" v-if="['TRANSFER', 'DELIVERY'].includes(movementForm.movement_type)">
         <label for="m_from" class="font-semibold text-sm">{{ t('gadgetStock.form.sourceWarehouse') }} *</label>
-        <Select inputId="m_from" v-model="movementForm.from_warehouse_id" :options="fromWarehouseOptions.filter(opt => opt.value !== movementForm.to_warehouse_id)" optionLabel="label" optionValue="value" :placeholder="movementForm.variant_id ? t('gadgetStock.form.selectSource') : t('gadgetStock.form.selectVariantFirst')" :disabled="!movementForm.variant_id" class="w-full" />
+        <Select inputId="m_from" v-model="movementForm.from_warehouse_id" :options="fromWarehouseOptions.filter(opt => opt.value !== movementForm.to_warehouse_id)" optionLabel="label" optionValue="value" :placeholder="movementForm.gadget_id ? t('gadgetStock.form.selectSource') : 'Seleziona prima un gadget'" :disabled="!movementForm.gadget_id" class="w-full" />
       </div>
       <div class="flex flex-column gap-2" v-if="['RESTOCK', 'TRANSFER'].includes(movementForm.movement_type)">
         <label for="m_to" class="font-semibold text-sm">{{ t('gadgetStock.form.destinationWarehouse') }} *</label>
-        <Select inputId="m_to" v-model="movementForm.to_warehouse_id" :options="toWarehouseOptions.filter(opt => opt.value !== movementForm.from_warehouse_id)" optionLabel="label" optionValue="value" :placeholder="movementForm.variant_id ? t('gadgetStock.form.selectDestination') : t('gadgetStock.form.selectVariantFirst')" :disabled="!movementForm.variant_id" class="w-full" />
+        <Select inputId="m_to" v-model="movementForm.to_warehouse_id" :options="toWarehouseOptions.filter(opt => opt.value !== movementForm.from_warehouse_id)" optionLabel="label" optionValue="value" :placeholder="movementForm.gadget_id ? t('gadgetStock.form.selectDestination') : 'Seleziona prima un gadget'" :disabled="!movementForm.gadget_id" class="w-full" />
       </div>
       <div class="flex flex-column gap-2">
         <label for="m_qty" class="font-semibold text-sm">{{ t('gadgetStock.form.quantity') }} *</label>
@@ -555,24 +528,19 @@ onMounted(() => {
 
 <style scoped>
 .stock-container {
-max-width: 1200px;
-margin: 0 auto;
+  max-width: 1200px;
+  margin: 0 auto;
 }
 .border-light {
-border-color: var(--border);
-}
-:deep(.p-image-img) {
-width: 100% !important;
-height: 100% !important;
-object-fit: cover !important;
+  border-color: var(--border);
 }
 .object-fit-cover {
-object-fit: cover;
+  object-fit: cover;
 }
 .line-height-2 {
-line-height: 1.2;
+  line-height: 1.2;
 }
 .text-xxs {
-font-size: 0.65rem;
+  font-size: 0.65rem;
 }
-</style>
+</style>

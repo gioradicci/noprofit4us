@@ -51,16 +51,12 @@ class GadgetCreate(BaseModel):
     category: str
     min_donation: float
     image_path: Optional[str] = None
-
-class VariantCreate(BaseModel):
-    gadget_id: int
     size: Optional[str] = None
     color: Optional[str] = None
     model: Optional[str] = None
     variant_type: Optional[str] = None
     sku: Optional[str] = None
     price_modifier: Optional[float] = 0.0
-    image_path: Optional[str] = None
 
 class GadgetUpdate(BaseModel):
     name: str
@@ -68,19 +64,15 @@ class GadgetUpdate(BaseModel):
     category: str
     min_donation: float
     image_path: Optional[str] = None
-
-class VariantUpdate(BaseModel):
-    id: Optional[int] = None
     size: Optional[str] = None
     color: Optional[str] = None
     model: Optional[str] = None
     variant_type: Optional[str] = None
     sku: Optional[str] = None
     price_modifier: Optional[float] = 0.0
-    image_path: Optional[str] = None
 
 class MovementCreate(BaseModel):
-    variant_id: int
+    gadget_id: int
     from_warehouse_id: Optional[int] = None
     to_warehouse_id: Optional[int] = None
     quantity: int
@@ -157,7 +149,6 @@ def upload_image(
         file_bytes = file.file.read()
         
         # Upload to Supabase Storage
-        # Check if python supabase client uses from_
         res = supabase.storage.from_("gadgets").upload(
             path=filename, 
             file=file_bytes, 
@@ -192,29 +183,22 @@ def get_gadgets(current_user=Depends(get_current_user), db: Session = Depends(ge
             "min_donation": g.min_donation,
             "image_path": g.image_path,
             "created_at": g.created_at.isoformat() if g.created_at else None,
-            "variants": []
+            "size": g.size,
+            "color": g.color,
+            "model": g.model,
+            "variant_type": g.variant_type,
+            "sku": g.sku,
+            "price_modifier": g.price_modifier,
+            "stock_quantity": g.stock_quantity,
+            "stocks": []
         }
-        for v in g.variants:
-            v_data = {
-                "id": v.id,
-                "size": v.size,
-                "color": v.color,
-                "model": v.model,
-                "variant_type": v.variant_type,
-                "sku": v.sku,
-                "price_modifier": v.price_modifier,
-                "stock_quantity": v.stock_quantity,
-                "image_path": v.image_path,
-                "stocks": []
-            }
-            for s in v.stocks:
-                v_data["stocks"].append({
-                    "warehouse_id": s.warehouse_id,
-                    "warehouse_name": s.warehouse.name,
-                    "warehouse_code": s.warehouse.code,
-                    "quantity": s.quantity
-                })
-            g_data["variants"].append(v_data)
+        for s in g.stocks:
+            g_data["stocks"].append({
+                "warehouse_id": s.warehouse_id,
+                "warehouse_name": s.warehouse.name,
+                "warehouse_code": s.warehouse.code,
+                "quantity": s.quantity
+            })
         result.append(g_data)
     return result
 
@@ -253,6 +237,12 @@ def create_gadget(payload: GadgetCreate, current_user=Depends(get_current_user),
         category=payload.category,
         min_donation=payload.min_donation,
         image_path=payload.image_path,
+        size=payload.size,
+        color=payload.color,
+        model=payload.model,
+        variant_type=payload.variant_type,
+        sku=payload.sku,
+        price_modifier=payload.price_modifier or 0.0,
         performed_by=current_user.id
     )
     return {
@@ -262,39 +252,14 @@ def create_gadget(payload: GadgetCreate, current_user=Depends(get_current_user),
         "category": gadget.category,
         "min_donation": gadget.min_donation,
         "image_path": gadget.image_path,
+        "size": gadget.size,
+        "color": gadget.color,
+        "model": gadget.model,
+        "variant_type": gadget.variant_type,
+        "sku": gadget.sku,
+        "price_modifier": gadget.price_modifier,
+        "stock_quantity": gadget.stock_quantity,
         "created_at": gadget.created_at.isoformat() if gadget.created_at else None
-    }
-
-
-@router.post("/variants")
-def create_variant(payload: VariantCreate, current_user=Depends(get_current_user), db: Session = Depends(get_db)):
-    if current_user.role not in ["ADMIN", "SECRETARY"]:
-        raise HTTPException(status_code=403, detail="Not authorized")
-    if current_user.role == "SECRETARY" and not has_active_membership(current_user, db):
-        raise HTTPException(status_code=403, detail="Active membership required")
-
-    variant = gadget_service.create_variant(
-        db=db,
-        gadget_id=payload.gadget_id,
-        size=payload.size,
-        color=payload.color,
-        model=payload.model,
-        variant_type=payload.variant_type,
-        sku=payload.sku,
-        price_modifier=payload.price_modifier or 0.0,
-        image_path=payload.image_path,
-        performed_by=current_user.id
-    )
-    return {
-        "id": variant.id,
-        "gadget_id": variant.gadget_id,
-        "size": variant.size,
-        "color": variant.color,
-        "model": variant.model,
-        "variant_type": variant.variant_type,
-        "sku": variant.sku,
-        "price_modifier": variant.price_modifier,
-        "image_path": variant.image_path
     }
 
 
@@ -313,6 +278,12 @@ def update_gadget(id: int, payload: GadgetUpdate, current_user=Depends(get_curre
         min_donation=payload.min_donation,
         description=payload.description,
         image_path=payload.image_path,
+        size=payload.size,
+        color=payload.color,
+        model=payload.model,
+        variant_type=payload.variant_type,
+        sku=payload.sku,
+        price_modifier=payload.price_modifier or 0.0,
         performed_by=current_user.id
     )
     return {
@@ -322,38 +293,15 @@ def update_gadget(id: int, payload: GadgetUpdate, current_user=Depends(get_curre
         "category": gadget.category,
         "min_donation": gadget.min_donation,
         "image_path": gadget.image_path,
+        "size": gadget.size,
+        "color": gadget.color,
+        "model": gadget.model,
+        "variant_type": gadget.variant_type,
+        "sku": gadget.sku,
+        "price_modifier": gadget.price_modifier,
+        "stock_quantity": gadget.stock_quantity,
         "created_at": gadget.created_at.isoformat() if gadget.created_at else None
     }
-
-
-@router.put("/{gadget_id}/variants")
-def update_gadget_variants(gadget_id: int, payload: List[VariantUpdate], current_user=Depends(get_current_user), db: Session = Depends(get_db)):
-    if current_user.role not in ["ADMIN", "SECRETARY"]:
-        raise HTTPException(status_code=403, detail="Not authorized")
-    if current_user.role == "SECRETARY" and not has_active_membership(current_user, db):
-        raise HTTPException(status_code=403, detail="Active membership required")
-
-    updated_variants = gadget_service.update_gadget_variants(
-        db=db,
-        gadget_id=gadget_id,
-        variants_data=[v.dict() for v in payload],
-        performed_by=current_user.id
-    )
-    return [
-        {
-            "id": v.id,
-            "gadget_id": v.gadget_id,
-            "size": v.size,
-            "color": v.color,
-            "model": v.model,
-            "variant_type": v.variant_type,
-            "sku": v.sku,
-            "price_modifier": v.price_modifier,
-            "stock_quantity": v.stock_quantity,
-            "image_path": v.image_path
-        }
-        for v in updated_variants
-    ]
 
 
 @router.delete("/{id}")
@@ -539,10 +487,10 @@ def get_movements(current_user=Depends(get_current_user), db: Session = Depends(
     for m in movements:
         result.append({
             "id": m.id,
-            "variant_id": m.variant_id,
-            "variant_sku": m.variant.sku if m.variant else None,
-            "gadget_name": m.variant.gadget.name if m.variant and m.variant.gadget else None,
-            "image_path": m.variant.image_path if (m.variant and m.variant.image_path) else (m.variant.gadget.image_path if (m.variant and m.variant.gadget and m.variant.gadget.image_path) else None),
+            "gadget_id": m.gadget_id,
+            "gadget_sku": m.gadget.sku if m.gadget else None,
+            "gadget_name": m.gadget.name if m.gadget else None,
+            "image_path": m.gadget.image_path if (m.gadget and m.gadget.image_path) else None,
             "from_warehouse": {
                 "id": m.from_warehouse.id,
                 "name": m.from_warehouse.name,
@@ -571,7 +519,7 @@ def create_movement(payload: MovementCreate, current_user=Depends(get_current_us
 
     movement = gadget_service.create_stock_movement(
         db=db,
-        variant_id=payload.variant_id,
+        gadget_id=payload.gadget_id,
         from_warehouse_id=payload.from_warehouse_id,
         to_warehouse_id=payload.to_warehouse_id,
         quantity=payload.quantity,
@@ -616,28 +564,23 @@ def export_inventory(
         cell.alignment = header_alignment
 
     for g in gadgets:
-        sorted_variants = sorted(
-            g.variants,
-            key=lambda v: (v.sku or "", v.size or "", v.color or "", v.model or "")
-        )
-        for v in sorted_variants:
-            for w in warehouses:
-                stock_qty = 0
-                for s in v.stocks:
-                    if s.warehouse_id == w.id:
-                        stock_qty = s.quantity
-                        break
-                
-                ws.append([
-                    g.name,
-                    g.category,
-                    v.sku or "",
-                    v.size or "",
-                    v.color or "",
-                    v.model or "",
-                    w.name,
-                    stock_qty
-                ])
+        for w in warehouses:
+            stock_qty = 0
+            for s in g.stocks:
+                if s.warehouse_id == w.id:
+                    stock_qty = s.quantity
+                    break
+            
+            ws.append([
+                g.name,
+                g.category,
+                g.sku or "",
+                g.size or "",
+                g.color or "",
+                g.model or "",
+                w.name,
+                stock_qty
+            ])
 
     # Auto-adjust column widths
     for col in ws.columns:
@@ -660,4 +603,5 @@ def export_inventory(
         media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
         headers=headers
     )
+
 
