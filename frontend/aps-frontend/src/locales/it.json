@@ -292,7 +292,7 @@
     "subtitle": "Visualizza, crea e organizza i gadget dell'associazione e le loro varianti",
     "newGadget": "Nuovo Gadget",
     "empty": "Nessun gadget presente nel database. Clicca su \"Nuovo Gadget\" per iniziare.",
-    "createButton": "Crea Gadget & Varianti",
+    "createButton": "Crea Gadget",
     "categories": {
       "cap": "Cappellino",
       "keychain": "Portachiavi",

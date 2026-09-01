@@ -292,7 +292,7 @@
     "subtitle": "View, create and organize association gadgets and their variants",
     "newGadget": "New Gadget",
     "empty": "No gadgets in database. Click \"New Gadget\" to start.",
-    "createButton": "Create Gadget & Variants",
+    "createButton": "Create Gadget",
     "categories": {
       "cap": "Cap",
       "keychain": "Keychain",
