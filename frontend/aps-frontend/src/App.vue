@@ -70,10 +70,10 @@ onMounted(async () => {
 </div>
 
 <div v-else class="app-layout">
-  <Menubar :model="isAuthenticated ? items : []" class="py-2 px-4 border-none border-bottom-1 border-light border-round-none shadow-1 mb-0">
+  <Menubar :model="isAuthenticated ? items : []" class="py-2 px-2 sm:px-4 border-none border-bottom-1 border-light border-round-none shadow-1 mb-0">
     <template #start>
-      <router-link to="/" class="mr-4 flex align-items-center">
-        <Image src="/logo.svg" alt="Logo" width="50" />
+      <router-link to="/" class="mr-2 sm:mr-4 flex align-items-center">
+        <Image src="/logo.svg" alt="Logo" width="40" />
       </router-link>
     </template>
 
@@ -92,14 +92,14 @@ onMounted(async () => {
     </template>
 
     <template #end>
-      <div class="flex align-items-center gap-2">
-        <div class="flex gap-1 mr-3 border-round p-1" style="background-color: var(--code-bg); border: 1px solid var(--border);">
+      <div class="flex align-items-center gap-1 sm:gap-2 flex-shrink-0">
+        <div class="flex gap-1 mr-1 sm:mr-3 border-round p-1 flex-shrink-0" style="background-color: var(--code-bg); border: 1px solid var(--border);">
           <Button 
             label="IT" 
             :severity="locale === 'it' ? 'primary' : 'secondary'" 
             size="small" 
             text 
-            class="p-1 px-2 text-xs font-bold min-w-0" 
+            class="p-1 px-1 sm:px-2 text-xs font-bold min-w-0" 
             @click="changeLanguage('it')"
           />
           <Button 
@@ -107,17 +107,24 @@ onMounted(async () => {
             :severity="locale === 'en' ? 'primary' : 'secondary'" 
             size="small" 
             text 
-            class="p-1 px-2 text-xs font-bold min-w-0" 
+            class="p-1 px-1 sm:px-2 text-xs font-bold min-w-0" 
             @click="changeLanguage('en')"
           />
         </div>
 
         <template v-if="isAuthenticated">
-          <div v-if="backendUser" class="flex align-items-center gap-2 mr-2">
-            <Avatar :label="userInitials" shape="circle" style="background-color: #ea580c; color: #ffffff;" class="font-bold" />
-            <div style="font-size: 9px;">{{ userRole }}</div>
+          <div v-if="backendUser" class="flex flex-column align-items-center justify-content-center mr-1 sm:mr-2 flex-shrink-0" style="line-height: 1;">
+            <Avatar 
+              :label="userInitials" 
+              shape="circle" 
+              style="background-color: #ea580c; color: #ffffff; width: 24px; height: 24px; font-size: 10px;" 
+              class="font-bold flex-shrink-0" 
+            />
+            <span class="text-color-secondary font-semibold text-center" style="font-size: 8px; margin-top: 2px; white-space: nowrap; max-width: 65px; overflow: hidden; text-overflow: ellipsis;">
+              {{ userRole }}
+            </span>
           </div>
-          <Button :title="t('nav.logout')" icon="pi pi-sign-out" severity="danger" size="small" outlined @click="doLogout" />
+          <Button :title="t('nav.logout')" icon="pi pi-sign-out" severity="danger" size="small" outlined class="flex-shrink-0" @click="doLogout" />
         </template>
       </div>
     </template>
@@ -153,6 +160,16 @@ background-color: var(--accent-bg);
 font-weight: 600;
 }
 .content {
-flex-grow: 1;
+  flex-grow: 1;
+}
+
+:deep(.p-menubar) {
+  width: 100%;
+  box-sizing: border-box;
+}
+
+:deep(.p-menubar-end) {
+  margin-left: auto;
+  min-width: 0;
 }
 </style>
