@@ -93,10 +93,19 @@ router.beforeEach(async (to) => {
         }
       }
 
-      if (isGadgetRoute) {
-        if (role === 'ADMIN') {
+      const isSecretary = role === 'SECRETARY' && hasActiveMembership && !currentUser.is_renewal_pending
+      const canManageGadgets = role === 'ADMIN' || isSecretary
+
+      if (['/gadget-stock', '/warehouses'].includes(to.path)) {
+        if (canManageGadgets) {
           return true
-        } else if (role === 'SECRETARY' && hasActiveMembership && !currentUser.is_renewal_pending) {
+        } else {
+          return '/'
+        }
+      }
+
+      if (to.path === '/gadgets') {
+        if (canManageGadgets || currentUser.status !== 'INCOMPLETE') {
           return true
         } else {
           return '/'

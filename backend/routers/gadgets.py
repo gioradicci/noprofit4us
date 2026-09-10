@@ -167,10 +167,8 @@ def upload_image(
 
 @router.get("/")
 def get_gadgets(current_user=Depends(get_current_user), db: Session = Depends(get_db)):
-    if current_user.role not in ["ADMIN", "SECRETARY"]:
-        raise HTTPException(status_code=403, detail="Not authorized")
-    if current_user.role == "SECRETARY" and not has_active_membership(current_user, db):
-        raise HTTPException(status_code=403, detail="Active membership required")
+    if current_user.role != "ADMIN" and current_user.status == "INCOMPLETE":
+        raise HTTPException(status_code=403, detail="Active profile required")
 
     gadgets = db.query(Gadget).all()
     result = []

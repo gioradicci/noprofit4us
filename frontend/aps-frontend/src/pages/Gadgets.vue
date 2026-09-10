@@ -5,6 +5,7 @@ import { supabase } from '../supabase'
 import { useToast } from 'primevue/usetoast'
 import { useConfirm } from 'primevue/useconfirm'
 import { useI18n } from 'vue-i18n'
+import { useUser } from '../composables/useUser'
 import ImageUpload from '../components/ImageUpload.vue'
 
 import InputText from 'primevue/inputtext'
@@ -16,6 +17,7 @@ import Column from 'primevue/column'
 import Dialog from 'primevue/dialog'
 
 const { t } = useI18n()
+const { canManageGadgets } = useUser()
 const toast = useToast()
 const confirm = useConfirm()
 
@@ -275,7 +277,7 @@ onMounted(() => {
       <h2 class="font-bold text-3xl mb-1 text-900">{{ t('gadgets.title') }}</h2>
       <p class="text-secondary text-sm m-0">{{ t('gadgets.subtitle') }}</p>
     </div>
-    <Button :label="t('gadgets.newGadget')" icon="pi pi-plus" severity="primary" @click="startCreate" class="w-full sm:w-auto" />
+    <Button v-if="canManageGadgets" :label="t('gadgets.newGadget')" icon="pi pi-plus" severity="primary" @click="startCreate" class="w-full sm:w-auto" />
   </div>
 
   <!-- Dialog Creazione/Modifica -->
@@ -383,7 +385,7 @@ onMounted(() => {
           <span :class="['font-bold', (slotProps.data.stock_quantity || 0) < 1 ? 'text-red-500' : 'text-900']">{{ slotProps.data.stock_quantity || 0 }} {{ t('gadgets.table.pcs') }}</span>
         </template>
       </Column>
-      <Column :header="t('common.actions')">
+      <Column v-if="canManageGadgets" :header="t('common.actions')">
         <template #body="slotProps">
           <div class="flex gap-2">
             <Button icon="pi pi-pencil" severity="secondary" outlined size="small" class="p-button-rounded" @click="startEdit(slotProps.data)" />

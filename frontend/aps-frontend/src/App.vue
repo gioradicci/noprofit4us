@@ -15,6 +15,7 @@ const {
   isLoading,
   isAdminOrTreasurer,
   canManageGadgets,
+  canViewGadgets,
   userInitials,
   userRole,
   initAuth,
@@ -50,6 +51,8 @@ const items = computed(() => {
         { label: t('nav.warehouses'), icon: 'pi pi-building', route: '/warehouses' }
       ]
     })
+  } else if (canViewGadgets.value) {
+    menu.push({ label: t('nav.gadgets'), icon: 'pi pi-box', route: '/gadgets' })
   }
 
   return menu

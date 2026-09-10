@@ -43,6 +43,12 @@ const canManageGadgets = computed(() => {
   return false
 })
 
+const canViewGadgets = computed(() => {
+  if (!user.value) return false
+  if (canManageGadgets.value) return true
+  return user.value.status !== 'INCOMPLETE'
+})
+
 async function fetchUser(force = false) {
   // If we already have the user and don't need a force refresh, return cached data
   if (user.value && !force) {
@@ -139,6 +145,7 @@ export function useUser() {
     isAdmin,
     isAdminOrTreasurer,
     canManageGadgets,
+    canViewGadgets,
     userInitials,
     userRole,
     fetchUser,
