@@ -102,7 +102,7 @@ async function saveWarehouse() {
     saving.value = false
   }
 }
-
+/* 
 async function toggleActive(warehouse) {
   try {
     const token = (await supabase.auth.getSession()).data.session?.access_token
@@ -119,12 +119,17 @@ async function toggleActive(warehouse) {
         detail: warehouse.is_active ? t('warehouses.activated') : t('warehouses.deactivated'),
         life: 3000
       })
+    } else 
+    {
+      warehouse.is_active = !warehouse.is_active
+      const err = await res.json()
+      toast.add({ severity: 'error', summary: t('common.error'), detail: err.detail || t('warehouses.errors.saveFailed'), life: 4000 })
     }
   } catch (err) {
     console.error(err)
     toast.add({ severity: 'error', summary: t('common.error'), detail: t('warehouses.errors.toggleFailed'), life: 3000 })
   }
-}
+} */
 
 onMounted(() => {
   loadWarehouses()
@@ -159,7 +164,7 @@ onMounted(() => {
       <Column :header="t('warehouses.active')" class="w-10rem">
         <template #body="slotProps">
           <div class="flex align-items-center gap-2">
-            <InputSwitch :modelValue="slotProps.data.is_active !== false" @update:modelValue="toggleActive(slotProps.data)" />
+            <!-- <InputSwitch :modelValue="slotProps.data.is_active !== false" @update:modelValue="toggleActive(slotProps.data)" />-->
             <span :class="['text-sm font-semibold', slotProps.data.is_active !== false ? 'text-green-600' : 'text-red-500']">
               {{ slotProps.data.is_active !== false ? t('warehouses.active') : t('warehouses.inactive') }}
             </span>
