@@ -4,6 +4,7 @@ import { ref, onMounted, computed } from 'vue'
 import { supabase } from '../supabase'
 import { useToast } from 'primevue/usetoast'
 import { useI18n } from 'vue-i18n'
+import { useUser } from '../composables/useUser'
 // Import PrimeVue Stepper and custom components
 import Stepper from 'primevue/stepper'
 import StepList from 'primevue/steplist'
@@ -19,9 +20,7 @@ import InputNumber from 'primevue/inputnumber'
 
 const { t } = useI18n()
 const toast = useToast()
-
-// Utente backend
-const backendUser = ref(null)
+const { user: backendUser, fetchUser } = useUser()
 
 // Errori di validazione
 const validationErrors = ref({})
@@ -97,32 +96,29 @@ const municipiRoma = ref([
 
 async function loadUser() {
   try {
-    const token = (await supabase.auth.getSession()).data.session?.access_token
-    const res = await fetch(API_URL + "/users/me", {
-      headers: { Authorization: `Bearer ${token}` }
-    })
-    backendUser.value = await res.json()
+    const u = await fetchUser()
+    if (!u) return
     profile.value = {
-      first_name: backendUser.value.first_name || "",
-      last_name: backendUser.value.last_name || "",
-      tax_code: backendUser.value.tax_code || "",
-      birth_date: backendUser.value.birth_date ? new Date(backendUser.value.birth_date) : null,
-      birth_place: backendUser.value.birth_place || "",
-      phone: backendUser.value.phone || "",
-      address: backendUser.value.address || "",
-      city: backendUser.value.city || "",
-      zip_code: backendUser.value.zip_code || "",
-      province: backendUser.value.province || "",
-      municipality: backendUser.value.municipality || "",
-      document_type: backendUser.value.document_type || "",
-      document_number: backendUser.value.document_number || "",
-      document_expiry: backendUser.value.document_expiry ? new Date(backendUser.value.document_expiry) : null,
-      profession: backendUser.value.profession || "",
-      usage_type: backendUser.value.usage_type || [],
-      avg_km_per_day: backendUser.value.avg_km_per_day || null,
-      member_type: backendUser.value.member_type || "",
-      payment_method: backendUser.value.payment_method || "",
-      municipio_roma: backendUser.value.municipio_roma || ""
+      first_name: u.first_name || "",
+      last_name: u.last_name || "",
+      tax_code: u.tax_code || "",
+      birth_date: u.birth_date ? new Date(u.birth_date) : null,
+      birth_place: u.birth_place || "",
+      phone: u.phone || "",
+      address: u.address || "",
+      city: u.city || "",
+      zip_code: u.zip_code || "",
+      province: u.province || "",
+      municipality: u.municipality || "",
+      document_type: u.document_type || "",
+      document_number: u.document_number || "",
+      document_expiry: u.document_expiry ? new Date(u.document_expiry) : null,
+      profession: u.profession || "",
+      usage_type: u.usage_type || [],
+      avg_km_per_day: u.avg_km_per_day || null,
+      member_type: u.member_type || "",
+      payment_method: u.payment_method || "",
+      municipio_roma: u.municipio_roma || ""
     }
   } catch (e) {
     console.error("Errore loadUser:", e)

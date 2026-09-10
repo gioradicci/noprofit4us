@@ -1,70 +1,30 @@
 <script setup>
 import { API_URL } from './config.js'
-import { ref, computed, onMounted } from 'vue'
-import { supabase } from './supabase'
+import { computed, onMounted } from 'vue'
 import Button from 'primevue/button'
 import Avatar from 'primevue/avatar'
 import Badge from 'primevue/badge'
+import Menubar from 'primevue/menubar'
 import { useI18n } from 'vue-i18n'
+import { useUser } from './composables/useUser'
 
 const { t, locale } = useI18n()
-
-const isAuthenticated = ref(false)
-const isLoading = ref(true)
-import Menubar from 'primevue/menubar'
-
-const backendUser = ref(null)
+const {
+  user: backendUser,
+  isAuthenticated,
+  isLoading,
+  isAdminOrTreasurer,
+  canManageGadgets,
+  userInitials,
+  userRole,
+  initAuth,
+  logout: doLogout
+} = useUser()
 
 function changeLanguage(lang) {
   locale.value = lang
   localStorage.setItem('lang', lang)
 }
-
-async function loadBackendUser() {
-  if (!isAuthenticated.value) return
-  try {
-    const { data: { session } } = await supabase.auth.getSession()
-    if (!session) return
-    const token = session.access_token
-    const res = await fetch(API_URL + "/users/me", {
-      headers: { Authorization: `Bearer ${token}` }
-    })
-    if (res.ok) {
-      backendUser.value = await res.json()
-    }
-  } catch (e) {
-    console.error("Errore nel caricamento del ruolo da backend:", e)
-  }
-}
-
-const isAdminOrTreasurer = computed(() => {
-  const role = backendUser.value?.role
-  return role === 'ADMIN' || role === 'TREASURER'
-})
-
-const userInitials = computed(() => {
-  const first = backendUser.value?.first_name || ''
-  const last = backendUser.value?.last_name || ''
-  if (first && last) {
-    return (first[0] + last[0]).toUpperCase()
-  }
-  return 'U'
-})
-
-const userRole = computed(() => {
-  return backendUser.value?.role || ''
-})
-
-const canManageGadgets = computed(() => {
-  const role = backendUser.value?.role
-  const hasActiveMembership = backendUser.value?.has_active_membership
-  const isRenewalPending = backendUser.value?.is_renewal_pending
-  if (role === 'ADMIN') return true
-  if (role === 'SECRETARY') {
-    return !!hasActiveMembership && !isRenewalPending
-  }
-  return false
-})
 
 const items = computed(() => {
   const menu = [
@@ -97,29 +57,8 @@ const items = computed(() => {
 
 onMounted(async () => {
   fetch(API_URL + "/wakeup").catch(e => console.log("Wakeup ping failed:", e))
-
-  const { data: { session } } = await supabase.auth.getSession()
-  isAuthenticated.value = !!session
-  isLoading.value = false
-
-  if (isAuthenticated.value) {
-    loadBackendUser()
-  }
-
-  supabase.auth.onAuthStateChange((event, _session) => {
-    isAuthenticated.value = !!_session
-    if (isAuthenticated.value) {
-      loadBackendUser()
-    } else {
-      backendUser.value = null
-    }
-  })
+  await initAuth()
 })
-
-async function doLogout() {
-  await supabase.auth.signOut()
-  window.location.href = '/'
-}
 </script>
 
 <template>

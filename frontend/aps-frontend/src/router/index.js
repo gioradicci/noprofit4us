@@ -1,6 +1,6 @@
-import { API_URL } from '../config.js'
 import { createRouter, createWebHistory } from 'vue-router'
 import { supabase } from '../supabase'
+import { useUser } from '../composables/useUser'
 
 import Home from '../pages/Home.vue'
 import Wizard from '../pages/Wizard.vue'
@@ -53,48 +53,29 @@ const router = createRouter({
   routes
 })
 
-let cachedUser = null
-
 router.beforeEach(async (to) => {
+  const { user, isAuthenticated, fetchUser } = useUser()
   const { data: { session } } = await supabase.auth.getSession()
-  const isAuthenticated = !!session
+  const hasSession = !!session
 
   // ✅ richiede login
-  if (to.meta.requiresAuth && !isAuthenticated) {
-    cachedUser = null
-    // Supabase non ha un loginWithRedirect nativo nello stesso modo di Auth0.
-    // Redirigiamo alla home dove c'è la landing page e i bottoni di login.
+  if (to.meta.requiresAuth && !hasSession) {
     return '/'
-  }
-
-  if (!isAuthenticated) {
-    cachedUser = null
   }
 
   const requiresAdmin = to.meta.requiresAdmin
   const requiresStrictAdmin = to.meta.requiresStrictAdmin
   const isGadgetRoute = ['/gadgets', '/gadget-stock', '/warehouses'].includes(to.path)
 
-  if (isAuthenticated && (requiresAdmin || requiresStrictAdmin || isGadgetRoute)) {
+  if (hasSession && (requiresAdmin || requiresStrictAdmin || isGadgetRoute)) {
     try {
-      if (!cachedUser) {
-        const token = session.access_token
-        const res = await fetch(API_URL + "/users/me", {
-          headers: {
-            Authorization: `Bearer ${token}`
-          }
-        })
-        if (res.ok) {
-          cachedUser = await res.json()
-        }
-      }
-
-      if (!cachedUser) {
+      const currentUser = await fetchUser()
+      if (!currentUser) {
         return '/'
       }
 
-      const role = cachedUser.role
-      const hasActiveMembership = cachedUser.has_active_membership
+      const role = currentUser.role
+      const hasActiveMembership = currentUser.has_active_membership
 
       if (requiresStrictAdmin) {
         if (role === 'ADMIN') {
@@ -115,7 +96,7 @@ router.beforeEach(async (to) => {
       if (isGadgetRoute) {
         if (role === 'ADMIN') {
           return true
-        } else if (role === 'SECRETARY' && hasActiveMembership && !cachedUser.is_renewal_pending) {
+        } else if (role === 'SECRETARY' && hasActiveMembership && !currentUser.is_renewal_pending) {
           return true
         } else {
           return '/'

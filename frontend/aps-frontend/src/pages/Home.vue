@@ -6,11 +6,10 @@ import Button from 'primevue/button'
 import Select from 'primevue/select'
 import InputText from 'primevue/inputtext'
 import { useI18n } from 'vue-i18n'
+import { useUser } from '../composables/useUser'
 
 const { t, locale } = useI18n()
-
-const isAuthenticated = ref(false)
-const isLoading = ref(true)
+const { user: backendUser, isAuthenticated, isLoading, fetchUser } = useUser()
 
 const email = ref('')
 const password = ref('')
@@ -33,8 +32,8 @@ async function registerWithEmail() {
   authError.value = ''
   authLoading.value = true
   
- // URL del frontend, prende dall'ambiente Vite
-const FRONTEND_URL = import.meta.env.VITE_FRONTEND_URL || window.location.origin
+  // URL del frontend, prende dall'ambiente Vite
+  const FRONTEND_URL = import.meta.env.VITE_FRONTEND_URL || window.location.origin
   
   console.log(FRONTEND_URL)
   const { data, error } = await supabase.auth.signUp({
@@ -43,36 +42,14 @@ const FRONTEND_URL = import.meta.env.VITE_FRONTEND_URL || window.location.origin
     options: {
       emailRedirectTo: FRONTEND_URL
     }
-   })
+  })
   
   //if (error) authError.value = error.message
   //else authError.value = t('home.loginCard.emailCheck')
   authLoading.value = false
 }
 
-const backendUser = ref(null)
-const loadingBackend = ref(false)
 const mese_inizio_rinnovo_anticipato = 10
-
-async function loadUser() {
-  if (!isAuthenticated.value) return
-  loadingBackend.value = true
-  try {
-    const { data: { session } } = await supabase.auth.getSession()
-    if (!session) return
-    const token = session.access_token
-    const res = await fetch(API_URL + "/users/me", {
-      headers: { Authorization: `Bearer ${token}` }
-    })
-    if (res.ok) {
-      backendUser.value = await res.json()
-    }
-  } catch (e) {
-    console.error("Errore loadUser:", e)
-  } finally {
-    loadingBackend.value = false
-  }
-}
 
 function formatDate(dateStr) {
   if (!dateStr) return '-'
@@ -86,21 +63,9 @@ function formatDate(dateStr) {
 }
 
 onMounted(async () => {
-  const { data: { session } } = await supabase.auth.getSession()
-  isAuthenticated.value = !!session
-  isLoading.value = false
   if (isAuthenticated.value) {
-    loadUser()
+    await fetchUser()
   }
-
-  supabase.auth.onAuthStateChange((event, _session) => {
-    isAuthenticated.value = !!_session
-    if (isAuthenticated.value) {
-      loadUser()
-    } else {
-      backendUser.value = null
-    }
-  })
 })
 
 const memberTypes = computed(() => [
@@ -134,7 +99,7 @@ async function requestRenewal() {
       body: JSON.stringify({ payment_method: selectedPaymentMethod.value, member_type: selectedMemberType.value })
     })
     if (res.ok) {
-      await loadUser()
+      await fetchUser(true)
     }
   } catch (e) {
     console.error("Errore requestRenewal:", e)
