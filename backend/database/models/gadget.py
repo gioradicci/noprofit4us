@@ -19,7 +19,6 @@ class Gadget(Base):
     model = Column(String, nullable=True)         # e.g. Uomo, Donna, Unisex
     variant_type = Column(String, nullable=True)  # e.g. Metallic, Glow-in-the-dark
     sku = Column(String, unique=True, nullable=True)
-    price_modifier = Column(Float, default=0.0)    # adjustment to min_donation
     stock_quantity = Column(Integer, default=0)    # Total aggregated stock
 
     stocks = relationship("GadgetVariantStock", back_populates="gadget", cascade="all, delete-orphan")

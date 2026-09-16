@@ -56,7 +56,6 @@ class GadgetCreate(BaseModel):
     model: Optional[str] = None
     variant_type: Optional[str] = None
     sku: Optional[str] = None
-    price_modifier: Optional[float] = 0.0
 
 class GadgetUpdate(BaseModel):
     name: str
@@ -69,7 +68,6 @@ class GadgetUpdate(BaseModel):
     model: Optional[str] = None
     variant_type: Optional[str] = None
     sku: Optional[str] = None
-    price_modifier: Optional[float] = 0.0
 
 class MovementCreate(BaseModel):
     gadget_id: int
@@ -186,7 +184,6 @@ def get_gadgets(current_user=Depends(get_current_user), db: Session = Depends(ge
             "model": g.model,
             "variant_type": g.variant_type,
             "sku": g.sku,
-            "price_modifier": g.price_modifier,
             "stock_quantity": g.stock_quantity,
             "stocks": []
         }
@@ -240,7 +237,6 @@ def create_gadget(payload: GadgetCreate, current_user=Depends(get_current_user),
         model=payload.model,
         variant_type=payload.variant_type,
         sku=payload.sku,
-        price_modifier=payload.price_modifier or 0.0,
         performed_by=current_user.id
     )
     return {
@@ -255,7 +251,6 @@ def create_gadget(payload: GadgetCreate, current_user=Depends(get_current_user),
         "model": gadget.model,
         "variant_type": gadget.variant_type,
         "sku": gadget.sku,
-        "price_modifier": gadget.price_modifier,
         "stock_quantity": gadget.stock_quantity,
         "created_at": gadget.created_at.isoformat() if gadget.created_at else None
     }
@@ -281,7 +276,6 @@ def update_gadget(id: int, payload: GadgetUpdate, current_user=Depends(get_curre
         model=payload.model,
         variant_type=payload.variant_type,
         sku=payload.sku,
-        price_modifier=payload.price_modifier or 0.0,
         performed_by=current_user.id
     )
     return {
@@ -296,7 +290,6 @@ def update_gadget(id: int, payload: GadgetUpdate, current_user=Depends(get_curre
         "model": gadget.model,
         "variant_type": gadget.variant_type,
         "sku": gadget.sku,
-        "price_modifier": gadget.price_modifier,
         "stock_quantity": gadget.stock_quantity,
         "created_at": gadget.created_at.isoformat() if gadget.created_at else None
     }

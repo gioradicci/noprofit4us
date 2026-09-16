@@ -59,7 +59,6 @@ def create_gadget(
     model: Optional[str] = None,
     variant_type: Optional[str] = None,
     sku: Optional[str] = None,
-    price_modifier: float = 0.0,
     performed_by: Optional[int] = None
 ) -> Gadget:
     gadget = Gadget(
@@ -73,7 +72,6 @@ def create_gadget(
         model=model,
         variant_type=variant_type,
         sku=sku,
-        price_modifier=price_modifier or 0.0,
         stock_quantity=0
     )
     db.add(gadget)
@@ -128,7 +126,6 @@ def update_gadget(
     model: Optional[str] = None,
     variant_type: Optional[str] = None,
     sku: Optional[str] = None,
-    price_modifier: float = 0.0,
     performed_by: Optional[int] = None
 ) -> Gadget:
     gadget = db.query(Gadget).get(gadget_id)
@@ -145,7 +142,6 @@ def update_gadget(
     gadget.model = model
     gadget.variant_type = variant_type
     gadget.sku = sku
-    gadget.price_modifier = price_modifier or 0.0
 
     db.commit()
     db.refresh(gadget)

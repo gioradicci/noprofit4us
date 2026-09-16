@@ -38,8 +38,7 @@ const newGadget = ref({
   color: '',
   model: '',
   variant_type: '',
-  sku: '',
-  price_modifier: 0.0
+  sku: ''
 })
 
 const categories = [
@@ -152,8 +151,25 @@ function startCreate() {
     color: '',
     model: '',
     variant_type: '',
-    sku: '',
-    price_modifier: 0.0
+    sku: ''
+  }
+  showCreateDialog.value = true
+}
+
+function startClone(gadget) {
+  isEditMode.value = false
+  newGadget.value = {
+    id: null,
+    name: gadget.name || '',
+    description: gadget.description || '',
+    category: gadget.category || 'T-SHIRT',
+    min_donation: gadget.min_donation,
+    image_path: gadget.image_path || '',
+    size: gadget.size || '',
+    color: gadget.color || '',
+    model: gadget.model || '',
+    variant_type: gadget.variant_type || '',
+    sku: ''
   }
   showCreateDialog.value = true
 }
@@ -174,8 +190,7 @@ async function startEdit(gadget) {
     color: gadget.color || '',
     model: gadget.model || '',
     variant_type: gadget.variant_type || '',
-    sku: gadget.sku || '',
-    price_modifier: gadget.price_modifier || 0.0
+    sku: gadget.sku || ''
   }
   showCreateDialog.value = true
 }
@@ -326,10 +341,6 @@ onMounted(() => {
             <label for="variant_type" class="font-semibold text-xs">{{ t('gadgets.variant.type') }}</label>
             <InputText id="variant_type" v-model="newGadget.variant_type" :placeholder="t('gadgets.placeholders.variantType')" class="w-full" />
           </div>
-          <div class="col-12 md:col-6 flex flex-column gap-1">
-            <label for="price_modifier" class="font-semibold text-xs">{{ t('gadgets.variant.priceModifier') }}</label>
-            <InputNumber inputId="price_modifier" v-model="newGadget.price_modifier" :minFractionDigits="2" :maxFractionDigits="2" class="w-full" mode="currency" currency="EUR" locale="it-IT" />
-          </div>
         </div>
       </div>
 
@@ -377,7 +388,7 @@ onMounted(() => {
       </Column>
       <Column field="min_donation" :header="t('gadgets.table.minDonation')" sortable>
         <template #body="slotProps">
-          {{ (slotProps.data.min_donation + (slotProps.data.price_modifier || 0)).toFixed(2) }} €
+          {{ Number(slotProps.data.min_donation || 0).toFixed(2) }} €
         </template>
       </Column>
       <Column field="stock_quantity" :header="t('gadgets.table.totalStock')" sortable>
@@ -388,8 +399,9 @@ onMounted(() => {
       <Column v-if="canManageGadgets" :header="t('common.actions')">
         <template #body="slotProps">
           <div class="flex gap-2">
-            <Button icon="pi pi-pencil" severity="secondary" outlined size="small" class="p-button-rounded" @click="startEdit(slotProps.data)" />
-            <Button icon="pi pi-trash" severity="danger" outlined size="small" class="p-button-rounded" @click="confirmDelete(slotProps.data.id, slotProps.data.name)" />
+            <Button icon="pi pi-pencil" severity="secondary" outlined size="small" class="p-button-rounded" :title="t('common.edit')" @click="startEdit(slotProps.data)" />
+            <Button icon="pi pi-copy" severity="secondary" outlined size="small" class="p-button-rounded" :title="t('common.clone')" @click="startClone(slotProps.data)" />
+            <Button icon="pi pi-trash" severity="danger" outlined size="small" class="p-button-rounded" :title="t('common.delete')" @click="confirmDelete(slotProps.data.id, slotProps.data.name)" />
           </div>
         </template>
       </Column>
