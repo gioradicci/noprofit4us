@@ -476,6 +476,14 @@ def get_movements(current_user=Depends(get_current_user), db: Session = Depends(
     movements = db.query(StockMovement).order_by(StockMovement.timestamp.desc()).all()
     result = []
     for m in movements:
+        performer_info = None
+        if m.performer:
+            performer_info = {
+                "id": m.performer.id,
+                "first_name": m.performer.first_name,
+                "last_name": m.performer.last_name,
+                "email": m.performer.email
+            }
         result.append({
             "id": m.id,
             "gadget_id": m.gadget_id,
@@ -495,6 +503,7 @@ def get_movements(current_user=Depends(get_current_user), db: Session = Depends(
             "quantity": m.quantity,
             "movement_type": m.movement_type,
             "performed_by": m.performed_by,
+            "performer": performer_info,
             "timestamp": m.timestamp.isoformat() if m.timestamp else None,
             "notes": m.notes
         })

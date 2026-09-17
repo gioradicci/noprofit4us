@@ -403,6 +403,7 @@
     "activeWarehouses": "Active Warehouses",
     "stocksPerVariant": "Stock per Variant",
     "movementHistory": "Movement History",
+    "performedby": "Performed by",
     "noData": "No gadgets or variants loaded in database.",
     "noMovements": "No movements recorded.",
     "allTypes": "All types",
@@ -432,11 +433,12 @@
     "searchCategory": "Search category...",
     "searchSku": "Search SKU...",
     "searchNotes": "Search notes...",
+    "searchPerformedBy": "Search operator...",
     "filterType": "Filter type",
     "movementTypes": {
       "restock": "Restock (RESTOCK)",
       "transfer": "Transfer (TRANSFER)",
-      "delivery": "Delivery to member (DELIVERY)"
+      "delivery": "Delivery (DELIVERY)"
     },
     "movementDialogTitle": "Register Warehouse Movement",
     "exported": "Exported",

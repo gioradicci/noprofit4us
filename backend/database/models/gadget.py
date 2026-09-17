@@ -60,13 +60,14 @@ class StockMovement(Base):
     quantity = Column(Integer, nullable=False)
     movement_type = Column(String, nullable=False)  # RESTOCK, TRANSFER, DELIVERY
     
-    performed_by = Column(Integer, nullable=False)  # User ID of Secretary/Admin
+    performed_by = Column(Integer, ForeignKey("users.id"), nullable=False)  # User ID of Secretary/Admin
     timestamp = Column(DateTime, default=datetime.utcnow, nullable=False)
     notes = Column(String, nullable=True)
 
     gadget = relationship("Gadget", back_populates="movements")
     from_warehouse = relationship("Warehouse", foreign_keys=[from_warehouse_id])
     to_warehouse = relationship("Warehouse", foreign_keys=[to_warehouse_id])
+    performer = relationship("User", foreign_keys=[performed_by])
 
 
 class GadgetLock(Base):

@@ -403,6 +403,7 @@
     "activeWarehouses": "Magazzini Attivi",
     "stocksPerVariant": "Giacenze per Variante",
     "movementHistory": "Storico Movimenti",
+    "performedby": "Fatto da",
     "noData": "Nessun gadget o variante caricata nel database.",
     "noMovements": "Nessun movimento registrato.",
     "allTypes": "Tutti i tipi",
@@ -432,11 +433,12 @@
     "searchCategory": "Cerca categoria...",
     "searchSku": "Cerca SKU...",
     "searchNotes": "Cerca note...",
+    "searchPerformedBy": "Cerca operatore...",
     "filterType": "Filtra tipo",
     "movementTypes": {
       "restock": "Rifornimento (RESTOCK)",
       "transfer": "Trasferimento (TRANSFER)",
-      "delivery": "Consegna a socio (DELIVERY)"
+      "delivery": "Consegna (DELIVERY)"
     },
     "movementDialogTitle": "Registra Movimento Magazzino",
     "exported": "Esportato",

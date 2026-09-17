@@ -37,7 +37,8 @@ const filters = ref({
 const movementFilters = ref({
   movement_type: { value: null, matchMode: FilterMatchMode.EQUALS },
   gadget_name: { value: null, matchMode: FilterMatchMode.CONTAINS },
-  notes: { value: null, matchMode: FilterMatchMode.CONTAINS }
+  notes: { value: null, matchMode: FilterMatchMode.CONTAINS },
+  performed_by_display: { value: null, matchMode: FilterMatchMode.CONTAINS }
 })
 
 const movementForm = ref({
@@ -191,7 +192,13 @@ async function loadData() {
     const resWarehouses = await fetch(API_URL + "/gadgets/warehouses", { headers })
     if (resWarehouses.ok) warehouses.value = await resWarehouses.json()
     const resMovements = await fetch(API_URL + "/gadgets/movements", { headers })
-    if (resMovements.ok) movements.value = await resMovements.json()
+    if (resMovements.ok) {
+      const data = await resMovements.json()
+      movements.value = data.map(m => ({
+        ...m,
+        performed_by_display: formatPerformedBy(m)
+      }))
+    }
   } catch (err) {
     console.error(err)
     toast.add({ severity: 'error', summary: t('common.error'), detail: t('gadgetStock.errors.loadFailed'), life: 3000 })
@@ -272,6 +279,26 @@ async function submitMovement() {
   } finally {
     submitting.value = false
   }
+}
+
+function formatPerformedBy(m) {
+  if (!m) return '-'
+  if (m.performer) {
+    const lastName = m.performer.last_name ? m.performer.last_name.trim() : ''
+    const id = m.performer.id || m.performed_by
+    if (lastName) {
+      return `${lastName} (#${id})`
+    }
+    const firstName = m.performer.first_name ? m.performer.first_name.trim() : ''
+    if (firstName) {
+      return `${firstName} (#${id})`
+    }
+    return `(#${id})`
+  }
+  if (m.performed_by) {
+    return `(${m.performed_by})`
+  }
+  return '-'
 }
 
 function formatDate(dateStr) {
@@ -474,6 +501,14 @@ onMounted(() => {
               <InputText v-model="filterModel.value" @input="filterCallback()" :placeholder="t('gadgetStock.searchNotes')" class="w-full" />
             </template>
           </Column>
+          <Column field="performed_by_display" :header="t('gadgetStock.performedby')" sortable filter filterField="performed_by_display" :showFilterMenu="false" :showClearButton="true">
+            <template #body="slotProps">
+              <span>{{ slotProps.data.performed_by_display ? slotProps.data.performed_by_display : '-' }}</span>
+            </template>
+            <template #filter="{ filterModel, filterCallback }">
+              <InputText v-model="filterModel.value" @input="filterCallback()" :placeholder="t('gadgetStock.searchPerformedBy')" class="w-full" />
+            </template>
+          </Column>
         </DataTable>
       </div>
     </div>
@@ -543,4 +578,4 @@ onMounted(() => {
 .text-xxs {
   font-size: 0.65rem;
 }
-</style>
+</style>
