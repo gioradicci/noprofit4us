@@ -15,6 +15,7 @@ import Select from 'primevue/select'
 import DataTable from 'primevue/datatable'
 import Column from 'primevue/column'
 import Dialog from 'primevue/dialog'
+import Image from 'primevue/image'
 
 const { t } = useI18n()
 const { canManageGadgets } = useUser()
@@ -366,8 +367,17 @@ onMounted(() => {
       </template>
       <Column :header="t('gadgets.table.image')" class="w-5rem text-center">
         <template #body="slotProps">
-          <div class="flex align-items-center justify-content-center m-auto border-1 border-light border-round overflow-hidden" style="width: 40px; height: 60px; background-color: var(--code-bg);">
-            <img v-if="slotProps.data.image_path" :src="getImageUrl(slotProps.data.image_path)" alt="Gadget" class="w-full h-full object-fit-cover" />
+          <div class="gadget-thumb flex align-items-center justify-content-center m-auto border-1 border-light border-round overflow-hidden">
+            <Image
+              v-if="slotProps.data.image_path"
+              :src="getImageUrl(slotProps.data.image_path)"
+              :alt="slotProps.data.name"
+              preview
+              class="gadget-thumb-image"
+              :imageStyle="{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }"
+              :previewButtonProps="{ 'aria-label': t('gadgets.table.image') }"
+              :pt="{ mask: { class: 'gadget-image-mask' } }"
+            />
             <i v-else class="pi pi-image text-color-secondary text-lg"></i>
           </div>
         </template>
@@ -424,6 +434,18 @@ onMounted(() => {
 .object-fit-cover {
   object-fit: cover;
 }
+/* Miniatura cliccabile: la dimensione resta invariata (40x60), ma l'immagine riempie il riquadro */
+.gadget-thumb {
+  width: 40px;
+  height: 60px;
+  background-color: var(--code-bg);
+}
+.gadget-thumb-image {
+  display: block;
+  position: relative;
+  width: 100%;
+  height: 100%;
+}
 </style>
 
 
@@ -445,5 +467,21 @@ object-fit: cover !important;
 }
 .object-fit-cover {
 object-fit: cover;
+}
+</style>
+
+<!--
+  L'overlay di anteprima di PrimeVue Image viene teleportato nel <body>,
+  quindi le regole di adattamento allo schermo devono essere globali
+  (non possono stare dentro <style scoped>).
+-->
+<style>
+.gadget-image-mask .p-image-original {
+  max-width: 92vw;
+  max-height: 82vh;
+}
+.gadget-image-mask .p-image-toolbar {
+  max-width: 92vw;
+  flex-wrap: wrap;
 }
 </style>
