@@ -32,8 +32,8 @@ async function registerWithEmail() {
   authError.value = ''
   authLoading.value = true
   
-  // URL del frontend, prende dall'ambiente Vite
-  const FRONTEND_URL = (import.meta.env.VITE_FRONTEND_URL || window.location.origin).replace(/\/+$/, '')
+  // URL del frontend: usa l'origine corrente del browser (es. http://localhost:5173 o dominio Vercel)
+  const FRONTEND_URL = (typeof window !== 'undefined' ? window.location.origin : (import.meta.env.VITE_FRONTEND_URL || '')).replace(/\/+$/, '')
   
   console.log(FRONTEND_URL)
   const { data, error } = await supabase.auth.signUp({

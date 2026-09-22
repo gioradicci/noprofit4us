@@ -111,6 +111,9 @@ async function initAuth() {
 
     if (event === 'PASSWORD_RECOVERY') {
       isPasswordRecovery.value = true
+      if (typeof window !== 'undefined' && window.location.pathname !== '/reset-password') {
+        window.location.href = '/reset-password'
+      }
     } else if (event === 'SIGNED_IN') {
       await fetchUser(true)
     } else if (event === 'SIGNED_OUT') {

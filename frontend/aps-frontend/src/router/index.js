@@ -1,5 +1,5 @@
 import { createRouter, createWebHistory } from 'vue-router'
-import { supabase } from '../supabase'
+import { supabase, isInitialRecoveryLink } from '../supabase'
 import { useUser } from '../composables/useUser'
 
 import Home from '../pages/Home.vue'
@@ -61,11 +61,10 @@ const router = createRouter({
 
 router.beforeEach(async (to) => {
   const { user, isAuthenticated, isPasswordRecovery, fetchUser } = useUser()
-  const { data: { session } } = await supabase.auth.getSession()
-  const hasSession = !!session
 
-  // 🔑 Se è attiva una sessione di reset password (da magic link), forza la rotta a /reset-password
-  const isRecoveryMode = isPasswordRecovery.value || (
+  // 🔑 CONTROLLA SUBITO LA RECOVERY PRIMA DI CHIAMARE getSession()
+  // (perché getSession() consuma e rimuove l'hash #access_token dall'URL!)
+  const isRecoveryMode = isInitialRecoveryLink || isPasswordRecovery.value || (
     typeof window !== 'undefined' && (
       window.location.href.includes('type=recovery') ||
       window.location.hash.includes('type=recovery') ||
@@ -77,6 +76,9 @@ router.beforeEach(async (to) => {
     isPasswordRecovery.value = true
     return '/reset-password'
   }
+
+  const { data: { session } } = await supabase.auth.getSession()
+  const hasSession = !!session
 
   // ✅ richiede login
   if (to.meta.requiresAuth && !hasSession) {
