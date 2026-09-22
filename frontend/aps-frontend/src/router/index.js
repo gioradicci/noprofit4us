@@ -9,11 +9,17 @@ import Gadgets from '../pages/Gadgets.vue'
 import GadgetStock from '../pages/GadgetStock.vue'
 import Warehouses from '../pages/Warehouses.vue'
 import Admin from '../pages/Admin.vue'
+import ResetPassword from '../pages/ResetPassword.vue'
 
 const routes = [
   {
     path: '/',
     component: Home,
+    meta: { requiresAuth: false }
+  },
+  {
+    path: '/reset-password',
+    component: ResetPassword,
     meta: { requiresAuth: false }
   },
   {
@@ -54,9 +60,23 @@ const router = createRouter({
 })
 
 router.beforeEach(async (to) => {
-  const { user, isAuthenticated, fetchUser } = useUser()
+  const { user, isAuthenticated, isPasswordRecovery, fetchUser } = useUser()
   const { data: { session } } = await supabase.auth.getSession()
   const hasSession = !!session
+
+  // 🔑 Se è attiva una sessione di reset password (da magic link), forza la rotta a /reset-password
+  const isRecoveryMode = isPasswordRecovery.value || (
+    typeof window !== 'undefined' && (
+      window.location.href.includes('type=recovery') ||
+      window.location.hash.includes('type=recovery') ||
+      window.location.search.includes('type=recovery')
+    )
+  )
+
+  if (isRecoveryMode && to.path !== '/reset-password') {
+    isPasswordRecovery.value = true
+    return '/reset-password'
+  }
 
   // ✅ richiede login
   if (to.meta.requiresAuth && !hasSession) {

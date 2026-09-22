@@ -53,6 +53,7 @@ const categories = [
   { label: t('gadgets.categories.poster'), value: 'POSTER' },
   { label: t('gadgets.categories.shopper'), value: 'SHOPPER' },
   { label: t('gadgets.categories.bags'), value: 'BORSE' },
+  { label: t('gadgets.categories.poncho'), value: 'PONCHO' },
   { label: t('gadgets.categories.other'), value: 'OTHER' }
 ]
 

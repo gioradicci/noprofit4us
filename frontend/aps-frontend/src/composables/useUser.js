@@ -1,11 +1,20 @@
 import { ref, computed } from 'vue'
-import { supabase } from '../supabase'
+import { supabase, isInitialRecoveryLink } from '../supabase'
 import { API_URL } from '../config'
 
 // Singleton reactive state shared across all components and router
 const user = ref(null)
 const isAuthenticated = ref(false)
 const isLoading = ref(true)
+const isPasswordRecovery = ref(
+  isInitialRecoveryLink || (
+    typeof window !== 'undefined' && (
+      window.location.href.includes('type=recovery') ||
+      window.location.hash.includes('type=recovery') ||
+      window.location.search.includes('type=recovery')
+    )
+  )
+)
 
 let inFlightPromise = null
 let authListenerInitialized = false
@@ -96,24 +105,18 @@ async function fetchUser(force = false) {
 async function initAuth() {
   if (authListenerInitialized) return
 
-  try {
-    const { data: { session } } = await supabase.auth.getSession()
-    isAuthenticated.value = !!session
-    if (isAuthenticated.value) {
-      await fetchUser()
-    }
-  } finally {
-    isLoading.value = false
-  }
-
+  // Register listener before getting session to avoid missing initial auth events
   supabase.auth.onAuthStateChange(async (event, session) => {
     isAuthenticated.value = !!session
 
-    if (event === 'SIGNED_IN') {
+    if (event === 'PASSWORD_RECOVERY') {
+      isPasswordRecovery.value = true
+    } else if (event === 'SIGNED_IN') {
       await fetchUser(true)
     } else if (event === 'SIGNED_OUT') {
       user.value = null
       isAuthenticated.value = false
+      isPasswordRecovery.value = false
     } else if (event === 'USER_UPDATED') {
       await fetchUser(true)
     } else if (event === 'INITIAL_SESSION') {
@@ -128,12 +131,23 @@ async function initAuth() {
   })
 
   authListenerInitialized = true
+
+  try {
+    const { data: { session } } = await supabase.auth.getSession()
+    isAuthenticated.value = !!session
+    if (isAuthenticated.value) {
+      await fetchUser()
+    }
+  } finally {
+    isLoading.value = false
+  }
 }
 
 async function logout() {
   await supabase.auth.signOut()
   user.value = null
   isAuthenticated.value = false
+  isPasswordRecovery.value = false
   window.location.href = '/'
 }
 
@@ -142,6 +156,7 @@ export function useUser() {
     user,
     isAuthenticated,
     isLoading,
+    isPasswordRecovery,
     isAdmin,
     isAdminOrTreasurer,
     canManageGadgets,

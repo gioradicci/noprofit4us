@@ -33,7 +33,7 @@ async function registerWithEmail() {
   authLoading.value = true
   
   // URL del frontend, prende dall'ambiente Vite
-  const FRONTEND_URL = import.meta.env.VITE_FRONTEND_URL || window.location.origin
+  const FRONTEND_URL = (import.meta.env.VITE_FRONTEND_URL || window.location.origin).replace(/\/+$/, '')
   
   console.log(FRONTEND_URL)
   const { data, error } = await supabase.auth.signUp({
@@ -183,6 +183,10 @@ function getRoleIcon() {
             <Button v-if="isRegistering" :label="t('home.loginCard.register')" :loading="authLoading" @click="registerWithEmail" class="w-full" />
             
             <Button :label="isRegistering ? t('home.loginCard.hasAccount') : t('home.loginCard.newUser')" link class="w-full p-0 text-sm" @click="isRegistering = !isRegistering" />
+            
+            <router-link v-if="!isRegistering" to="/reset-password" class="forgot-password-link text-center block mt-1">
+              {{ t('home.loginCard.forgotPassword') }}
+            </router-link>
           </form>
         </div>
       </div>
@@ -496,5 +500,17 @@ function getRoleIcon() {
 
 .text-muted {
   color: var(--text);
+}
+
+.forgot-password-link {
+  font-size: 0.8rem;
+  color: var(--text-color-secondary, #6b7280);
+  text-decoration: none;
+  transition: color 0.2s ease;
+}
+
+.forgot-password-link:hover {
+  color: #ea580c;
+  text-decoration: underline;
 }
 </style>

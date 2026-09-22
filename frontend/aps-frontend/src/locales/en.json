@@ -46,7 +46,28 @@
       "password": "Password",
       "emailCheck": "Check your email to verify your account",
       "hasAccount": "Already have an account? Login",
-      "newUser": "New user? Register"
+      "newUser": "New user? Register",
+      "forgotPassword": "Forgot password?"
+    },
+    "resetPassword": {
+      "title": "Reset Password",
+      "description": "Enter your email address and we'll send you a link to reset your password.",
+      "emailPlaceholder": "Your email address",
+      "sendLink": "Send Reset Link",
+      "sending": "Sending...",
+      "successTitle": "Email Sent!",
+      "successDesc": "Check your inbox (and spam folder). Click the link in the email to reset your password.",
+      "backToLogin": "Back to Login",
+      "newPasswordTitle": "New Password",
+      "newPasswordDesc": "Enter your new password. It must be at least 6 characters long.",
+      "newPassword": "New password",
+      "confirmPassword": "Confirm password",
+      "updatePassword": "Update Password",
+      "updating": "Updating...",
+      "passwordUpdated": "Password updated successfully! You will be redirected...",
+      "errorMismatch": "Passwords do not match",
+      "errorMinLength": "Password must be at least 6 characters",
+      "errorGeneric": "An error occurred. Please try again."
     },
     "howItWorks": {
       "title": "How It Works",
@@ -304,6 +325,7 @@
       "poster": "Poster",
       "shopper": "Shopper Bag",
       "bags": "Bags",
+      "poncho": "Poncho",      
       "other": "Other"
     },
     "models": {

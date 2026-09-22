@@ -46,7 +46,28 @@
       "password": "Password",
       "emailCheck": "Controlla la tua email per verificare l'account",
       "hasAccount": "Hai già un account? Accedi",
-      "newUser": "Nuovo utente? Registrati"
+      "newUser": "Nuovo utente? Registrati",
+      "forgotPassword": "Password dimenticata?"
+    },
+    "resetPassword": {
+      "title": "Reimposta Password",
+      "description": "Inserisci il tuo indirizzo email e ti invieremo un link per reimpostare la password.",
+      "emailPlaceholder": "Il tuo indirizzo email",
+      "sendLink": "Invia Link di Reset",
+      "sending": "Invio in corso...",
+      "successTitle": "Email Inviata!",
+      "successDesc": "Controlla la tua casella di posta (e la cartella spam). Clicca il link nell'email per reimpostare la password.",
+      "backToLogin": "Torna al Login",
+      "newPasswordTitle": "Nuova Password",
+      "newPasswordDesc": "Inserisci la tua nuova password. Deve contenere almeno 6 caratteri.",
+      "newPassword": "Nuova password",
+      "confirmPassword": "Conferma password",
+      "updatePassword": "Aggiorna Password",
+      "updating": "Aggiornamento in corso...",
+      "passwordUpdated": "Password aggiornata con successo! Verrai reindirizzato...",
+      "errorMismatch": "Le password non coincidono",
+      "errorMinLength": "La password deve contenere almeno 6 caratteri",
+      "errorGeneric": "Si è verificato un errore. Riprova."
     },
     "howItWorks": {
       "title": "Come Funziona",
@@ -304,6 +325,7 @@
       "poster": "Poster",
       "shopper": "Shopper",
       "bags": "Borse",
+      "poncho": "Poncho",
       "other": "Altro"
     },
     "models": {
