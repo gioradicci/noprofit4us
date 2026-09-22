@@ -63,20 +63,10 @@ router.beforeEach(async (to) => {
   const { user, isAuthenticated, isPasswordRecovery, fetchUser } = useUser()
 
   // 🔑 CONTROLLA SUBITO LA RECOVERY PRIMA DI CHIAMARE getSession()
-  // (perché getSession() consuma e rimuove l'hash #access_token dall'URL!)
   const hasAuthError = !!checkUrlAuthError()
-  const isRecoveryMode = !hasAuthError && (
-    isInitialRecoveryLink || isPasswordRecovery.value || (
-      typeof window !== 'undefined' && (
-        window.location.href.includes('type=recovery') ||
-        window.location.hash.includes('type=recovery') ||
-        window.location.search.includes('type=recovery')
-      )
-    )
-  )
+  const isRecoveryMode = !hasAuthError && isPasswordRecovery.value
 
   if (isRecoveryMode && to.path !== '/reset-password') {
-    isPasswordRecovery.value = true
     return '/reset-password'
   }
 

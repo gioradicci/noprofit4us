@@ -86,8 +86,8 @@
       "resourceDesc": "Manage gadgets, warehouse and association resources simply and transparently.",
       "communityTitle": "Active Community",
       "communityDesc": "Join a community of enthusiasts and volunteers.",
-      "supportTitle": "Dedicated Support",
-      "supportDesc": "Our team is always available to help you at every stage."
+      "supportTitle": "Support",
+      "supportDesc": "We help each other and collaborate on our activities."
     },
     "statusIncomplete": {
       "title": "Welcome!",
@@ -327,7 +327,7 @@
       "poster": "Poster",
       "shopper": "Shopper Bag",
       "bags": "Bags",
-      "poncho": "Poncho",      
+      "poncho": "Poncho",
       "other": "Other"
     },
     "models": {

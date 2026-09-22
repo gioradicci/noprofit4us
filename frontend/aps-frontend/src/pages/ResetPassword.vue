@@ -10,7 +10,7 @@ import { useUser } from '../composables/useUser'
 
 const { t } = useI18n()
 const router = useRouter()
-const { isPasswordRecovery } = useUser()
+const { isPasswordRecovery, clearRecoveryState } = useUser()
 
 // State
 const mode = ref('request') // 'request' | 'sent' | 'newPassword'
@@ -27,10 +27,7 @@ onMounted(async () => {
   if (urlAuthError) {
     // Invalida immediatamente qualunque sessione residua o preesistente
     await supabase.auth.signOut()
-    isPasswordRecovery.value = false
-    try {
-      sessionStorage.removeItem('is_password_recovery')
-    } catch (e) {}
+    clearRecoveryState()
 
     mode.value = 'request'
     if (
@@ -57,11 +54,11 @@ onMounted(async () => {
         sessionStorage.setItem('is_password_recovery', 'true')
       } catch (e) {}
       mode.value = 'newPassword'
+      if (typeof window !== 'undefined' && window.history && window.history.replaceState) {
+        window.history.replaceState(null, '', window.location.pathname)
+      }
     } else if (event === 'SIGNED_OUT') {
-      isPasswordRecovery.value = false
-      try {
-        sessionStorage.removeItem('is_password_recovery')
-      } catch (e) {}
+      clearRecoveryState()
       if (mode.value === 'newPassword') {
         mode.value = 'request'
       }
@@ -83,6 +80,9 @@ onMounted(async () => {
         sessionStorage.setItem('is_password_recovery', 'true')
       } catch (e) {}
       mode.value = 'newPassword'
+      if (typeof window !== 'undefined' && window.history && window.history.replaceState) {
+        window.history.replaceState(null, '', window.location.pathname)
+      }
       return
     }
   }
@@ -135,27 +135,25 @@ async function updatePassword() {
     error.value = updateError.message
   } else {
     success.value = true
-    isPasswordRecovery.value = false
-    try {
-      sessionStorage.removeItem('is_password_recovery')
-    } catch (e) {}
+    clearRecoveryState()
 
     // Effettua la logout per invalidare la sessione di recovery e forzare il login con la nuova password
     await supabase.auth.signOut()
 
     setTimeout(() => {
-      router.push('/')
+      router.push('/').catch(() => {
+        window.location.href = '/'
+      })
     }, 2500)
   }
 }
 
 async function goToLogin() {
-  isPasswordRecovery.value = false
-  try {
-    sessionStorage.removeItem('is_password_recovery')
-  } catch (e) {}
+  clearRecoveryState()
   await supabase.auth.signOut()
-  router.push('/')
+  router.push('/').catch(() => {
+    window.location.href = '/'
+  })
 }
 </script>
 

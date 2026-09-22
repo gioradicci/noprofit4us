@@ -20,11 +20,18 @@ export function checkUrlAuthError() {
   return null
 }
 
-export const isInitialRecoveryLink = typeof window !== 'undefined' && !checkUrlAuthError() && (
+export let isInitialRecoveryLink = typeof window !== 'undefined' && !checkUrlAuthError() && (
   window.location.href.includes('type=recovery') ||
   window.location.hash.includes('type=recovery') ||
   window.location.search.includes('type=recovery')
 )
+
+export function clearRecoveryLink() {
+  isInitialRecoveryLink = false
+  if (typeof window !== 'undefined' && window.history && window.history.replaceState) {
+    window.history.replaceState(null, '', window.location.pathname)
+  }
+}
 
 
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL

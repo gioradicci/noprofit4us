@@ -1,5 +1,5 @@
 import { ref, computed } from 'vue'
-import { supabase, isInitialRecoveryLink, checkUrlAuthError } from '../supabase'
+import { supabase, isInitialRecoveryLink, checkUrlAuthError, clearRecoveryLink } from '../supabase'
 import { API_URL } from '../config'
 
 // Singleton reactive state shared across all components and router
@@ -12,11 +12,20 @@ const isPasswordRecovery = ref(
       typeof window !== 'undefined' && (
         window.location.href.includes('type=recovery') ||
         window.location.hash.includes('type=recovery') ||
-        window.location.search.includes('type=recovery')
+        window.location.search.includes('type=recovery') ||
+        (typeof sessionStorage !== 'undefined' && sessionStorage.getItem('is_password_recovery') === 'true')
       )
     )
   )
 )
+
+export function clearRecoveryState() {
+  clearRecoveryLink()
+  isPasswordRecovery.value = false
+  try {
+    sessionStorage.removeItem('is_password_recovery')
+  } catch (e) {}
+}
 
 let inFlightPromise = null
 let authListenerInitialized = false
@@ -158,10 +167,7 @@ async function logout() {
   await supabase.auth.signOut()
   user.value = null
   isAuthenticated.value = false
-  isPasswordRecovery.value = false
-  try {
-    sessionStorage.removeItem('is_password_recovery')
-  } catch (e) {}
+  clearRecoveryState()
   window.location.href = '/'
 }
 
@@ -171,6 +177,7 @@ export function useUser() {
     isAuthenticated,
     isLoading,
     isPasswordRecovery,
+    clearRecoveryState,
     isAdmin,
     isAdminOrTreasurer,
     canManageGadgets,
