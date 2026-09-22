@@ -1,6 +1,6 @@
 <script setup>
 import { ref, onMounted } from 'vue'
-import { supabase } from '../supabase'
+import { supabase, checkUrlAuthError } from '../supabase'
 import { useRouter } from 'vue-router'
 import Button from 'primevue/button'
 import InputText from 'primevue/inputtext'
@@ -22,28 +22,73 @@ const error = ref('')
 const success = ref(false)
 
 onMounted(async () => {
-  // Ascolta cambi di stato auth (es. se la sessione viene recuperata asincronamente dall'hash URL)
+  // 1. Controlla se l'URL contiene un errore restituito da Supabase (es. link scaduto, otp_expired, access_denied)
+  const urlAuthError = checkUrlAuthError()
+  if (urlAuthError) {
+    // Invalida immediatamente qualunque sessione residua o preesistente
+    await supabase.auth.signOut()
+    isPasswordRecovery.value = false
+    try {
+      sessionStorage.removeItem('is_password_recovery')
+    } catch (e) {}
+
+    mode.value = 'request'
+    if (
+      urlAuthError.errorCode === 'otp_expired' ||
+      (urlAuthError.errorDescription && urlAuthError.errorDescription.toLowerCase().includes('expired'))
+    ) {
+      error.value = t('home.resetPassword.errorExpiredLink')
+    } else {
+      error.value = urlAuthError.errorDescription || t('home.resetPassword.errorInvalidLink')
+    }
+
+    // Pulisce parametri di errore dall'URL
+    if (typeof window !== 'undefined' && window.history && window.history.replaceState) {
+      window.history.replaceState(null, '', window.location.pathname)
+    }
+    return
+  }
+
+  // 2. Ascolta l'evento PASSWORD_RECOVERY da Supabase
   supabase.auth.onAuthStateChange((event, session) => {
-    if (session || event === 'PASSWORD_RECOVERY') {
+    if (event === 'PASSWORD_RECOVERY') {
       isPasswordRecovery.value = true
+      try {
+        sessionStorage.setItem('is_password_recovery', 'true')
+      } catch (e) {}
       mode.value = 'newPassword'
+    } else if (event === 'SIGNED_OUT') {
+      isPasswordRecovery.value = false
+      try {
+        sessionStorage.removeItem('is_password_recovery')
+      } catch (e) {}
+      if (mode.value === 'newPassword') {
+        mode.value = 'request'
+      }
     }
   })
 
-  // Controlla se la sessione Supabase è già stata creata dal magic link
-  const { data: { session } } = await supabase.auth.getSession()
-
-  const isHashRecovery = typeof window !== 'undefined' && (
+  // 3. Verifica se siamo effettivamente in un flusso di recovery valido
+  const hasRecoveryHash = typeof window !== 'undefined' && (
     window.location.hash.includes('type=recovery') ||
     window.location.search.includes('type=recovery')
   )
+  const isStoredRecovery = (typeof sessionStorage !== 'undefined' && sessionStorage.getItem('is_password_recovery') === 'true')
 
-  if (session || isPasswordRecovery.value || isHashRecovery) {
-    isPasswordRecovery.value = true
-    mode.value = 'newPassword'
-  } else {
-    mode.value = 'request'
+  if (isPasswordRecovery.value || hasRecoveryHash || isStoredRecovery) {
+    const { data: { session } } = await supabase.auth.getSession()
+    if (session) {
+      isPasswordRecovery.value = true
+      try {
+        sessionStorage.setItem('is_password_recovery', 'true')
+      } catch (e) {}
+      mode.value = 'newPassword'
+      return
+    }
   }
+
+  // Se non c'è una sessione di recupero valida, mostra la form di richiesta reset
+  mode.value = 'request'
 })
 
 async function sendResetEmail() {
@@ -91,14 +136,25 @@ async function updatePassword() {
   } else {
     success.value = true
     isPasswordRecovery.value = false
+    try {
+      sessionStorage.removeItem('is_password_recovery')
+    } catch (e) {}
+
+    // Effettua la logout per invalidare la sessione di recovery e forzare il login con la nuova password
+    await supabase.auth.signOut()
+
     setTimeout(() => {
       router.push('/')
     }, 2500)
   }
 }
 
-function goToLogin() {
+async function goToLogin() {
   isPasswordRecovery.value = false
+  try {
+    sessionStorage.removeItem('is_password_recovery')
+  } catch (e) {}
+  await supabase.auth.signOut()
   router.push('/')
 }
 </script>
@@ -127,7 +183,10 @@ function goToLogin() {
               required
             />
 
-            <small v-if="error" class="p-error text-center" style="color: red;">{{ error }}</small>
+            <div v-if="error" class="p-3 border-round bg-red-50 text-red-700 border-1 border-red-200 text-sm flex align-items-center gap-2">
+              <i class="pi pi-exclamation-circle text-lg flex-shrink-0"></i>
+              <span class="line-height-2">{{ error }}</span>
+            </div>
 
             <Button
               :label="loading ? t('home.resetPassword.sending') : t('home.resetPassword.sendLink')"
@@ -176,7 +235,15 @@ function goToLogin() {
           <!-- Success message after update -->
           <div v-if="success" class="text-center">
             <i class="pi pi-check-circle text-5xl text-green-500 mb-3 block"></i>
-            <p class="text-green-500 font-semibold">{{ t('home.resetPassword.passwordUpdated') }}</p>
+            <p class="text-green-500 font-semibold mb-4">{{ t('home.resetPassword.passwordUpdated') }}</p>
+            <Button
+              :label="t('home.resetPassword.backToLogin')"
+              class="w-full"
+              @click="goToLogin"
+              icon="pi pi-arrow-left"
+              severity="secondary"
+              outlined
+            />
           </div>
 
           <form v-else class="flex flex-column gap-3" @submit.prevent="updatePassword">
@@ -200,7 +267,10 @@ function goToLogin() {
               required
             />
 
-            <small v-if="error" class="p-error text-center" style="color: red;">{{ error }}</small>
+            <div v-if="error" class="p-3 border-round bg-red-50 text-red-700 border-1 border-red-200 text-sm flex align-items-center gap-2">
+              <i class="pi pi-exclamation-circle text-lg flex-shrink-0"></i>
+              <span class="line-height-2">{{ error }}</span>
+            </div>
 
             <Button
               :label="loading ? t('home.resetPassword.updating') : t('home.resetPassword.updatePassword')"

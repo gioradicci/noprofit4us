@@ -67,7 +67,9 @@
       "passwordUpdated": "Password aggiornata con successo! Verrai reindirizzato...",
       "errorMismatch": "Le password non coincidono",
       "errorMinLength": "La password deve contenere almeno 6 caratteri",
-      "errorGeneric": "Si è verificato un errore. Riprova."
+      "errorGeneric": "Si è verificato un errore. Riprova.",
+      "errorExpiredLink": "Il link per il recupero della password è scaduto o non è più valido. Richiedi un nuovo link.",
+      "errorInvalidLink": "Il link per il recupero della password non è valido. Richiedi un nuovo link."
     },
     "howItWorks": {
       "title": "Come Funziona",

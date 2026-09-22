@@ -67,7 +67,9 @@
       "passwordUpdated": "Password updated successfully! You will be redirected...",
       "errorMismatch": "Passwords do not match",
       "errorMinLength": "Password must be at least 6 characters",
-      "errorGeneric": "An error occurred. Please try again."
+      "errorGeneric": "An error occurred. Please try again.",
+      "errorExpiredLink": "The password reset link has expired or is invalid. Please request a new link.",
+      "errorInvalidLink": "The password reset link is invalid. Please request a new link."
     },
     "howItWorks": {
       "title": "How It Works",

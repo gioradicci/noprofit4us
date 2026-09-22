@@ -1,5 +1,5 @@
 import { ref, computed } from 'vue'
-import { supabase, isInitialRecoveryLink } from '../supabase'
+import { supabase, isInitialRecoveryLink, checkUrlAuthError } from '../supabase'
 import { API_URL } from '../config'
 
 // Singleton reactive state shared across all components and router
@@ -7,11 +7,13 @@ const user = ref(null)
 const isAuthenticated = ref(false)
 const isLoading = ref(true)
 const isPasswordRecovery = ref(
-  isInitialRecoveryLink || (
-    typeof window !== 'undefined' && (
-      window.location.href.includes('type=recovery') ||
-      window.location.hash.includes('type=recovery') ||
-      window.location.search.includes('type=recovery')
+  !checkUrlAuthError() && (
+    isInitialRecoveryLink || (
+      typeof window !== 'undefined' && (
+        window.location.href.includes('type=recovery') ||
+        window.location.hash.includes('type=recovery') ||
+        window.location.search.includes('type=recovery')
+      )
     )
   )
 )
@@ -111,6 +113,9 @@ async function initAuth() {
 
     if (event === 'PASSWORD_RECOVERY') {
       isPasswordRecovery.value = true
+      try {
+        sessionStorage.setItem('is_password_recovery', 'true')
+      } catch (e) {}
       if (typeof window !== 'undefined' && window.location.pathname !== '/reset-password') {
         window.location.href = '/reset-password'
       }
@@ -120,6 +125,9 @@ async function initAuth() {
       user.value = null
       isAuthenticated.value = false
       isPasswordRecovery.value = false
+      try {
+        sessionStorage.removeItem('is_password_recovery')
+      } catch (e) {}
     } else if (event === 'USER_UPDATED') {
       await fetchUser(true)
     } else if (event === 'INITIAL_SESSION') {
@@ -151,6 +159,9 @@ async function logout() {
   user.value = null
   isAuthenticated.value = false
   isPasswordRecovery.value = false
+  try {
+    sessionStorage.removeItem('is_password_recovery')
+  } catch (e) {}
   window.location.href = '/'
 }
 

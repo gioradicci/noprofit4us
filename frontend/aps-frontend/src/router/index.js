@@ -1,5 +1,5 @@
 import { createRouter, createWebHistory } from 'vue-router'
-import { supabase, isInitialRecoveryLink } from '../supabase'
+import { supabase, isInitialRecoveryLink, checkUrlAuthError } from '../supabase'
 import { useUser } from '../composables/useUser'
 
 import Home from '../pages/Home.vue'
@@ -64,11 +64,14 @@ router.beforeEach(async (to) => {
 
   // 🔑 CONTROLLA SUBITO LA RECOVERY PRIMA DI CHIAMARE getSession()
   // (perché getSession() consuma e rimuove l'hash #access_token dall'URL!)
-  const isRecoveryMode = isInitialRecoveryLink || isPasswordRecovery.value || (
-    typeof window !== 'undefined' && (
-      window.location.href.includes('type=recovery') ||
-      window.location.hash.includes('type=recovery') ||
-      window.location.search.includes('type=recovery')
+  const hasAuthError = !!checkUrlAuthError()
+  const isRecoveryMode = !hasAuthError && (
+    isInitialRecoveryLink || isPasswordRecovery.value || (
+      typeof window !== 'undefined' && (
+        window.location.href.includes('type=recovery') ||
+        window.location.hash.includes('type=recovery') ||
+        window.location.search.includes('type=recovery')
+      )
     )
   )
 
