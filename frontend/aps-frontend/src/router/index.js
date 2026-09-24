@@ -3,13 +3,6 @@ import { supabase, isInitialRecoveryLink, checkUrlAuthError } from '../supabase'
 import { useUser } from '../composables/useUser'
 
 import Home from '../pages/Home.vue'
-import Wizard from '../pages/Wizard.vue'
-import Dashboard from '../pages/Dashboard.vue'
-import Gadgets from '../pages/Gadgets.vue'
-import GadgetStock from '../pages/GadgetStock.vue'
-import Warehouses from '../pages/Warehouses.vue'
-import Admin from '../pages/Admin.vue'
-import ResetPassword from '../pages/ResetPassword.vue'
 
 const routes = [
   {
@@ -19,37 +12,37 @@ const routes = [
   },
   {
     path: '/reset-password',
-    component: ResetPassword,
+    component: () => import('../pages/ResetPassword.vue'),
     meta: { requiresAuth: false }
   },
   {
     path: '/wizard',
-    component: Wizard,
+    component: () => import('../pages/Wizard.vue'),
     meta: { requiresAuth: true }
   },
   {
     path: '/dashboard',
-    component: Dashboard,
+    component: () => import('../pages/Dashboard.vue'),
     meta: { requiresAuth: true, requiresAdmin: true }
   },
   {
     path: '/gadgets',
-    component: Gadgets,
+    component: () => import('../pages/Gadgets.vue'),
     meta: { requiresAuth: true }
   },
   {
     path: '/gadget-stock',
-    component: GadgetStock,
+    component: () => import('../pages/GadgetStock.vue'),
     meta: { requiresAuth: true }
   },
   {
     path: '/warehouses',
-    component: Warehouses,
+    component: () => import('../pages/Warehouses.vue'),
     meta: { requiresAuth: true }
   },
   {
     path: '/admin',
-    component: Admin,
+    component: () => import('../pages/Admin.vue'),
     meta: { requiresAuth: true, requiresStrictAdmin: true }
   }
 ]

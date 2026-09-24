@@ -1,3 +1,4 @@
+from database.models import membership
 from fastapi import APIRouter, Depends, HTTPException
 from fastapi.responses import StreamingResponse
 from sqlalchemy.orm import Session
@@ -624,9 +625,15 @@ def update_user_role(
         )
 
     new_role = payload.role.strip().upper()
-    valid_roles = ["USER", "MEMBER", "SECRETARY", "TREASURER", "ADMIN"]
+    valid_roles = [ "MEMBER", "SECRETARY", "TREASURER", "ADMIN"]
     if new_role not in valid_roles:
         raise HTTPException(status_code=400, detail="Ruolo non valido")
+
+    #TODO: Controllo che se l'utente è provvisorio, pending e non ha un numero di tessera 
+    #non deve essere possibile modificare il ruolo.
+    #
+    if target_user.status != "APPROVED" :
+        raise HTTPException(status_code=400, detail="Non puoi modificare il ruolo di un utente provvisorio.")
 
     old_role = target_user.role
 

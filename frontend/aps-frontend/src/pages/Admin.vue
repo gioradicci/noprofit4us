@@ -23,7 +23,6 @@ const editForm = ref({
 })
 
 const roleOptions = [
-  { label: t('admin.roles.user'), value: 'USER' },
   { label: t('admin.roles.member'), value: 'MEMBER' },
   { label: t('admin.roles.secretary'), value: 'SECRETARY' },
   { label: t('admin.roles.treasurer'), value: 'TREASURER' },
