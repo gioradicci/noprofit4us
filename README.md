@@ -17,5 +17,5 @@ Questo è un progetto web per la gestione di un'associazione no-profit (APS), co
 ### Backend
 - Python (v3.10+)
 - Virtualenv (opzionale ma consigliato)
-- Su Render
+- Su Vercel+Supabase
 
