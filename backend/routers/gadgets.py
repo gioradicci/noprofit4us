@@ -163,10 +163,12 @@ def upload_image(
     return {"image_path": public_url}
 
 
+#Rendiamo la pagina dei gadget visibile a tutti anche senza autenticazione
 @router.get("/")
-def get_gadgets(current_user=Depends(get_current_user), db: Session = Depends(get_db)):
-    if current_user.role != "ADMIN" and current_user.status == "INCOMPLETE":
-        raise HTTPException(status_code=403, detail="Active profile required")
+#def get_gadgets(current_user=Depends(get_current_user), db: Session = Depends(get_db)):
+def get_gadgets(db: Session = Depends(get_db)):
+ #   if current_user.role != "ADMIN" and current_user.status == "INCOMPLETE":
+ #       raise HTTPException(status_code=403, detail="Active profile required")
 
     gadgets = db.query(Gadget).all()
     result = []

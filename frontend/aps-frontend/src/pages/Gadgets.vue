@@ -359,14 +359,14 @@ onMounted(() => {
 
   <!-- Lista Gadget -->
   <div class="card p-4 shadow-2 border-round surface-card">
-    <DataTable :value="gadgets" :loading="loading" paginator :rows="10" responsiveLayout="scroll">
+    <DataTable :value="gadgets" :loading="loading" paginator :rows="10" scrollable>
       <template #empty>
         <div class="text-center py-4">
           <i class="pi pi-box text-4xl text-300 mb-2"></i>
           <p class="m-0 text-color-secondary">{{ t('gadgets.empty') }}</p>
         </div>
       </template>
-      <Column :header="t('gadgets.table.image')" class="w-5rem text-center">
+      <Column :header="t('gadgets.table.image')" frozen alignFrozen="left" class="text-center" style="width: 5rem; min-width: 5rem">
         <template #body="slotProps">
           <div class="gadget-thumb flex align-items-center justify-content-center m-auto border-1 border-light border-round overflow-hidden">
             <Image
@@ -383,7 +383,7 @@ onMounted(() => {
           </div>
         </template>
       </Column>
-      <Column field="sku" header="SKU" sortable class="font-medium text-sm"></Column>
+      <Column field="sku" header="SKU" sortable frozen alignFrozen="left" class="font-medium text-sm"></Column>
       <Column field="name" :header="t('gadgets.table.name')" sortable class="font-bold"></Column>
       <Column field="category" :header="t('gadgets.table.category')" sortable>
         <template #body="slotProps">
@@ -446,6 +446,16 @@ onMounted(() => {
   position: relative;
   width: 100%;
   height: 100%;
+}
+/*
+  Colonna "frozen": posizionata con position: sticky dal tema PrimeVue
+  (regola .p-datatable-scrollable .p-datatable-frozen-column), quindi serve
+  un fondo opaco per non far trasparire le colonne in scorrimento.
+*/
+:deep(.p-datatable-scrollable th.p-datatable-frozen-column),
+:deep(.p-datatable-scrollable td.p-datatable-frozen-column) {
+  background-color: var(--p-content-background, #ffffff);
+  border-inline-end: 1px solid var(--border);
 }
 </style>
 

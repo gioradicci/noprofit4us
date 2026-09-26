@@ -28,7 +28,7 @@ const routes = [
   {
     path: '/gadgets',
     component: () => import('../pages/Gadgets.vue'),
-    meta: { requiresAuth: true }
+    meta: { requiresAuth: false }
   },
   {
     path: '/gadget-stock',
