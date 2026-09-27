@@ -11,12 +11,13 @@ from openpyxl.styles import Font, PatternFill, Alignment
 from io import BytesIO
 from database.database import get_db
 from supabase import create_client, Client
-from database.models.gadget import Gadget, Warehouse, StockMovement, GadgetVariantStock
+from database.models.gadget import Gadget, Warehouse, StockMovement, GadgetVariantStock, GadgetLoan
+from database.models.user import User
 from dependencies.auth import get_current_user
 from services import gadget_service
 from database.models.member import Member
 from database.models.membership import Membership
-from datetime import date
+from datetime import date, datetime
 
 
 #router = APIRouter(prefix="/gadgets", tags=["gadgets"])
@@ -75,6 +76,23 @@ class MovementCreate(BaseModel):
     to_warehouse_id: Optional[int] = None
     quantity: int
     movement_type: str  # RESTOCK, TRANSFER, DELIVERY
+    notes: Optional[str] = None
+
+
+class LoanCreate(BaseModel):
+    gadget_id: int
+    from_warehouse_id: int
+    quantity: int
+    assigned_to_user_id: Optional[int] = None
+    assigned_to_name: Optional[str] = None
+    expected_return_date: Optional[str] = None
+    notes: Optional[str] = None
+
+
+class LoanReturn(BaseModel):
+    returned_quantity: int
+    to_warehouse_id: int
+    distributed_quantity: int = 0
     notes: Optional[str] = None
 
 
@@ -605,5 +623,138 @@ def export_inventory(
         media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
         headers=headers
     )
+
+
+@router.get("/loan-assignees")
+def get_loan_assignees(current_user=Depends(get_current_user), db: Session = Depends(get_db)):
+    if current_user.role not in ["ADMIN", "SECRETARY"]:
+        raise HTTPException(status_code=403, detail="Not authorized")
+    if current_user.role == "SECRETARY" and not has_active_membership(current_user, db):
+        raise HTTPException(status_code=403, detail="Active membership required")
+
+    users = db.query(User).filter(User.status == "APPROVED").all()
+    result = []
+    for u in users:
+        member = db.query(Member).filter_by(user_id=u.id).first()
+        mem_num = member.membership_number if member else None
+        full_name = f"{u.first_name or ''} {u.last_name or ''}".strip()
+        display = f"{full_name} ({mem_num})" if (full_name and mem_num) else (full_name or u.email or f"Socio #{u.id}")
+        result.append({
+            "id": u.id,
+            "name": full_name,
+            "email": u.email,
+            "membership_number": mem_num,
+            "display": display
+        })
+    return sorted(result, key=lambda x: x["display"].lower())
+
+
+@router.get("/loans")
+def get_loans(
+    status: Optional[str] = None,
+    current_user=Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    if current_user.role not in ["ADMIN", "SECRETARY"]:
+        raise HTTPException(status_code=403, detail="Not authorized")
+    if current_user.role == "SECRETARY" and not has_active_membership(current_user, db):
+        raise HTTPException(status_code=403, detail="Active membership required")
+
+    query = db.query(GadgetLoan)
+    if status and status.upper() != "ALL":
+        query = query.filter(GadgetLoan.status == status.upper())
+
+    loans = query.order_by(GadgetLoan.created_at.desc()).all()
+    result = []
+    today = date.today()
+    for l in loans:
+        remaining = l.quantity - l.returned_quantity - l.distributed_quantity
+        is_overdue = False
+        if l.status != "RETURNED" and l.expected_return_date:
+            exp_date = l.expected_return_date.date() if isinstance(l.expected_return_date, datetime) else l.expected_return_date
+            if exp_date < today:
+                is_overdue = True
+
+        result.append({
+            "id": l.id,
+            "gadget_id": l.gadget_id,
+            "gadget_name": l.gadget.name if l.gadget else None,
+            "gadget_sku": l.gadget.sku if l.gadget else None,
+            "gadget_image": l.gadget.image_path if l.gadget else None,
+            "from_warehouse_id": l.from_warehouse_id,
+            "from_warehouse_name": l.from_warehouse.name if l.from_warehouse else None,
+            "assigned_to_user_id": l.assigned_to_user_id,
+            "assigned_to_name": l.assigned_to_name,
+            "quantity": l.quantity,
+            "returned_quantity": l.returned_quantity,
+            "distributed_quantity": l.distributed_quantity,
+            "remaining_quantity": remaining,
+            "status": l.status,
+            "loan_date": l.loan_date.isoformat() if l.loan_date else None,
+            "expected_return_date": l.expected_return_date.strftime("%Y-%m-%d") if l.expected_return_date else None,
+            "returned_date": l.returned_date.isoformat() if l.returned_date else None,
+            "is_overdue": is_overdue,
+            "notes": l.notes,
+            "performed_by": l.performed_by,
+            "performer_name": f"{l.performer.first_name or ''} {l.performer.last_name or ''}".strip() if l.performer else None
+        })
+    return result
+
+
+@router.post("/loans")
+def create_loan(
+    payload: LoanCreate,
+    current_user=Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    if current_user.role not in ["ADMIN", "SECRETARY"]:
+        raise HTTPException(status_code=403, detail="Not authorized")
+    if current_user.role == "SECRETARY" and not has_active_membership(current_user, db):
+        raise HTTPException(status_code=403, detail="Active membership required")
+
+    expected_dt = None
+    if payload.expected_return_date:
+        try:
+            expected_dt = datetime.strptime(payload.expected_return_date, "%Y-%m-%d")
+        except ValueError:
+            pass
+
+    loan = gadget_service.create_gadget_loan(
+        db=db,
+        gadget_id=payload.gadget_id,
+        from_warehouse_id=payload.from_warehouse_id,
+        quantity=payload.quantity,
+        performed_by=current_user.id,
+        assigned_to_user_id=payload.assigned_to_user_id,
+        assigned_to_name=payload.assigned_to_name,
+        expected_return_date=expected_dt,
+        notes=payload.notes
+    )
+    return {"status": "success", "loan_id": loan.id}
+
+
+@router.post("/loans/{loan_id}/return")
+def return_loan(
+    loan_id: int,
+    payload: LoanReturn,
+    current_user=Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    if current_user.role not in ["ADMIN", "SECRETARY"]:
+        raise HTTPException(status_code=403, detail="Not authorized")
+    if current_user.role == "SECRETARY" and not has_active_membership(current_user, db):
+        raise HTTPException(status_code=403, detail="Active membership required")
+
+    loan = gadget_service.return_gadget_loan(
+        db=db,
+        loan_id=loan_id,
+        returned_quantity=payload.returned_quantity,
+        to_warehouse_id=payload.to_warehouse_id,
+        performed_by=current_user.id,
+        distributed_quantity=payload.distributed_quantity,
+        notes=payload.notes
+    )
+    return {"status": "success", "loan_id": loan.id, "new_status": loan.status}
+
 
 

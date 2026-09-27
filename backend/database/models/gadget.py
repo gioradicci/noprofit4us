@@ -23,6 +23,7 @@ class Gadget(Base):
 
     stocks = relationship("GadgetVariantStock", back_populates="gadget", cascade="all, delete-orphan")
     movements = relationship("StockMovement", back_populates="gadget", cascade="all, delete-orphan")
+    loans = relationship("GadgetLoan", back_populates="gadget", cascade="all, delete-orphan")
 
 
 class Warehouse(Base):
@@ -58,7 +59,7 @@ class StockMovement(Base):
     to_warehouse_id = Column(Integer, ForeignKey("warehouses.id"), nullable=True)    # Null if DELIVERY
 
     quantity = Column(Integer, nullable=False)
-    movement_type = Column(String, nullable=False)  # RESTOCK, TRANSFER, DELIVERY
+    movement_type = Column(String, nullable=False)  # RESTOCK, TRANSFER, DELIVERY, LOAN, LOAN_RETURN
     
     performed_by = Column(Integer, ForeignKey("users.id"), nullable=False)  # User ID of Secretary/Admin
     timestamp = Column(DateTime, default=datetime.utcnow, nullable=False)
@@ -80,4 +81,30 @@ class GadgetLock(Base):
 
     gadget = relationship("Gadget")
     user = relationship("User")
+
+
+class GadgetLoan(Base):
+    __tablename__ = "gadget_loans"
+
+    id = Column(Integer, primary_key=True)
+    gadget_id = Column(Integer, ForeignKey("gadgets.id"), nullable=False)
+    from_warehouse_id = Column(Integer, ForeignKey("warehouses.id"), nullable=True)
+    assigned_to_user_id = Column(Integer, ForeignKey("users.id"), nullable=True)
+    assigned_to_name = Column(String, nullable=True)
+    quantity = Column(Integer, nullable=False)
+    returned_quantity = Column(Integer, default=0, nullable=False)
+    distributed_quantity = Column(Integer, default=0, nullable=False)
+    status = Column(String, default="ACTIVE", nullable=False)  # ACTIVE, PARTIAL, RETURNED
+    loan_date = Column(DateTime, default=datetime.utcnow, nullable=False)
+    expected_return_date = Column(DateTime, nullable=True)
+    returned_date = Column(DateTime, nullable=True)
+    notes = Column(String, nullable=True)
+    performed_by = Column(Integer, ForeignKey("users.id"), nullable=False)
+    created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+    updated_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+
+    gadget = relationship("Gadget", back_populates="loans")
+    from_warehouse = relationship("Warehouse", foreign_keys=[from_warehouse_id])
+    assigned_user = relationship("User", foreign_keys=[assigned_to_user_id])
+    performer = relationship("User", foreign_keys=[performed_by])
 
