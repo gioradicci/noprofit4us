@@ -121,7 +121,7 @@ def initialize_database():
                 # Abilitiamo RLS su tutte le tabelle per sicurezza
                 tables_to_secure = [
                     "users", "members", "memberships", "gadgets", 
-                    "gadget_variants", "warehouses", "gadget_variant_stocks", 
+                    "warehouses", "gadget_variant_stocks", 
                     "stock_movements", "gadget_locks", "audit_logs"
                 ]
                 for table in tables_to_secure:
