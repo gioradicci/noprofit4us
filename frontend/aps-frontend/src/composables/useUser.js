@@ -6,6 +6,7 @@ import { API_URL } from '../config'
 const user = ref(null)
 const isAuthenticated = ref(false)
 const isLoading = ref(true)
+const isFetchingUser = ref(false)
 const isPasswordRecovery = ref(
   !checkUrlAuthError() && (
     isInitialRecoveryLink || (
@@ -80,7 +81,11 @@ async function fetchUser(force = false) {
     return inFlightPromise
   }
 
+  isFetchingUser.value = true
   inFlightPromise = (async () => {
+    const controller = new AbortController()
+    const timeoutId = setTimeout(() => controller.abort(), 25000)
+
     try {
       const { data: { session } } = await supabase.auth.getSession()
       if (!session) {
@@ -92,21 +97,38 @@ async function fetchUser(force = false) {
       isAuthenticated.value = true
       const token = session.access_token
       const res = await fetch(API_URL + "/users/me", {
-        headers: { Authorization: `Bearer ${token}` }
+        headers: { Authorization: `Bearer ${token}` },
+        signal: controller.signal
       })
 
       if (res.ok) {
         user.value = await res.json()
         return user.value
       } else if (res.status === 401 || res.status === 403) {
+        console.warn("Sessione o token non valido sul backend (401/403). Pulizia sessione locale...")
         user.value = null
+        isAuthenticated.value = false
+        try {
+          await supabase.auth.signOut()
+        } catch (signOutErr) {
+          console.error("Errore signOut:", signOutErr)
+        }
+        return null
+      } else {
+        console.error("Errore risposta backend /users/me:", res.status)
         return null
       }
     } catch (e) {
-      console.error("Errore nel caricamento utente da /users/me:", e)
+      if (e.name === 'AbortError') {
+        console.warn("Timeout (25s) durante la chiamata a /users/me")
+      } else {
+        console.error("Errore nel caricamento utente da /users/me:", e)
+      }
       return null
     } finally {
+      clearTimeout(timeoutId)
       inFlightPromise = null
+      isFetchingUser.value = false
     }
   })()
 
@@ -143,10 +165,10 @@ async function initAuth() {
       if (session && !user.value) {
         await fetchUser()
       }
-    }
-    // Note: TOKEN_REFRESHED does NOT trigger a re-fetch of /users/me unless user is missing
-    if (session && !user.value) {
-      await fetchUser()
+    } else if (event === 'TOKEN_REFRESHED') {
+      if (session && !user.value) {
+        await fetchUser()
+      }
     }
   })
 
@@ -156,7 +178,7 @@ async function initAuth() {
     const { data: { session } } = await supabase.auth.getSession()
     isAuthenticated.value = !!session
     if (isAuthenticated.value) {
-      await fetchUser()
+      fetchUser()
     }
   } finally {
     isLoading.value = false
@@ -164,7 +186,11 @@ async function initAuth() {
 }
 
 async function logout() {
-  await supabase.auth.signOut()
+  try {
+    await supabase.auth.signOut()
+  } catch (e) {
+    console.error("Errore durante signOut:", e)
+  }
   user.value = null
   isAuthenticated.value = false
   clearRecoveryState()
@@ -176,6 +202,7 @@ export function useUser() {
     user,
     isAuthenticated,
     isLoading,
+    isFetchingUser,
     isPasswordRecovery,
     clearRecoveryState,
     isAdmin,

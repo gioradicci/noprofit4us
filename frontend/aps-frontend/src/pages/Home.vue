@@ -9,7 +9,7 @@ import { useI18n } from 'vue-i18n'
 import { useUser } from '../composables/useUser'
 
 const { t, locale } = useI18n()
-const { user: backendUser, isAuthenticated, isLoading, fetchUser } = useUser()
+const { user: backendUser, isAuthenticated, isLoading, isFetchingUser, fetchUser, logout } = useUser()
 
 const email = ref('')
 const password = ref('')
@@ -149,9 +149,22 @@ function getRoleIcon() {
 
 <template>
   <!-- ⏳ Stato Caricamento -->
-  <div v-if="isLoading || (isAuthenticated && loadingBackend)" class="flex flex-column align-items-center justify-content-center min-h-30rem gap-3">
+  <div v-if="isLoading || (isAuthenticated && isFetchingUser && !backendUser)" class="flex flex-column align-items-center justify-content-center min-h-30rem gap-3">
     <i class="pi pi-spin pi-spinner text-4xl text-primary"></i>
     <span class="text-color-secondary text-sm">{{ t('common.loading') }}</span>
+  </div>
+
+  <!-- ⚠️ Fallback se autenticato ma i dati del backend non sono arrivati (es. cold start o errore di rete) -->
+  <div v-else-if="isAuthenticated && !backendUser" class="flex flex-column align-items-center justify-content-center min-h-30rem gap-3 text-center px-3">
+    <i class="pi pi-exclamation-triangle text-4xl text-orange-500"></i>
+    <h3 class="m-0 text-xl font-bold">Impossibile contattare il server</h3>
+    <p class="text-color-secondary text-sm m-0 max-w-30rem line-height-3">
+      Il server backend potrebbe essere in fase di risveglio (cold start) o temporaneamente non raggiungibile. Riprova tra qualche istante oppure effettua la disconnessione.
+    </p>
+    <div class="flex gap-2 mt-2">
+      <Button label="Riprova" icon="pi pi-refresh" size="small" @click="fetchUser(true)" />
+      <Button label="Disconnetti" icon="pi pi-sign-out" severity="secondary" outlined size="small" @click="logout" />
+    </div>
   </div>
 
   <div v-else class="home-container py-5 px-2">
