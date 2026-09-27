@@ -201,7 +201,7 @@ async function saveGadget() {
   if (!newGadget.value.sku) {
     const cat = newGadget.value.category.substring(0, 3)
     const rand = Math.floor(1000 + Math.random() * 9000)
-    newGadget.value.sku = `${cat}-${newGadget.value.size || 'UNI'}-${newGadget.value.color || 'GEN'}-${rand}`.toUpperCase()
+    newGadget.value.sku = `${cat}-${newGadget.value.size || 'UNI'}-${newGadget.value.color || 'GEN'}-${newGadget.value.model || 'USX'}-${rand}`.toUpperCase()
   }
 
   loading.value = true
