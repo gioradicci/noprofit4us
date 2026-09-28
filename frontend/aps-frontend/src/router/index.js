@@ -53,7 +53,7 @@ const router = createRouter({
 })
 
 router.beforeEach(async (to) => {
-  const { user, isAuthenticated, isPasswordRecovery, fetchUser } = useUser()
+  const { isPasswordRecovery, fetchUser } = useUser()
 
   // 🔑 CONTROLLA SUBITO LA RECOVERY PRIMA DI CHIAMARE getSession()
   const hasAuthError = !!checkUrlAuthError()
@@ -63,21 +63,28 @@ router.beforeEach(async (to) => {
     return '/reset-password'
   }
 
+  // Identifica i requisiti della rotta
+  const requiresAdmin = to.meta.requiresAdmin
+  const requiresStrictAdmin = to.meta.requiresStrictAdmin
+  const isProtectedGadgetRoute = ['/gadget-stock', '/warehouses'].includes(to.path)
+  const isProtectedRoute = to.meta.requiresAuth || requiresAdmin || requiresStrictAdmin || isProtectedGadgetRoute
+
+  // Se la rotta non è protetta (es. '/', '/gadgets', '/reset-password'), consenti la navigazione immediatamente
+  if (!isProtectedRoute) {
+    return true
+  }
+
   const { data: { session } } = await supabase.auth.getSession()
   const hasSession = !!session
 
-  // ✅ richiede login
-  if (to.meta.requiresAuth && !hasSession) {
+  // Se la rotta richiede autenticazione e non c'è sessione attiva, reindirizza alla home
+  if (!hasSession) {
     return '/'
   }
 
-  const requiresAdmin = to.meta.requiresAdmin
-  const requiresStrictAdmin = to.meta.requiresStrictAdmin
-  const isGadgetRoute = ['/gadgets', '/gadget-stock', '/warehouses'].includes(to.path)
-
-  if (hasSession && (requiresAdmin || requiresStrictAdmin || isGadgetRoute)) {
+  if (requiresAdmin || requiresStrictAdmin || isProtectedGadgetRoute) {
     try {
-      const currentUser = await fetchUser()
+      const currentUser = await fetchUser(false, session)
       if (!currentUser) {
         return '/'
       }
@@ -104,16 +111,8 @@ router.beforeEach(async (to) => {
       const isSecretary = role === 'SECRETARY' && hasActiveMembership && !currentUser.is_renewal_pending
       const canManageGadgets = role === 'ADMIN' || isSecretary
 
-      if (['/gadget-stock', '/warehouses'].includes(to.path)) {
+      if (isProtectedGadgetRoute) {
         if (canManageGadgets) {
-          return true
-        } else {
-          return '/'
-        }
-      }
-
-      if (to.path === '/gadgets') {
-        if (canManageGadgets || currentUser.status !== 'INCOMPLETE') {
           return true
         } else {
           return '/'

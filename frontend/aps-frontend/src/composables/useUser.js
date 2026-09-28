@@ -31,6 +31,21 @@ export function clearRecoveryState() {
 let inFlightPromise = null
 let authListenerInitialized = false
 
+// Helper per ottenere la sessione con timeout di sicurezza contro eventuali deadlock dei WebLocks di Supabase
+export async function safeGetSession(timeoutMs = 4000) {
+  try {
+    const sessionPromise = supabase.auth.getSession()
+    const timeoutPromise = new Promise((_, reject) =>
+      setTimeout(() => reject(new Error('getSession timeout')), timeoutMs)
+    )
+    const result = await Promise.race([sessionPromise, timeoutPromise])
+    return result?.data?.session || null
+  } catch (err) {
+    console.warn('safeGetSession fallback o timeout:', err)
+    return null
+  }
+}
+
 const isAdminOrTreasurer = computed(() => {
   const role = user.value?.role
   return role === 'ADMIN' || role === 'TREASURER'
@@ -70,7 +85,7 @@ const canViewGadgets = computed(() => {
   return user.value.status !== 'INCOMPLETE'
 })
 
-async function fetchUser(force = false) {
+async function fetchUser(force = false, providedSession = null) {
   // If we already have the user and don't need a force refresh, return cached data
   if (user.value && !force) {
     return user.value
@@ -84,10 +99,10 @@ async function fetchUser(force = false) {
   isFetchingUser.value = true
   inFlightPromise = (async () => {
     const controller = new AbortController()
-    const timeoutId = setTimeout(() => controller.abort(), 25000)
+    const timeoutId = setTimeout(() => controller.abort(), 12000)
 
     try {
-      const { data: { session } } = await supabase.auth.getSession()
+      const session = providedSession || (await safeGetSession())
       if (!session) {
         isAuthenticated.value = false
         user.value = null
@@ -120,7 +135,7 @@ async function fetchUser(force = false) {
       }
     } catch (e) {
       if (e.name === 'AbortError') {
-        console.warn("Timeout (25s) durante la chiamata a /users/me")
+        console.warn("Timeout (12s) durante la chiamata a /users/me")
       } else {
         console.error("Errore nel caricamento utente da /users/me:", e)
       }
@@ -137,9 +152,15 @@ async function fetchUser(force = false) {
 
 async function initAuth() {
   if (authListenerInitialized) return
+  authListenerInitialized = true
+
+  // Garantisce che isLoading non rimanga mai bloccato indefinitamente
+  const safetyTimeout = setTimeout(() => {
+    isLoading.value = false
+  }, 3000)
 
   // Register listener before getting session to avoid missing initial auth events
-  supabase.auth.onAuthStateChange(async (event, session) => {
+  supabase.auth.onAuthStateChange((event, session) => {
     isAuthenticated.value = !!session
 
     if (event === 'PASSWORD_RECOVERY') {
@@ -151,7 +172,9 @@ async function initAuth() {
         window.location.href = '/reset-password'
       }
     } else if (event === 'SIGNED_IN') {
-      await fetchUser(true)
+      if (session) {
+        setTimeout(() => fetchUser(true, session), 0)
+      }
     } else if (event === 'SIGNED_OUT') {
       user.value = null
       isAuthenticated.value = false
@@ -160,27 +183,28 @@ async function initAuth() {
         sessionStorage.removeItem('is_password_recovery')
       } catch (e) {}
     } else if (event === 'USER_UPDATED') {
-      await fetchUser(true)
+      if (session) {
+        setTimeout(() => fetchUser(true, session), 0)
+      }
     } else if (event === 'INITIAL_SESSION') {
       if (session && !user.value) {
-        await fetchUser()
+        setTimeout(() => fetchUser(false, session), 0)
       }
     } else if (event === 'TOKEN_REFRESHED') {
       if (session && !user.value) {
-        await fetchUser()
+        setTimeout(() => fetchUser(false, session), 0)
       }
     }
   })
 
-  authListenerInitialized = true
-
   try {
-    const { data: { session } } = await supabase.auth.getSession()
+    const session = await safeGetSession()
     isAuthenticated.value = !!session
-    if (isAuthenticated.value) {
-      fetchUser()
+    if (isAuthenticated.value && session) {
+      await fetchUser(false, session)
     }
   } finally {
+    clearTimeout(safetyTimeout)
     isLoading.value = false
   }
 }

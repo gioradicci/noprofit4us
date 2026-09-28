@@ -67,9 +67,14 @@ const modelOptions = [
 async function loadGadgets() {
   loading.value = true
   try {
-    const token = (await supabase.auth.getSession()).data.session?.access_token
+    const { data: { session } } = await supabase.auth.getSession()
+    const token = session?.access_token
+    const headers = {}
+    if (token) {
+      headers['Authorization'] = `Bearer ${token}`
+    }
     const res = await fetch(API_URL + "/gadgets/", {
-      headers: { Authorization: `Bearer ${token}` }
+      headers
     })
     if (res.ok) {
       const data = await res.json()
