@@ -175,7 +175,7 @@ function getRoleIcon() {
       <!-- Hero Banner -->
       <div class="hero-section text-center py-4 px-4 mb-5 border-round-3xl shadow-1 relative overflow-hidden">
         <div class="mb-3">
-          <Image src="/logo.svg" alt="Logo" width="100"></Image>
+          <Image src="/logosic_roma.bmp" alt="Logo" width="100"></Image>
         </div>
         <h1 class="text-2xl md:text-3xl font-bold mb-3 mt-0 text-primary-gradient">{{ t('home.title') }}</h1>
         <h2 class="text-1xl md:text-2xl font-bold mb-3 mt-0 text-primary-gradient">{{ t('home.demoWarning') }}</h2>

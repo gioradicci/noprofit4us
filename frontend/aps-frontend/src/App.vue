@@ -76,7 +76,7 @@ onMounted(async () => {
   <Menubar :model="isAuthenticated ? items : []" class="py-2 px-2 sm:px-4 border-none border-bottom-1 border-light border-round-none shadow-1 mb-0">
     <template #start>
       <router-link to="/" class="mr-2 sm:mr-4 flex align-items-center">
-        <Image src="/logo.svg" alt="Logo" width="40" />
+        <Image src="/logosic_roma.bmp" alt="Logo" width="40" />
       </router-link>
     </template>
 
