@@ -1,6 +1,6 @@
 <script setup>
 import { API_URL, getImageUrl } from '../config.js'
-import { ref, onMounted } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { supabase } from '../supabase'
 import { useToast } from 'primevue/usetoast'
 import { useConfirm } from 'primevue/useconfirm'
@@ -19,7 +19,7 @@ import Image from 'primevue/image'
 import Checkbox from 'primevue/checkbox'
 
 const { t } = useI18n()
-const { canManageGadgets, isAdminOrSecretary } = useUser()
+const { canManageGadgets, isAdminOrSecretary, isAuthenticated } = useUser()
 const toast = useToast()
 const confirm = useConfirm()
 
@@ -65,6 +65,13 @@ const modelOptions = [
   { label: t('gadgets.models.woman'), value: 'Donna' },
   { label: t('gadgets.models.unisex'), value: 'Unisex' }
 ]
+
+// Lista visibile: se l'utente NON è autenticato, i gadget non destinati alla vendita
+// (is_not_for_sale === true) non devono essere mostrati.
+const visibleGadgets = computed(() => {
+  if (isAuthenticated.value) return gadgets.value
+  return gadgets.value.filter(g => !g.is_not_for_sale)
+})
 
 async function loadGadgets() {
   loading.value = true
@@ -373,7 +380,7 @@ onMounted(() => {
 
   <!-- Lista Gadget -->
   <div class="card p-4 shadow-2 border-round surface-card">
-    <DataTable :value="gadgets" :loading="loading" paginator :rows="10" scrollable>
+    <DataTable :value="visibleGadgets" :loading="loading" paginator :rows="10" scrollable>
       <template #empty>
         <div class="text-center py-4">
           <i class="pi pi-box text-4xl text-300 mb-2"></i>
