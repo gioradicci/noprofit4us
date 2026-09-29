@@ -349,7 +349,8 @@
       "minDonation": "Donazione Minima (€)",
       "description": "Descrizione",
       "image": "Immagine Gadget",
-      "imageLabel": "Foto Gadget"
+      "imageLabel": "Foto Gadget",
+      "notForSale": "Non destinato alla vendita (solo uso interno)"
     },
     "placeholders": {
       "name": "Es. T-Shirt Ufficiale APS",
@@ -388,6 +389,8 @@
       "description": "Descrizione",
       "variants": "Varianti Attive",
       "totalStock": "Totale Giacenza",
+      "notForSale": "Non in Vendita",
+      "notForSaleShort": "Uso interno",
       "pcs": "pz"
     },
     "variantAdded": "Variante Aggiunta",
@@ -434,6 +437,8 @@
     "stock": "Stock",
     "pcs": "pz",
     "disabled": "DISATTIVATO",
+    "notForSale": "Non in Vendita",
+    "notForSaleShort": "Uso interno",
     "size": "Taglia",
     "color": "Colore",
     "model": "Modello",

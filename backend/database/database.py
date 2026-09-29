@@ -122,7 +122,8 @@ def initialize_database():
                 tables_to_secure = [
                     "users", "members", "memberships", "gadgets", 
                     "warehouses", "gadget_variant_stocks", 
-                    "stock_movements", "gadget_locks", "audit_logs"
+                    "stock_movements", "gadget_locks", "gadget_loans", "audit_logs"
+                    "gadgets",
                 ]
                 for table in tables_to_secure:
                     conn.execute(text(f"ALTER TABLE public.{table} ENABLE ROW LEVEL SECURITY;"))

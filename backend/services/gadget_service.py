@@ -60,6 +60,7 @@ def create_gadget(
     model: Optional[str] = None,
     variant_type: Optional[str] = None,
     sku: Optional[str] = None,
+    is_not_for_sale: Optional[bool] = None,
     performed_by: Optional[int] = None
 ) -> Gadget:
     gadget = Gadget(
@@ -73,6 +74,7 @@ def create_gadget(
         model=model,
         variant_type=variant_type,
         sku=sku,
+        is_not_for_sale = is_not_for_sale,
         stock_quantity=0
     )
     db.add(gadget)
@@ -127,6 +129,7 @@ def update_gadget(
     model: Optional[str] = None,
     variant_type: Optional[str] = None,
     sku: Optional[str] = None,
+    is_not_for_sale: Optional[bool] = None,
     performed_by: Optional[int] = None
 ) -> Gadget:
     gadget = db.query(Gadget).get(gadget_id)
@@ -143,6 +146,7 @@ def update_gadget(
     gadget.model = model
     gadget.variant_type = variant_type
     gadget.sku = sku
+    gadget.is_not_for_sale = is_not_for_sale
 
     db.commit()
     db.refresh(gadget)

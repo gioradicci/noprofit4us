@@ -4,6 +4,7 @@ import { ref, onMounted, computed, watch } from 'vue'
 import { supabase } from '../supabase'
 import { useToast } from 'primevue/usetoast'
 import { useI18n } from 'vue-i18n'
+import { useUser } from '../composables/useUser'
 import { FilterMatchMode } from '@primevue/core/api'
 
 import Button from 'primevue/button'
@@ -17,6 +18,7 @@ import Card from 'primevue/card'
 import Image from 'primevue/image'
 
 const { t } = useI18n()
+const { isAdminOrSecretary } = useUser()
 const toast = useToast()
 
 const gadgets = ref([])
@@ -152,6 +154,7 @@ const flattenedStocks = computed(() => {
       model: g.model,
       variant_details,
       total_stock: g.stock_quantity || 0,
+      is_not_for_sale: g.is_not_for_sale || false,
       image_path: g.image_path || '',
       ...stockMap
     }
@@ -180,6 +183,12 @@ const selectedGadgetDetails = computed(() => {
   if (gadget.color) parts.push(`${t('gadgetStock.color')}: ${gadget.color}`)
   if (gadget.model) parts.push(`${t('gadgetStock.model')}: ${gadget.model}`)
   return parts.join(' | ')
+})
+
+const selectedGadgetNotForSale = computed(() => {
+  if (!movementForm.value.gadget_id) return false
+  const gadget = gadgets.value.find(g => g.id === movementForm.value.gadget_id)
+  return !!gadget?.is_not_for_sale
 })
 
 const totalStockPieces = computed(() => {
@@ -565,6 +574,14 @@ onMounted(() => {
               <InputText v-model="filterModel.value" @input="filterCallback()" :placeholder="t('gadgetStock.searchSku')" class="w-full" />
             </template>
           </Column>
+          <Column v-if="isAdminOrSecretary" field="is_not_for_sale" :header="t('gadgetStock.notForSale')" sortable>
+            <template #body="slotProps">
+              <span v-if="slotProps.data.is_not_for_sale" class="badge border-round px-2 py-1 text-xs bg-orange-100 text-orange-800 font-semibold">
+                <i class="pi pi-ban text-xs mr-1"></i>{{ t('gadgetStock.notForSaleShort') }}
+              </span>
+              <span v-else class="text-xs text-400">-</span>
+            </template>
+          </Column>
           <Column field="total_stock" :header="t('gadgetStock.totalStock')" sortable class="bg-surface-50">
             <template #body="slotProps">
               <span :class="['font-bold', slotProps.data.total_stock < 1 ? 'text-red-500' : 'text-primary']">{{ slotProps.data.total_stock }} {{ t('gadgetStock.pcs') }}</span>
@@ -772,6 +789,9 @@ onMounted(() => {
           <span class="text-xxs font-semibold text-color-secondary uppercase" style="letter-spacing: 0.5px;">{{ t('gadgetStock.form.selectedItem') }}</span>
           <span class="text-sm font-bold text-900 line-height-2">{{ selectedGadgetName }}</span>
           <span class="text-xs text-500 font-medium">{{ selectedGadgetDetails }}</span>
+          <span v-if="selectedGadgetNotForSale" class="badge border-round px-2 py-1 text-xs bg-orange-100 text-orange-800 font-semibold align-self-start">
+            <i class="pi pi-ban text-xs mr-1"></i>{{ t('gadgetStock.notForSaleShort') }}
+          </span>
         </div>
       </div>
       <div class="flex flex-column gap-2">

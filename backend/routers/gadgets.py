@@ -57,6 +57,7 @@ class GadgetCreate(BaseModel):
     model: Optional[str] = None
     variant_type: Optional[str] = None
     sku: Optional[str] = None
+    is_not_for_sale: Optional[bool] = None
 
 class GadgetUpdate(BaseModel):
     name: str
@@ -69,6 +70,7 @@ class GadgetUpdate(BaseModel):
     model: Optional[str] = None
     variant_type: Optional[str] = None
     sku: Optional[str] = None
+    is_not_for_sale: Optional[bool] = None
 
 class MovementCreate(BaseModel):
     gadget_id: int
@@ -188,7 +190,7 @@ def get_gadgets(db: Session = Depends(get_db)):
  #   if current_user.role != "ADMIN" and current_user.status == "INCOMPLETE":
  #       raise HTTPException(status_code=403, detail="Active profile required")
 
-    gadgets = db.query(Gadget).all()
+    gadgets = db.query(Gadget).order_by(Gadget.id.desc()).all()
     result = []
     for g in gadgets:
         g_data = {
@@ -204,6 +206,7 @@ def get_gadgets(db: Session = Depends(get_db)):
             "model": g.model,
             "variant_type": g.variant_type,
             "sku": g.sku,
+            "is_not_for_sale": g.is_not_for_sale,
             "stock_quantity": g.stock_quantity,
             "stocks": []
         }
@@ -257,6 +260,7 @@ def create_gadget(payload: GadgetCreate, current_user=Depends(get_current_user),
         model=payload.model,
         variant_type=payload.variant_type,
         sku=payload.sku,
+        is_not_for_sale=payload.is_not_for_sale,
         performed_by=current_user.id
     )
     return {
@@ -271,6 +275,7 @@ def create_gadget(payload: GadgetCreate, current_user=Depends(get_current_user),
         "model": gadget.model,
         "variant_type": gadget.variant_type,
         "sku": gadget.sku,
+        "is_not_for_sale" : gadget.is_not_for_sale,
         "stock_quantity": gadget.stock_quantity,
         "created_at": gadget.created_at.isoformat() if gadget.created_at else None
     }
@@ -296,6 +301,7 @@ def update_gadget(id: int, payload: GadgetUpdate, current_user=Depends(get_curre
         model=payload.model,
         variant_type=payload.variant_type,
         sku=payload.sku,
+        is_not_for_sale=payload.is_not_for_sale,
         performed_by=current_user.id
     )
     return {
@@ -310,6 +316,7 @@ def update_gadget(id: int, payload: GadgetUpdate, current_user=Depends(get_curre
         "model": gadget.model,
         "variant_type": gadget.variant_type,
         "sku": gadget.sku,
+        "is_not_for_sale": gadget.is_not_for_sale,
         "stock_quantity": gadget.stock_quantity,
         "created_at": gadget.created_at.isoformat() if gadget.created_at else None
     }

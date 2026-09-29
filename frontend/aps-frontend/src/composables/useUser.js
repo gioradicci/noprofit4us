@@ -55,6 +55,11 @@ const isAdmin = computed(() => {
   return user.value?.role === 'ADMIN'
 })
 
+const isAdminOrSecretary = computed(() => {
+  const role = user.value?.role
+  return role === 'ADMIN' || role === 'SECRETARY'
+})
+
 const userInitials = computed(() => {
   const first = user.value?.first_name || ''
   const last = user.value?.last_name || ''
@@ -230,6 +235,7 @@ export function useUser() {
     isPasswordRecovery,
     clearRecoveryState,
     isAdmin,
+    isAdminOrSecretary,
     isAdminOrTreasurer,
     canManageGadgets,
     canViewGadgets,

@@ -16,9 +16,10 @@ import DataTable from 'primevue/datatable'
 import Column from 'primevue/column'
 import Dialog from 'primevue/dialog'
 import Image from 'primevue/image'
+import Checkbox from 'primevue/checkbox'
 
 const { t } = useI18n()
-const { canManageGadgets } = useUser()
+const { canManageGadgets, isAdminOrSecretary } = useUser()
 const toast = useToast()
 const confirm = useConfirm()
 
@@ -39,7 +40,8 @@ const newGadget = ref({
   color: '',
   model: '',
   variant_type: '',
-  sku: ''
+  sku: '',
+  is_not_for_sale: false
 })
 
 const categories = [
@@ -158,7 +160,8 @@ function startCreate() {
     color: '',
     model: '',
     variant_type: '',
-    sku: ''
+    sku: '',
+    is_not_for_sale: false
   }
   showCreateDialog.value = true
 }
@@ -176,7 +179,8 @@ function startClone(gadget) {
     color: gadget.color || '',
     model: gadget.model || '',
     variant_type: gadget.variant_type || '',
-    sku: ''
+    sku: '',
+    is_not_for_sale: gadget.is_not_for_sale || false
   }
   showCreateDialog.value = true
 }
@@ -197,7 +201,8 @@ async function startEdit(gadget) {
     color: gadget.color || '',
     model: gadget.model || '',
     variant_type: gadget.variant_type || '',
-    sku: gadget.sku || ''
+    sku: gadget.sku || '',
+    is_not_for_sale: gadget.is_not_for_sale || false
   }
   showCreateDialog.value = true
 }
@@ -306,6 +311,10 @@ onMounted(() => {
   <Dialog v-model:visible="showCreateDialog" :header="isEditMode ? t('gadgets.wizard.editTitle') : t('gadgets.wizard.createTitle')" :modal="true" style="width: 90vw; max-width: 800px;">
     <div class="grid py-2 text-left">
       <div class="col-12 md:col-8 flex flex-column gap-3">
+        <div v-if="isAdminOrSecretary" class="col-12 flex align-items-center gap-2 mt-1">
+          <Checkbox v-model="newGadget.is_not_for_sale" inputId="is_not_for_sale" binary />
+          <label for="is_not_for_sale" class="font-semibold text-xs m-0">{{ t('gadgets.form.notForSale') }}</label>
+        </div>
         <div class="flex flex-column gap-1">
           <label for="name" class="font-semibold text-sm">{{ t('gadgets.form.name') }} *</label>
           <InputText id="name" v-model="newGadget.name" :placeholder="t('gadgets.placeholders.name')" class="w-full" />
@@ -393,6 +402,14 @@ onMounted(() => {
       <Column field="category" :header="t('gadgets.table.category')" sortable>
         <template #body="slotProps">
           <span class="badge border-round px-2 py-1 text-xs bg-cyan-100 text-cyan-800">{{ slotProps.data.category }}</span>
+        </template>
+      </Column>
+      <Column v-if="isAdminOrSecretary" field="is_not_for_sale" :header="t('gadgets.table.notForSale')" sortable>
+        <template #body="slotProps">
+          <span v-if="slotProps.data.is_not_for_sale" class="badge border-round px-2 py-1 text-xs bg-orange-100 text-orange-800 font-semibold">
+            <i class="pi pi-ban text-xs mr-1"></i>{{ t('gadgets.table.notForSaleShort') }}
+          </span>
+          <span v-else class="text-xs text-400">-</span>
         </template>
       </Column>
       <Column header="Dettagli">

@@ -20,6 +20,8 @@ class Gadget(Base):
     variant_type = Column(String, nullable=True)  # e.g. Metallic, Glow-in-the-dark
     sku = Column(String, unique=True, nullable=True)
     stock_quantity = Column(Integer, default=0)    # Total aggregated stock
+    is_not_for_sale = Column(Boolean, default=False, nullable=False) #Gadget or asset used internally but not for sale: 
+            #is_not_for_sale =  TRUE : for staff/volunteers/internal use ONLY, FALSE : for sale
 
     stocks = relationship("GadgetVariantStock", back_populates="gadget", cascade="all, delete-orphan")
     movements = relationship("StockMovement", back_populates="gadget", cascade="all, delete-orphan")

@@ -349,7 +349,8 @@
       "minDonation": "Minimum Donation (€)",
       "description": "Description",
       "image": "Gadget Image",
-      "imageLabel": "Gadget Photo"
+      "imageLabel": "Gadget Photo",
+      "notForSale": "Not for sale (internal use only)"
     },
     "placeholders": {
       "name": "e.g. Official APS T-Shirt",
@@ -388,6 +389,8 @@
       "description": "Description",
       "variants": "Active Variants",
       "totalStock": "Total Stock",
+      "notForSale": "Not for Sale",
+      "notForSaleShort": "Internal use",
       "pcs": "pcs"
     },
     "variantAdded": "Variant Added",
@@ -434,6 +437,8 @@
     "stock": "Stock",
     "pcs": "pcs",
     "disabled": "DISABLED",
+    "notForSale": "Not for Sale",
+    "notForSaleShort": "Internal use",
     "size": "Size",
     "color": "Color",
     "model": "Model",
