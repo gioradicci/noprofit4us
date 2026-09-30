@@ -94,7 +94,6 @@ class LoanCreate(BaseModel):
 class LoanReturn(BaseModel):
     returned_quantity: int
     to_warehouse_id: int
-    distributed_quantity: int = 0
     notes: Optional[str] = None
 
 
@@ -675,7 +674,7 @@ def get_loans(
     result = []
     today = date.today()
     for l in loans:
-        remaining = l.quantity - l.returned_quantity - l.distributed_quantity
+        remaining = l.quantity - l.returned_quantity
         is_overdue = False
         if l.status != "RETURNED" and l.expected_return_date:
             exp_date = l.expected_return_date.date() if isinstance(l.expected_return_date, datetime) else l.expected_return_date
@@ -694,7 +693,6 @@ def get_loans(
             "assigned_to_name": l.assigned_to_name,
             "quantity": l.quantity,
             "returned_quantity": l.returned_quantity,
-            "distributed_quantity": l.distributed_quantity,
             "remaining_quantity": remaining,
             "status": l.status,
             "loan_date": l.loan_date.isoformat() if l.loan_date else None,
@@ -758,7 +756,6 @@ def return_loan(
         returned_quantity=payload.returned_quantity,
         to_warehouse_id=payload.to_warehouse_id,
         performed_by=current_user.id,
-        distributed_quantity=payload.distributed_quantity,
         notes=payload.notes
     )
     return {"status": "success", "loan_id": loan.id, "new_status": loan.status}

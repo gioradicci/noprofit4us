@@ -95,7 +95,6 @@ class GadgetLoan(Base):
     assigned_to_name = Column(String, nullable=True)
     quantity = Column(Integer, nullable=False)
     returned_quantity = Column(Integer, default=0, nullable=False)
-    distributed_quantity = Column(Integer, default=0, nullable=False)
     status = Column(String, default="ACTIVE", nullable=False)  # ACTIVE, PARTIAL, RETURNED
     loan_date = Column(DateTime, default=datetime.utcnow, nullable=False)
     expected_return_date = Column(DateTime, nullable=True)

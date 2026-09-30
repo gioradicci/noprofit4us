@@ -38,7 +38,6 @@ const selectedLoan = ref(null)
 const returnForm = ref({
   returned_quantity: 1,
   to_warehouse_id: null,
-  distributed_quantity: 0,
   notes: ''
 })
 
@@ -65,20 +64,38 @@ const movementForm = ref({
   notes: '',
   assigned_to_user_id: null,
   assigned_to_name: '',
-  expected_return_date: null
+  expected_return_date: null,
+  loan_id: null,
+  returned_quantity: 1
 })
 
 const movementTypes = computed(() => [
   { label: t('gadgetStock.movementTypes.restock'), value: 'RESTOCK' },
   { label: t('gadgetStock.movementTypes.transfer'), value: 'TRANSFER' },
   { label: t('gadgetStock.movementTypes.delivery'), value: 'DELIVERY' },
-  { label: t('gadgetStock.movementTypes.loan'), value: 'LOAN' }
+  { label: t('gadgetStock.movementTypes.loan'), value: 'LOAN' },
+  { label: t('gadgetStock.movementTypes.loan_return'), value: 'LOAN_RETURN' }
 ])
 
 const movementTypeFilterOptions = computed(() => [
   { label: t('gadgetStock.allTypes'), value: null },
   ...movementTypes.value
 ])
+
+const activeLoanOptions = computed(() => {
+  return loans.value
+    .filter(l => l.status !== 'RETURNED' && (l.remaining_quantity > 0 || (l.quantity - l.returned_quantity) > 0))
+    .map(l => ({
+      label: `#${l.id} - ${l.gadget_name || 'Gadget'} (Affidato a: ${l.assigned_to_name || 'Socio'}) - Residuo: ${l.remaining_quantity} pz`,
+      value: l.id,
+      loan: l
+    }))
+})
+
+const selectedLoanInMovementForm = computed(() => {
+  if (movementForm.value.movement_type !== 'LOAN_RETURN' || !movementForm.value.loan_id) return null
+  return loans.value.find(l => l.id === movementForm.value.loan_id) || null
+})
 
 const gadgetOptions = computed(() => {
   return gadgets.value.map(g => ({
@@ -144,6 +161,9 @@ const flattenedStocks = computed(() => {
     if (g.color) parts.push(`${t('gadgetStock.color')}: ${g.color}`)
     if (g.model) parts.push(`${t('gadgetStock.model')}: ${g.model}`)
     const variant_details = parts.join(' | ') || '-'
+    const loanRemainingTotal = loans.value
+      .filter(l => l.gadget_id === g.id && l.status !== 'RETURNED')
+      .reduce((sum, l) => sum + (l.remaining_quantity || 0), 0)
     return {
       id: g.id,
       gadget_name: g.name,
@@ -154,6 +174,7 @@ const flattenedStocks = computed(() => {
       model: g.model,
       variant_details,
       total_stock: g.stock_quantity || 0,
+      loan_remaining_total: loanRemainingTotal,
       is_not_for_sale: g.is_not_for_sale || false,
       image_path: g.image_path || '',
       ...stockMap
@@ -196,8 +217,10 @@ const totalStockPieces = computed(() => {
 })
 
 watch(() => movementForm.value.gadget_id, () => {
-  movementForm.value.from_warehouse_id = null
-  movementForm.value.to_warehouse_id = null
+  if (movementForm.value.movement_type !== 'LOAN_RETURN') {
+    movementForm.value.from_warehouse_id = null
+    movementForm.value.to_warehouse_id = null
+  }
 })
 
 watch(() => movementForm.value.movement_type, (newType) => {
@@ -205,6 +228,22 @@ watch(() => movementForm.value.movement_type, (newType) => {
     movementForm.value.from_warehouse_id = null
   } else if (newType === 'DELIVERY' || newType === 'LOAN') {
     movementForm.value.to_warehouse_id = null
+  } else if (newType === 'LOAN_RETURN') {
+    movementForm.value.from_warehouse_id = null
+    if (!movementForm.value.loan_id && activeLoanOptions.value.length > 0) {
+      movementForm.value.loan_id = activeLoanOptions.value[0].value
+    }
+  }
+})
+
+watch(() => movementForm.value.loan_id, (newLoanId) => {
+  if (movementForm.value.movement_type === 'LOAN_RETURN' && newLoanId) {
+    const loan = loans.value.find(l => l.id === newLoanId)
+    if (loan) {
+      movementForm.value.gadget_id = loan.gadget_id
+      movementForm.value.returned_quantity = loan.remaining_quantity
+      movementForm.value.to_warehouse_id = loan.from_warehouse_id || (warehouses.value.find(w => w.is_active !== false)?.id || null)
+    }
   }
 })
 
@@ -250,22 +289,99 @@ async function loadData() {
   }
 }
 
-function openMovementModal() {
+function openMovementModal(type = 'RESTOCK', loanId = null) {
   movementForm.value = {
     gadget_id: null,
-    movement_type: 'RESTOCK',
+    movement_type: type,
     from_warehouse_id: null,
     to_warehouse_id: null,
     quantity: 1,
     notes: '',
     assigned_to_user_id: null,
     assigned_to_name: '',
-    expected_return_date: null
+    expected_return_date: null,
+    loan_id: loanId,
+    returned_quantity: 1
   }
+
+  if (type === 'LOAN_RETURN') {
+    if (loanId) {
+      const loan = loans.value.find(l => l.id === loanId)
+      if (loan) {
+        movementForm.value.gadget_id = loan.gadget_id
+        movementForm.value.returned_quantity = loan.remaining_quantity
+        movementForm.value.to_warehouse_id = loan.from_warehouse_id || (warehouses.value.find(w => w.is_active !== false)?.id || null)
+      }
+    } else if (activeLoanOptions.value.length > 0) {
+      movementForm.value.loan_id = activeLoanOptions.value[0].value
+      const loan = loans.value.find(l => l.id === activeLoanOptions.value[0].value)
+      if (loan) {
+        movementForm.value.gadget_id = loan.gadget_id
+        movementForm.value.returned_quantity = loan.remaining_quantity
+        movementForm.value.to_warehouse_id = loan.from_warehouse_id || (warehouses.value.find(w => w.is_active !== false)?.id || null)
+      }
+    }
+  }
+
   showMovementDialog.value = true
 }
 
 async function submitMovement() {
+  if (movementForm.value.movement_type === 'LOAN_RETURN') {
+    if (!movementForm.value.loan_id) {
+      toast.add({ severity: 'warn', summary: t('common.warning'), detail: "Seleziona l'affidamento da riconsegnare", life: 3000 })
+      return
+    }
+    const targetLoan = loans.value.find(l => l.id === movementForm.value.loan_id)
+    if (!targetLoan) {
+      toast.add({ severity: 'error', summary: t('common.error'), detail: "Affidamento non trovato", life: 3000 })
+      return
+    }
+    const retQty = Number(movementForm.value.returned_quantity) || 0
+
+    if (retQty <= 0) {
+      toast.add({ severity: 'warn', summary: t('common.warning'), detail: "Specifica la quantità da restituire (almeno 1 pz)", life: 3000 })
+      return
+    }
+    if (retQty > targetLoan.remaining_quantity) {
+      toast.add({ severity: 'error', summary: t('common.error'), detail: `La quantità da restituire supera il residuo in carico (${targetLoan.remaining_quantity} pz)`, life: 4000 })
+      return
+    }
+    if (!movementForm.value.to_warehouse_id) {
+      toast.add({ severity: 'warn', summary: t('common.warning'), detail: "Seleziona il magazzino di rientro", life: 3000 })
+      return
+    }
+
+    submitting.value = true
+    try {
+      const token = (await supabase.auth.getSession()).data.session?.access_token
+      const headers = { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` }
+      const res = await fetch(`${API_URL}/gadgets/loans/${movementForm.value.loan_id}/return`, {
+        method: 'POST',
+        headers,
+        body: JSON.stringify({
+          returned_quantity: retQty,
+          to_warehouse_id: movementForm.value.to_warehouse_id,
+          notes: movementForm.value.notes
+        })
+      })
+      if (res.ok) {
+        toast.add({ severity: 'success', summary: "Riconsegnato", detail: t('gadgetStock.returnSuccess'), life: 3000 })
+        showMovementDialog.value = false
+        await loadData()
+      } else {
+        const errDetail = await res.json()
+        toast.add({ severity: 'error', summary: t('common.error'), detail: errDetail.detail || "Errore durante la riconsegna", life: 4000 })
+      }
+    } catch (err) {
+      console.error(err)
+      toast.add({ severity: 'error', summary: t('common.error'), detail: t('gadgetStock.errors.connectionFailed'), life: 3000 })
+    } finally {
+      submitting.value = false
+    }
+    return
+  }
+
   if (!movementForm.value.gadget_id || !movementForm.value.quantity) {
     toast.add({ severity: 'warn', summary: t('common.warning'), detail: t('gadgetStock.errors.requiredFields'), life: 3000 })
     return
@@ -364,7 +480,6 @@ function openReturnModal(loan) {
   returnForm.value = {
     returned_quantity: loan.remaining_quantity,
     to_warehouse_id: loan.from_warehouse_id || (warehouses.value.find(w => w.is_active !== false)?.id || null),
-    distributed_quantity: 0,
     notes: ''
   }
   showReturnDialog.value = true
@@ -372,17 +487,17 @@ function openReturnModal(loan) {
 
 async function submitReturn() {
   if (!selectedLoan.value) return
-  if (!returnForm.value.to_warehouse_id && returnForm.value.returned_quantity > 0) {
+  const retQty = Number(returnForm.value.returned_quantity) || 0
+  if (retQty <= 0) {
+    toast.add({ severity: 'warn', summary: t('common.warning'), detail: "Specifica la quantità da restituire (almeno 1 pz)", life: 3000 })
+    return
+  }
+  if (!returnForm.value.to_warehouse_id) {
     toast.add({ severity: 'warn', summary: t('common.warning'), detail: "Seleziona il magazzino di rientro", life: 3000 })
     return
   }
-  const totalClosing = (returnForm.value.returned_quantity || 0) + (returnForm.value.distributed_quantity || 0)
-  if (totalClosing <= 0) {
-    toast.add({ severity: 'warn', summary: t('common.warning'), detail: "Specifica almeno una quantità da restituire o distribuita", life: 3000 })
-    return
-  }
-  if (totalClosing > selectedLoan.value.remaining_quantity) {
-    toast.add({ severity: 'error', summary: t('common.error'), detail: `La somma supera il residuo in carico (${selectedLoan.value.remaining_quantity} pz)`, life: 4000 })
+  if (retQty > selectedLoan.value.remaining_quantity) {
+    toast.add({ severity: 'error', summary: t('common.error'), detail: `La quantità supera il residuo in carico (${selectedLoan.value.remaining_quantity} pz)`, life: 4000 })
     return
   }
 
@@ -408,6 +523,28 @@ async function submitReturn() {
     toast.add({ severity: 'error', summary: t('common.error'), detail: t('gadgetStock.errors.connectionFailed'), life: 3000 })
   } finally {
     returningSubmitting.value = false
+  }
+}
+
+function getMovementTypeBadgeClass(type) {
+  switch (type) {
+    case 'RESTOCK': return 'bg-green-600'
+    case 'TRANSFER': return 'bg-blue-600'
+    case 'DELIVERY': return 'bg-orange-500'
+    case 'LOAN': return 'bg-purple-600'
+    case 'LOAN_RETURN': return 'bg-teal-600'
+    default: return 'bg-gray-500'
+  }
+}
+
+function getMovementTypeLabel(type) {
+  switch (type) {
+    case 'RESTOCK': return t('gadgetStock.movementTypes.restock')
+    case 'TRANSFER': return t('gadgetStock.movementTypes.transfer')
+    case 'DELIVERY': return t('gadgetStock.movementTypes.delivery')
+    case 'LOAN': return t('gadgetStock.movementTypes.loan')
+    case 'LOAN_RETURN': return t('gadgetStock.movementTypes.loan_return')
+    default: return type
   }
 }
 
@@ -584,7 +721,10 @@ onMounted(() => {
           </Column>
           <Column field="total_stock" :header="t('gadgetStock.totalStock')" sortable class="bg-surface-50">
             <template #body="slotProps">
-              <span :class="['font-bold', slotProps.data.total_stock < 1 ? 'text-red-500' : 'text-primary']">{{ slotProps.data.total_stock }} {{ t('gadgetStock.pcs') }}</span>
+              <div class="flex align-items-center gap-2">
+                <span :class="['font-bold', slotProps.data.total_stock < 1 ? 'text-red-500' : 'text-primary']">{{ slotProps.data.total_stock }} {{ t('gadgetStock.pcs') }}</span>
+                <span v-if="slotProps.data.loan_remaining_total > 0" class="badge border-round px-2 py-1 text-xs bg-purple-100 text-purple-800 font-bold white-space-nowrap" :title="'Affidati attivi: ' + slotProps.data.loan_remaining_total + ' pz'">🤝 {{ slotProps.data.loan_remaining_total }} {{ t('gadgetStock.pcs') }}</span>
+              </div>
             </template>
           </Column>
           <Column v-for="wh in warehouses.filter(w => w.is_active !== false)" :key="wh.id" :field="wh.code" :header="wh.name" sortable>
@@ -610,7 +750,7 @@ onMounted(() => {
             </h3>
             <p class="text-secondary text-sm m-0 mt-1">{{ t('gadgetStock.loansSubtitle') }}</p>
           </div>
-          <div class="flex align-items-center gap-2">
+          <div class="flex flex-wrap align-items-center gap-2">
             <Button 
               :label="showOnlyActiveLoans ? 'Solo in corso' : 'Tutti'" 
               :icon="showOnlyActiveLoans ? 'pi pi-filter' : 'pi pi-list'" 
@@ -618,6 +758,22 @@ onMounted(() => {
               outlined 
               size="small" 
               @click="showOnlyActiveLoans = !showOnlyActiveLoans" 
+            />
+            <Button 
+              :label="t('gadgetStock.newLoan')" 
+              icon="pi pi-plus" 
+              severity="help" 
+              outlined 
+              size="small" 
+              @click="openMovementModal('LOAN')" 
+            />
+            <Button 
+              :label="t('gadgetStock.quickReturn')" 
+              icon="pi pi-replay" 
+              severity="success" 
+              outlined 
+              size="small" 
+              @click="openMovementModal('LOAN_RETURN')" 
             />
           </div>
         </div>
@@ -659,9 +815,22 @@ onMounted(() => {
           <Column field="remaining_quantity" header="In Carico" sortable>
             <template #body="slotProps">
               <span class="font-bold text-purple-700 text-base">{{ slotProps.data.remaining_quantity }} pz</span>
-              <small v-if="slotProps.data.returned_quantity > 0 || slotProps.data.distributed_quantity > 0" class="block text-xxs text-color-secondary">
+              <small v-if="slotProps.data.returned_quantity > 0" class="block text-xxs text-color-secondary">
                 (Iniziali: {{ slotProps.data.quantity }})
               </small>
+            </template>
+          </Column>
+          <Column field="status" :header="t('gadgetStock.statusLoan')" sortable>
+            <template #body="slotProps">
+              <span v-if="slotProps.data.status === 'RETURNED'" class="badge bg-green-100 text-green-800 text-xs px-2 py-1 border-round font-semibold">
+                <i class="pi pi-check text-xs mr-1"></i> {{ t('gadgetStock.statusReturned') }}
+              </span>
+              <span v-else-if="slotProps.data.status === 'PARTIAL'" class="badge bg-amber-100 text-amber-800 text-xs px-2 py-1 border-round font-semibold">
+                <i class="pi pi-clock text-xs mr-1"></i> {{ t('gadgetStock.statusPartial') }}
+              </span>
+              <span v-else class="badge bg-purple-100 text-purple-800 text-xs px-2 py-1 border-round font-semibold">
+                <i class="pi pi-user text-xs mr-1"></i> {{ t('gadgetStock.statusActive') }}
+              </span>
             </template>
           </Column>
           <Column field="loan_date" header="Data Consegna" sortable>
@@ -731,7 +900,7 @@ onMounted(() => {
           </Column>
           <Column field="movement_type" :header="t('gadgetStock.type')" sortable filter filterField="movement_type" :showFilterMenu="false" :showClearButton="true">
             <template #body="slotProps">
-              <span :class="['badge border-round px-2 py-1 text-xs text-white font-bold', slotProps.data.movement_type === 'RESTOCK' ? 'bg-green-500' : slotProps.data.movement_type === 'TRANSFER' ? 'bg-blue-500' : 'bg-orange-500']">{{ slotProps.data.movement_type }}</span>
+              <span :class="['badge border-round px-2 py-1 text-xs text-white font-bold', getMovementTypeBadgeClass(slotProps.data.movement_type)]">{{ getMovementTypeLabel(slotProps.data.movement_type) }}</span>
             </template>
             <template #filter="{ filterModel, filterCallback }">
               <Select v-model="filterModel.value" @change="filterCallback()" :options="movementTypeFilterOptions" optionLabel="label" optionValue="value" :placeholder="t('gadgetStock.filterType')" class="w-full" />
@@ -745,7 +914,17 @@ onMounted(() => {
           <Column field="gadget_sku" :header="t('gadgetStock.sku')"></Column>
           <Column :header="t('gadgetStock.path')">
             <template #body="slotProps">
-              <span class="text-sm">
+              <span class="text-sm" v-if="slotProps.data.movement_type === 'LOAN'">
+                <span class="font-semibold">{{ slotProps.data.from_warehouse ? slotProps.data.from_warehouse.name : 'Magazzino' }}</span>
+                <i class="pi pi-arrow-right text-xs mx-2 text-purple-600"></i>
+                <span class="text-purple-700 font-semibold">{{ t('gadgetStock.assignedLoan') }}</span>
+              </span>
+              <span class="text-sm" v-else-if="slotProps.data.movement_type === 'LOAN_RETURN'">
+                <span class="text-purple-700 font-semibold">{{ t('gadgetStock.assignedLoan') }}</span>
+                <i class="pi pi-arrow-right text-xs mx-2 text-teal-600"></i>
+                <span class="font-semibold text-teal-700">{{ slotProps.data.to_warehouse ? slotProps.data.to_warehouse.name : 'Magazzino' }}</span>
+              </span>
+              <span class="text-sm" v-else>
                 {{ slotProps.data.from_warehouse ? slotProps.data.from_warehouse.name : t('gadgetStock.external') }}
                 <i class="pi pi-arrow-right text-xs mx-2"></i>
                 {{ slotProps.data.to_warehouse ? slotProps.data.to_warehouse.name : t('gadgetStock.deliveredToMember') }}
@@ -774,80 +953,159 @@ onMounted(() => {
   </div>
 
   <!-- Movement Dialog -->
-  <Dialog v-model:visible="showMovementDialog" :header="t('gadgetStock.movementDialogTitle')" :modal="true" :style="{ width: '500px' }">
+  <Dialog 
+    v-model:visible="showMovementDialog" 
+    :header="movementForm.movement_type === 'LOAN_RETURN' ? t('gadgetStock.returnDialogTitle') : t('gadgetStock.movementDialogTitle')" 
+    :modal="true" 
+    :style="{ width: '520px' }"
+  >
     <div class="flex flex-column gap-4 py-2 text-left">
-      <div class="flex flex-column gap-2">
-        <label for="m_gadget" class="font-semibold text-sm">{{ t('gadgetStock.form.gadget') }} *</label>
-        <Select inputId="m_gadget" v-model="movementForm.gadget_id" :options="gadgetOptions" optionLabel="label" optionValue="value" :placeholder="t('gadgetStock.form.selectGadget')" class="w-full" />
-      </div>
-      <div v-if="movementForm.gadget_id" class="flex align-items-center gap-3 p-3 border-round" style="background-color: var(--code-bg); border: 1px solid var(--border);">
-        <div class="border-round border-1 border-light overflow-hidden flex align-items-center justify-content-center" style="width: 40px; height: 60px; background-color: var(--bg); flex-shrink: 0;">
-          <img v-if="selectedGadgetImage" :src="getImageUrl(selectedGadgetImage)" alt="Preview" class="w-full h-full object-fit-cover" />
-          <i v-else class="pi pi-image text-color-secondary text-lg"></i>
-        </div>
-        <div class="flex flex-column gap-1 text-left">
-          <span class="text-xxs font-semibold text-color-secondary uppercase" style="letter-spacing: 0.5px;">{{ t('gadgetStock.form.selectedItem') }}</span>
-          <span class="text-sm font-bold text-900 line-height-2">{{ selectedGadgetName }}</span>
-          <span class="text-xs text-500 font-medium">{{ selectedGadgetDetails }}</span>
-          <span v-if="selectedGadgetNotForSale" class="badge border-round px-2 py-1 text-xs bg-orange-100 text-orange-800 font-semibold align-self-start">
-            <i class="pi pi-ban text-xs mr-1"></i>{{ t('gadgetStock.notForSaleShort') }}
-          </span>
-        </div>
-      </div>
       <div class="flex flex-column gap-2">
         <label for="m_type" class="font-semibold text-sm">{{ t('gadgetStock.form.movementType') }} *</label>
         <Select inputId="m_type" v-model="movementForm.movement_type" :options="movementTypes" optionLabel="label" optionValue="value" class="w-full" />
       </div>
-      <div class="flex flex-column gap-2" v-if="['TRANSFER', 'DELIVERY', 'LOAN'].includes(movementForm.movement_type)">
-        <label for="m_from" class="font-semibold text-sm">{{ t('gadgetStock.form.sourceWarehouse') }} *</label>
-        <Select inputId="m_from" v-model="movementForm.from_warehouse_id" :options="fromWarehouseOptions.filter(opt => opt.value !== movementForm.to_warehouse_id)" optionLabel="label" optionValue="value" :placeholder="movementForm.gadget_id ? t('gadgetStock.form.selectSource') : 'Seleziona prima un gadget'" :disabled="!movementForm.gadget_id" class="w-full" />
-      </div>
-      <div class="flex flex-column gap-2" v-if="['RESTOCK', 'TRANSFER'].includes(movementForm.movement_type)">
-        <label for="m_to" class="font-semibold text-sm">{{ t('gadgetStock.form.destinationWarehouse') }} *</label>
-        <Select inputId="m_to" v-model="movementForm.to_warehouse_id" :options="toWarehouseOptions.filter(opt => opt.value !== movementForm.from_warehouse_id)" optionLabel="label" optionValue="value" :placeholder="movementForm.gadget_id ? t('gadgetStock.form.selectDestination') : 'Seleziona prima un gadget'" :disabled="!movementForm.gadget_id" class="w-full" />
-      </div>
 
-      <!-- Campi specifici per AFFIDAMENTO (LOAN) -->
-      <template v-if="movementForm.movement_type === 'LOAN'">
+      <!-- IF MOVEMENT IS LOAN RETURN -->
+      <template v-if="movementForm.movement_type === 'LOAN_RETURN'">
         <div class="flex flex-column gap-2">
-          <label for="m_assignee_user" class="font-semibold text-sm">{{ t('gadgetStock.assignee') }} (Socio registrato)</label>
+          <label for="m_loan_select" class="font-semibold text-sm">{{ t('gadgetStock.selectLoan') }} *</label>
           <Select 
-            inputId="m_assignee_user" 
-            v-model="movementForm.assigned_to_user_id" 
-            :options="loanAssignees" 
-            optionLabel="display" 
-            optionValue="id" 
-            :placeholder="t('gadgetStock.selectAssignee')" 
-            showClear 
+            inputId="m_loan_select" 
+            v-model="movementForm.loan_id" 
+            :options="activeLoanOptions" 
+            optionLabel="label" 
+            optionValue="value" 
+            :placeholder="t('gadgetStock.selectLoan')" 
             filter 
             class="w-full" 
           />
         </div>
-        <div class="flex flex-column gap-2">
-          <label for="m_assignee_name" class="font-semibold text-sm">{{ t('gadgetStock.customAssignee') }}</label>
-          <InputText 
-            id="m_assignee_name" 
-            v-model="movementForm.assigned_to_name" 
-            placeholder="es. Mario Rossi (Volontario)" 
-            :disabled="!!movementForm.assigned_to_user_id" 
-            class="w-full" 
-          />
+
+        <div v-if="!activeLoanOptions.length" class="p-3 bg-amber-50 border-round text-amber-900 text-sm">
+          <i class="pi pi-info-circle mr-1"></i> Nessun materiale attualmente in affidamento temporaneo da riconsegnare.
         </div>
+
+        <div v-if="selectedLoanInMovementForm" class="p-3 border-round border-1 border-light" style="background-color: var(--code-bg);">
+          <div class="flex align-items-center gap-3 mb-2">
+            <div class="border-round border-1 border-light overflow-hidden flex align-items-center justify-content-center" style="width: 40px; height: 50px; background-color: var(--bg); flex-shrink: 0;">
+              <img v-if="selectedLoanInMovementForm.gadget_image" :src="getImageUrl(selectedLoanInMovementForm.gadget_image)" alt="Gadget" class="w-full h-full object-fit-cover" />
+              <i v-else class="pi pi-image text-color-secondary text-base"></i>
+            </div>
+            <div>
+              <div class="font-bold text-base text-900">{{ selectedLoanInMovementForm.gadget_name }}</div>
+              <div class="text-xs text-secondary" v-if="selectedLoanInMovementForm.gadget_sku">[SKU: {{ selectedLoanInMovementForm.gadget_sku }}]</div>
+            </div>
+          </div>
+          <div class="text-sm text-color-secondary mb-1">
+            Affidato a: <strong class="text-900">{{ selectedLoanInMovementForm.assigned_to_name }}</strong>
+          </div>
+          <div class="flex flex-wrap gap-3 text-xs font-semibold uppercase text-purple-700">
+            <span>Residuo in carico: {{ selectedLoanInMovementForm.remaining_quantity }} pz</span>
+            <span v-if="selectedLoanInMovementForm.from_warehouse_name">Origine: {{ selectedLoanInMovementForm.from_warehouse_name }}</span>
+          </div>
+        </div>
+
+        <template v-if="selectedLoanInMovementForm">
+          <div class="flex flex-column gap-2">
+            <label for="m_ret_qty" class="font-semibold text-sm">{{ t('gadgetStock.returnedQty') }} *</label>
+            <InputNumber 
+              inputId="m_ret_qty" 
+              v-model="movementForm.returned_quantity" 
+              :min="1" 
+              :max="selectedLoanInMovementForm.remaining_quantity" 
+              class="w-full" 
+              showButtons 
+            />
+            <small class="text-color-secondary text-xs">Pezzi da restituire al magazzino (residuo: {{ selectedLoanInMovementForm.remaining_quantity }} pz)</small>
+          </div>
+
+          <div class="flex flex-column gap-2">
+            <label for="m_ret_wh" class="font-semibold text-sm">{{ t('gadgetStock.returnWarehouse') }} *</label>
+            <Select 
+              inputId="m_ret_wh" 
+              v-model="movementForm.to_warehouse_id" 
+              :options="warehouses.filter(w => w.is_active !== false)" 
+              optionLabel="name" 
+              optionValue="id" 
+              placeholder="Seleziona magazzino..." 
+              class="w-full" 
+            />
+          </div>
+        </template>
+      </template>
+
+      <!-- IF MOVEMENT IS RESTOCK, TRANSFER, DELIVERY, LOAN -->
+      <template v-else>
         <div class="flex flex-column gap-2">
-          <label for="m_expected_date" class="font-semibold text-sm">{{ t('gadgetStock.expectedReturnDate') }}</label>
-          <input 
-            type="date" 
-            id="m_expected_date" 
-            v-model="movementForm.expected_return_date" 
-            class="p-inputtext p-component w-full" 
-          />
+          <label for="m_gadget" class="font-semibold text-sm">{{ t('gadgetStock.form.gadget') }} *</label>
+          <Select inputId="m_gadget" v-model="movementForm.gadget_id" :options="gadgetOptions" optionLabel="label" optionValue="value" :placeholder="t('gadgetStock.form.selectGadget')" filter class="w-full" />
+        </div>
+        <div v-if="movementForm.gadget_id" class="flex align-items-center gap-3 p-3 border-round" style="background-color: var(--code-bg); border: 1px solid var(--border);">
+          <div class="border-round border-1 border-light overflow-hidden flex align-items-center justify-content-center" style="width: 40px; height: 60px; background-color: var(--bg); flex-shrink: 0;">
+            <img v-if="selectedGadgetImage" :src="getImageUrl(selectedGadgetImage)" alt="Preview" class="w-full h-full object-fit-cover" />
+            <i v-else class="pi pi-image text-color-secondary text-lg"></i>
+          </div>
+          <div class="flex flex-column gap-1 text-left">
+            <span class="text-xxs font-semibold text-color-secondary uppercase" style="letter-spacing: 0.5px;">{{ t('gadgetStock.form.selectedItem') }}</span>
+            <span class="text-sm font-bold text-900 line-height-2">{{ selectedGadgetName }}</span>
+            <span class="text-xs text-500 font-medium">{{ selectedGadgetDetails }}</span>
+            <span v-if="selectedGadgetNotForSale" class="badge border-round px-2 py-1 text-xs bg-orange-100 text-orange-800 font-semibold align-self-start">
+              <i class="pi pi-ban text-xs mr-1"></i>{{ t('gadgetStock.notForSaleShort') }}
+            </span>
+          </div>
+        </div>
+        <div class="flex flex-column gap-2" v-if="['TRANSFER', 'DELIVERY', 'LOAN'].includes(movementForm.movement_type)">
+          <label for="m_from" class="font-semibold text-sm">{{ t('gadgetStock.form.sourceWarehouse') }} *</label>
+          <Select inputId="m_from" v-model="movementForm.from_warehouse_id" :options="fromWarehouseOptions.filter(opt => opt.value !== movementForm.to_warehouse_id)" optionLabel="label" optionValue="value" :placeholder="movementForm.gadget_id ? t('gadgetStock.form.selectSource') : 'Seleziona prima un gadget'" :disabled="!movementForm.gadget_id" class="w-full" />
+        </div>
+        <div class="flex flex-column gap-2" v-if="['RESTOCK', 'TRANSFER'].includes(movementForm.movement_type)">
+          <label for="m_to" class="font-semibold text-sm">{{ t('gadgetStock.form.destinationWarehouse') }} *</label>
+          <Select inputId="m_to" v-model="movementForm.to_warehouse_id" :options="toWarehouseOptions.filter(opt => opt.value !== movementForm.from_warehouse_id)" optionLabel="label" optionValue="value" :placeholder="movementForm.gadget_id ? t('gadgetStock.form.selectDestination') : 'Seleziona prima un gadget'" :disabled="!movementForm.gadget_id" class="w-full" />
+        </div>
+
+        <!-- Campi specifici per AFFIDAMENTO (LOAN) -->
+        <template v-if="movementForm.movement_type === 'LOAN'">
+          <div class="flex flex-column gap-2">
+            <label for="m_assignee_user" class="font-semibold text-sm">{{ t('gadgetStock.assignee') }} (Socio registrato)</label>
+            <Select 
+              inputId="m_assignee_user" 
+              v-model="movementForm.assigned_to_user_id" 
+              :options="loanAssignees" 
+              optionLabel="display" 
+              optionValue="id" 
+              :placeholder="t('gadgetStock.selectAssignee')" 
+              showClear 
+              filter 
+              class="w-full" 
+            />
+          </div>
+          <div class="flex flex-column gap-2">
+            <label for="m_assignee_name" class="font-semibold text-sm">{{ t('gadgetStock.customAssignee') }}</label>
+            <InputText 
+              id="m_assignee_name" 
+              v-model="movementForm.assigned_to_name" 
+              placeholder="es. Mario Rossi (Volontario)" 
+              :disabled="!!movementForm.assigned_to_user_id" 
+              class="w-full" 
+            />
+          </div>
+          <div class="flex flex-column gap-2">
+            <label for="m_expected_date" class="font-semibold text-sm">{{ t('gadgetStock.expectedReturnDate') }}</label>
+            <input 
+              type="date" 
+              id="m_expected_date" 
+              v-model="movementForm.expected_return_date" 
+              class="p-inputtext p-component w-full" 
+            />
+          </div>
+        </template>
+
+        <div class="flex flex-column gap-2">
+          <label for="m_qty" class="font-semibold text-sm">{{ t('gadgetStock.form.quantity') }} *</label>
+          <InputNumber inputId="m_qty" v-model="movementForm.quantity" :min="1" :placeholder="t('gadgetStock.form.quantityPlaceholder')" class="w-full" showButtons />
         </div>
       </template>
 
-      <div class="flex flex-column gap-2">
-        <label for="m_qty" class="font-semibold text-sm">{{ t('gadgetStock.form.quantity') }} *</label>
-        <InputNumber inputId="m_qty" v-model="movementForm.quantity" :min="1" :placeholder="t('gadgetStock.form.quantityPlaceholder')" class="w-full" showButtons />
-      </div>
       <div class="flex flex-column gap-2">
         <label for="m_notes" class="font-semibold text-sm">{{ t('gadgetStock.form.notes') }}</label>
         <InputText id="m_notes" v-model="movementForm.notes" :placeholder="t('gadgetStock.form.notesPlaceholder')" class="w-full" />
@@ -855,7 +1113,7 @@ onMounted(() => {
     </div>
     <template #footer>
       <Button :label="t('common.cancel')" severity="secondary" outlined @click="showMovementDialog = false" />
-      <Button :label="t('gadgetStock.form.register')" severity="success" :loading="submitting" @click="submitMovement" />
+      <Button :label="movementForm.movement_type === 'LOAN_RETURN' ? 'Conferma Riconsegna' : t('gadgetStock.form.register')" severity="success" :loading="submitting" @click="submitMovement" />
     </template>
   </Dialog>
 
@@ -878,15 +1136,15 @@ onMounted(() => {
         <InputNumber 
           inputId="ret_qty" 
           v-model="returnForm.returned_quantity" 
-          :min="0" 
+          :min="1" 
           :max="selectedLoan.remaining_quantity" 
           class="w-full" 
           showButtons 
         />
-        <small class="text-color-secondary text-xs">Pezzi che tornano fisicamente disponibili a magazzino</small>
+        <small class="text-color-secondary text-xs">Pezzi da restituire al magazzino (residuo in carico: {{ selectedLoan.remaining_quantity }} pz)</small>
       </div>
 
-      <div class="flex flex-column gap-2" v-if="returnForm.returned_quantity > 0">
+      <div class="flex flex-column gap-2">
         <label for="ret_wh" class="font-semibold text-sm">{{ t('gadgetStock.returnWarehouse') }} *</label>
         <Select 
           inputId="ret_wh" 
@@ -897,19 +1155,6 @@ onMounted(() => {
           placeholder="Seleziona magazzino..." 
           class="w-full" 
         />
-      </div>
-
-      <div class="flex flex-column gap-2">
-        <label for="ret_dist" class="font-semibold text-sm">{{ t('gadgetStock.distributedQty') }}</label>
-        <InputNumber 
-          inputId="ret_dist" 
-          v-model="returnForm.distributed_quantity" 
-          :min="0" 
-          :max="selectedLoan.remaining_quantity - (returnForm.returned_quantity || 0)" 
-          class="w-full" 
-          showButtons 
-        />
-        <small class="text-color-secondary text-xs">Pezzi donati o distribuiti durante l'affidamento (scaricati definitivamente)</small>
       </div>
 
       <div class="flex flex-column gap-2">

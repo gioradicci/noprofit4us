@@ -392,7 +392,6 @@ def create_gadget_loan(
         assigned_to_name=assignee_display,
         quantity=quantity,
         returned_quantity=0,
-        distributed_quantity=0,
         status="ACTIVE",
         loan_date=datetime.utcnow(),
         expected_return_date=expected_return_date,
@@ -404,7 +403,7 @@ def create_gadget_loan(
 
     # Aggiorna giacenza aggregata gadget
     total_stock = db.query(func.sum(GadgetVariantStock.quantity)).filter_by(gadget_id=gadget.id).scalar() or 0
-    gadget.stock_quantity = total_stock
+    gadget.stock_quantity = total_stock #- quantity
 
     db.commit()
 
@@ -427,7 +426,6 @@ def return_gadget_loan(
     returned_quantity: int,
     to_warehouse_id: int,
     performed_by: int,
-    distributed_quantity: int = 0,
     notes: Optional[str] = None
 ) -> GadgetLoan:
     loan = db.query(GadgetLoan).get(loan_id)
@@ -437,14 +435,13 @@ def return_gadget_loan(
     if loan.status == "RETURNED":
         raise HTTPException(status_code=400, detail="Questo affidamento è già stato completamente riconsegnato")
 
-    remaining = loan.quantity - loan.returned_quantity - loan.distributed_quantity
-    total_closing = returned_quantity + distributed_quantity
+    remaining = loan.quantity - loan.returned_quantity
 
-    if total_closing <= 0:
-        raise HTTPException(status_code=400, detail="La somma tra quantità restituita e distribuita deve essere maggiore di zero")
+    if returned_quantity <= 0:
+        raise HTTPException(status_code=400, detail="La quantità da restituire deve essere maggiore di zero")
 
-    if total_closing > remaining:
-        raise HTTPException(status_code=400, detail=f"Quantità totale ({total_closing}) superiore al residuo in carico ({remaining})")
+    if returned_quantity > remaining:
+        raise HTTPException(status_code=400, detail=f"Quantità da restituire ({returned_quantity}) superiore al residuo in carico ({remaining})")
 
     wh_to = db.query(Warehouse).get(to_warehouse_id)
     if not wh_to:
@@ -454,58 +451,46 @@ def return_gadget_loan(
     assignee = loan.assigned_to_name or "Assegnatario"
 
     # 1. Riconsegna a magazzino
-    if returned_quantity > 0:
-        stock_to = db.query(GadgetVariantStock).filter_by(
-            gadget_id=loan.gadget_id, warehouse_id=to_warehouse_id
-        ).first()
-        if not stock_to:
-            stock_to = GadgetVariantStock(
-                gadget_id=loan.gadget_id,
-                warehouse_id=to_warehouse_id,
-                quantity=0
-            )
-            db.add(stock_to)
-        stock_to.quantity += returned_quantity
-
-        movement_return = StockMovement(
+    stock_to = db.query(GadgetVariantStock).filter_by(
+        gadget_id=loan.gadget_id, warehouse_id=to_warehouse_id
+    ).first()
+    if not stock_to:
+        stock_to = GadgetVariantStock(
             gadget_id=loan.gadget_id,
-            from_warehouse_id=None,
-            to_warehouse_id=to_warehouse_id,
-            quantity=returned_quantity,
-            movement_type="LOAN_RETURN",
-            performed_by=performed_by,
-            notes=f"Rientro da affidamento di {assignee} in {wh_to.name}" + (f": {notes}" if notes else "")
+            warehouse_id=to_warehouse_id,
+            quantity=0
         )
-        db.add(movement_return)
+        db.add(stock_to)
+    stock_to.quantity += returned_quantity
 
-    # 2. Eventuale scarico / distribuzione durante l'affidamento
-    if distributed_quantity > 0:
-        movement_dist = StockMovement(
-            gadget_id=loan.gadget_id,
-            from_warehouse_id=None,
-            to_warehouse_id=None,
-            quantity=distributed_quantity,
-            movement_type="DELIVERY",
-            performed_by=performed_by,
-            notes=f"Distribuito/donato durante affidamento da {assignee}" + (f": {notes}" if notes else "")
-        )
-        db.add(movement_dist)
+    movement_return = StockMovement(
+        gadget_id=loan.gadget_id,
+        from_warehouse_id=None,
+        to_warehouse_id=to_warehouse_id,
+        quantity=returned_quantity,
+        movement_type="LOAN_RETURN",
+        performed_by=performed_by,
+        notes=f"Rientro da affidamento di {assignee} in {wh_to.name}" + (f": {notes}" if notes else "")
+    )
+    db.add(movement_return)
 
-    # 3. Aggiorna lo stato del loan
+    # 2. Aggiorna lo stato del loan
     loan.returned_quantity += returned_quantity
-    loan.distributed_quantity += distributed_quantity
     loan.updated_at = datetime.utcnow()
 
-    if loan.returned_quantity + loan.distributed_quantity >= loan.quantity:
+    if loan.returned_quantity >= loan.quantity:
         loan.status = "RETURNED"
         loan.returned_date = datetime.utcnow()
     else:
         loan.status = "PARTIAL"
-
+    db.flush(loan)
     # Aggiorna giacenza aggregata gadget
     if gadget:
         total_stock = db.query(func.sum(GadgetVariantStock.quantity)).filter_by(gadget_id=gadget.id).scalar() or 0
-        gadget.stock_quantity = total_stock
+        total_stock_in_loan = db.query(func.sum(GadgetLoan.quantity - GadgetLoan.returned_quantity))\
+            .filter_by(gadget_id=gadget.id).filter(GadgetLoan.status != "RETURNED").scalar() or 0
+        
+        gadget.stock_quantity = total_stock + total_stock_in_loan #+ returned_quantity
 
     db.commit()
 
@@ -515,7 +500,7 @@ def return_gadget_loan(
         entity_type="GADGET_LOAN",
         entity_id=loan.id,
         performed_by=performed_by,
-        details=f"Riconsegna affidamento #{loan.id}: {returned_quantity} rientrati in {wh_to.name}, {distributed_quantity} distribuiti."
+        details=f"Riconsegna affidamento #{loan.id}: {returned_quantity} rientrati in {wh_to.name}."
     )
     db.commit()
     db.refresh(loan)
