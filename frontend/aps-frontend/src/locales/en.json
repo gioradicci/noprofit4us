@@ -537,7 +537,8 @@
       "insufficientStockDetail": "The selected warehouse has only {stock} units of this variant",
       "movementFailed": "Unable to register movement",
       "connectionFailed": "Connection error",
-      "exportFailed": "Error exporting inventory"
+      "exportFailed": "Error exporting inventory",
+      "notForSaleDelivery": "Gadgets marked as 'not for sale' (internal use) cannot be delivered."
     }
   },
   "warehouses": {

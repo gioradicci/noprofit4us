@@ -239,6 +239,12 @@ def create_stock_movement(
     elif movement_type == "DELIVERY":
         if not from_warehouse_id:
             raise HTTPException(status_code=400, detail="Source warehouse is required for deliveries")
+        # I gadget "non in vendita" (uso interno/staff) non possono essere consegnati.
+        if gadget.is_not_for_sale:
+            raise HTTPException(
+                status_code=400,
+                detail="I gadget contrassegnati come 'non in vendita' (uso interno) non possono essere consegnati."
+            )
 
     # Apply changes
     # 1. Deduct stock from source warehouse
@@ -572,6 +578,13 @@ def deliver_gadget_loan(
         )
 
     gadget = db.query(Gadget).get(loan.gadget_id)
+    # I gadget "non in vendita" (uso interno/staff) non possono essere consegnati
+    # definitivamente all'assegnatario, anche se già in affidamento temporaneo.
+    if gadget is not None and gadget.is_not_for_sale:
+        raise HTTPException(
+            status_code=400,
+            detail="I gadget contrassegnati come 'non in vendita' (uso interno) non possono essere consegnati."
+        )
     assignee = loan.assigned_to_name or "Assegnatario"
 
     # Registra il movimento: la merce esce dall'affidamento ed è conseguente all'assegnatario.

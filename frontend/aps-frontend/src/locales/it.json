@@ -537,7 +537,8 @@
       "insufficientStockDetail": "Il magazzino selezionato ha solo {stock} unità di questa variante",
       "movementFailed": "Impossibile registrare il movimento",
       "connectionFailed": "Errore di connessione",
-      "exportFailed": "Errore durante l'esportazione dell'inventario"
+      "exportFailed": "Errore durante l'esportazione dell'inventario",
+      "notForSaleDelivery": "I gadget contrassegnati come 'non in vendita' (uso interno) non possono essere consegnati."
     }
   },
   "warehouses": {

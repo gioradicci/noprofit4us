@@ -84,13 +84,25 @@ const movementTypeFilterOptions = computed(() => [
   ...movementTypes.value
 ])
 
+// Un gadget "non in vendita" (uso interno) non può essere consegnato
+// definitivamente all'assegnatario tramite LOAN_DELIVERY.
+function isLoanGadgetNotForSale(loan) {
+  if (!loan) return false
+  const gadget = gadgets.value.find(g => g.id === loan.gadget_id)
+  return !!gadget?.is_not_for_sale
+}
+
 const activeLoanOptions = computed(() => {
   // Un affidamento è selezionabile solo se ha ancora residuo in carico:
   // remaining = quantity - returned_quantity - delivered_quantity > 0
   // (stessa logica di _refresh_loan_status lato backend). Esclude così anche gli
   // affidamenti chiusi (RETURNED/DELIVERED/COMPLETED) che hanno residuo 0.
+  // Per la consegna definitiva (LOAN_DELIVERY) si escludono inoltre gli
+  // affidamenti di gadget "non in vendita" (uso interno), non consegnabili.
+  const isLoanDelivery = movementForm.value.movement_type === 'LOAN_DELIVERY'
   return loans.value
     .filter(l => (l.remaining_quantity || 0) > 0)
+    .filter(l => !isLoanDelivery || !isLoanGadgetNotForSale(l))
     .map(l => ({
       label: `#${l.id} - ${l.gadget_name || 'Gadget'} (Affidato a: ${l.assigned_to_name || 'Socio'}) - Residuo: ${l.remaining_quantity} pz`,
       value: l.id,
@@ -104,12 +116,17 @@ const selectedLoanInMovementForm = computed(() => {
 })
 
 const gadgetOptions = computed(() => {
-  return gadgets.value.map(g => ({
-    label: `${g.name} ${g.sku ? `[SKU: ${g.sku}]` : ''} (${t('gadgetStock.stock')}: ${g.stock_quantity || 0})`,
-    value: g.id,
-    sku: g.sku,
-    stocks: g.stocks
-  }))
+  // I gadget "non in vendita" (uso interno) non possono essere consegnati
+  // tramite DELIVERY: vengono esclusi dalla lista per questo tipo di movimento.
+  const isDelivery = movementForm.value.movement_type === 'DELIVERY'
+  return gadgets.value
+    .filter(g => !isDelivery || !g.is_not_for_sale)
+    .map(g => ({
+      label: `${g.name} ${g.sku ? `[SKU: ${g.sku}]` : ''} (${t('gadgetStock.stock')}: ${g.stock_quantity || 0})`,
+      value: g.id,
+      sku: g.sku,
+      stocks: g.stocks
+    }))
 })
 
 const fromWarehouseOptions = computed(() => {
@@ -327,6 +344,8 @@ function openMovementModal(type = 'RESTOCK', loanId = null) {
   if (type === 'LOAN_RETURN' || type === 'LOAN_DELIVERY') {
     const applyLoan = (loan) => {
       if (!loan) return
+      // Un gadget "non in vendita" non è consegnabile definitivamente.
+      if (type === 'LOAN_DELIVERY' && isLoanGadgetNotForSale(loan)) return
       movementForm.value.gadget_id = loan.gadget_id
       if (type === 'LOAN_DELIVERY') {
         movementForm.value.delivered_quantity = loan.remaining_quantity
@@ -356,6 +375,10 @@ async function submitMovement() {
     const targetLoan = loans.value.find(l => l.id === movementForm.value.loan_id)
     if (!targetLoan) {
       toast.add({ severity: 'error', summary: t('common.error'), detail: "Affidamento non trovato", life: 3000 })
+      return
+    }
+    if (isLoanGadgetNotForSale(targetLoan)) {
+      toast.add({ severity: 'error', summary: t('common.error'), detail: t('gadgetStock.errors.notForSaleDelivery'), life: 4000 })
       return
     }
     const delQty = Number(movementForm.value.delivered_quantity) || 0
@@ -456,6 +479,13 @@ async function submitMovement() {
   if (!movementForm.value.gadget_id || !movementForm.value.quantity) {
     toast.add({ severity: 'warn', summary: t('common.warning'), detail: t('gadgetStock.errors.requiredFields'), life: 3000 })
     return
+  }
+  if (movementForm.value.movement_type === 'DELIVERY') {
+    const deliveryGadget = gadgets.value.find(g => g.id === movementForm.value.gadget_id)
+    if (deliveryGadget?.is_not_for_sale) {
+      toast.add({ severity: 'error', summary: t('common.error'), detail: t('gadgetStock.errors.notForSaleDelivery'), life: 4000 })
+      return
+    }
   }
   if (movementForm.value.movement_type === 'TRANSFER') {
     if (!movementForm.value.from_warehouse_id || !movementForm.value.to_warehouse_id) {
@@ -940,6 +970,7 @@ onMounted(() => {
             <template #body="slotProps">
               <div v-if="slotProps.data.remaining_quantity > 0" class="flex gap-2 justify-content-start">
                 <Button
+                  v-if="!isLoanGadgetNotForSale(slotProps.data)"
                   :title="t('gadgetStock.deliverBtn')"
                   class="p-button-rounded"
                   icon="pi pi-truck"
