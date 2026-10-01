@@ -398,7 +398,10 @@ onMounted(() => {
               class="gadget-thumb-image"
               :imageStyle="{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }"
               :previewButtonProps="{ 'aria-label': t('gadgets.table.image') }"
-              :pt="{ mask: { class: 'gadget-image-mask' } }"
+              :pt="{
+                image: { loading: 'lazy', decoding: 'async' },
+                mask: { class: 'gadget-image-mask' }
+              }"
             />
             <i v-else class="pi pi-image text-color-secondary text-lg"></i>
           </div>

@@ -265,11 +265,18 @@ async function loadData() {
   try {
     const token = (await supabase.auth.getSession()).data.session?.access_token
     const headers = { Authorization: `Bearer ${token}` }
-    const resGadgets = await fetch(API_URL + "/gadgets/", { headers })
+    // Richieste eseguite in parallelo (Promise.all) invece che in sequenza:
+    // la pagina è pronta in un solo round-trip "logico" e il backend (macchine
+    // piccole) gestisce meno richieste a cascata.
+    const [resGadgets, resWarehouses, resMovements, resLoans, resAssignees] = await Promise.all([
+      fetch(API_URL + "/gadgets/", { headers }),
+      fetch(API_URL + "/gadgets/warehouses", { headers }),
+      fetch(API_URL + "/gadgets/movements", { headers }),
+      fetch(API_URL + "/gadgets/loans?status=ALL", { headers }),
+      fetch(API_URL + "/gadgets/loan-assignees", { headers })
+    ])
     if (resGadgets.ok) gadgets.value = await resGadgets.json()
-    const resWarehouses = await fetch(API_URL + "/gadgets/warehouses", { headers })
     if (resWarehouses.ok) warehouses.value = await resWarehouses.json()
-    const resMovements = await fetch(API_URL + "/gadgets/movements", { headers })
     if (resMovements.ok) {
       const data = await resMovements.json()
       movements.value = data.map(m => ({
@@ -277,9 +284,7 @@ async function loadData() {
         performed_by_display: formatPerformedBy(m)
       }))
     }
-    const resLoans = await fetch(API_URL + "/gadgets/loans?status=ALL", { headers })
     if (resLoans.ok) loans.value = await resLoans.json()
-    const resAssignees = await fetch(API_URL + "/gadgets/loan-assignees", { headers })
     if (resAssignees.ok) loanAssignees.value = await resAssignees.json()
   } catch (err) {
     console.error(err)
@@ -682,7 +687,7 @@ onMounted(() => {
           <Column frozen :header="t('gadgetStock.photo')" class="w-5rem text-center" style="min-width: 60px">
             <template #body="slotProps">
               <div class="flex align-items-center justify-content-center m-auto border-1 border-light border-round overflow-hidden" style="width: 40px; height: 60px; background-color: var(--code-bg);">
-                <img v-if="slotProps.data.image_path" :src="getImageUrl(slotProps.data.image_path)" alt="Gadget" class="w-full h-full object-fit-cover" />
+                <img v-if="slotProps.data.image_path" :src="getImageUrl(slotProps.data.image_path)" alt="Gadget" loading="lazy" decoding="async" class="w-full h-full object-fit-cover" />
                 <i v-else class="pi pi-image text-color-secondary text-lg"></i>
               </div>
             </template>
@@ -788,7 +793,7 @@ onMounted(() => {
           <Column :header="t('gadgetStock.photo')" class="w-5rem text-center">
             <template #body="slotProps">
               <div class="flex align-items-center justify-content-center m-auto border-1 border-light border-round overflow-hidden" style="width: 40px; height: 50px; background-color: var(--code-bg);">
-                <img v-if="slotProps.data.gadget_image" :src="getImageUrl(slotProps.data.gadget_image)" alt="Gadget" class="w-full h-full object-fit-cover" />
+                <img v-if="slotProps.data.gadget_image" :src="getImageUrl(slotProps.data.gadget_image)" alt="Gadget" loading="lazy" decoding="async" class="w-full h-full object-fit-cover" />
                 <i v-else class="pi pi-image text-color-secondary text-base"></i>
               </div>
             </template>
@@ -890,7 +895,7 @@ onMounted(() => {
           <Column :header="t('gadgetStock.photo')" class="w-5rem text-center">
             <template #body="slotProps">
               <div class="flex align-items-center justify-content-center m-auto border-1 border-light border-round overflow-hidden" style="width: 40px; height: 60px; background-color: var(--code-bg);">
-                <img v-if="slotProps.data.image_path" :src="getImageUrl(slotProps.data.image_path)" alt="Movimento" class="w-full h-full object-fit-cover" />
+                <img v-if="slotProps.data.image_path" :src="getImageUrl(slotProps.data.image_path)" alt="Movimento" loading="lazy" decoding="async" class="w-full h-full object-fit-cover" />
                 <i v-else class="pi pi-image text-color-secondary text-lg"></i>
               </div>
             </template>

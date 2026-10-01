@@ -165,11 +165,19 @@ def upload_image(
         # Read file bytes
         file_bytes = file.file.read()
         
-        # Upload to Supabase Storage
+        # Upload to Supabase Storage.
+        # Il nome file è un UUID, quindi il contenuto di un oggetto non cambia
+        # mai: ogni modifica immagine genera un nuovo file. Possiamo quindi
+        # marcare l'oggetto come immutabile e lasciare che il browser (e la CDN
+        # di Supabase) lo conservino a lungo, evitando di riscaricare le
+        # miniature ad ogni navigazione tra le pagine.
         res = supabase.storage.from_("gadgets").upload(
-            path=filename, 
-            file=file_bytes, 
-            file_options={"content-type": content_type}
+            path=filename,
+            file=file_bytes,
+            file_options={
+                "content-type": content_type,
+                "cache-control": "public, max-age=31536000, immutable",
+            }
         )
         
         # Get public URL
