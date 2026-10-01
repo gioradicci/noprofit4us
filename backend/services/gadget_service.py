@@ -100,6 +100,13 @@ def delete_gadget(db: Session, gadget_id: int, performed_by: int) -> bool:
     if (gadget.stock_quantity or 0) > 0:
         raise HTTPException(status_code=400, detail="Impossibile eliminare il gadget perché ci sono ancora pezzi in magazzino.")
 
+    active_loans = db.query(func.sum(GadgetLoan.quantity - GadgetLoan.returned_quantity)).filter(
+        GadgetLoan.gadget_id == gadget_id,
+        GadgetLoan.status != "RETURNED"
+    ).scalar() or 0
+    if active_loans > 0:
+        raise HTTPException(status_code=400, detail="Impossibile eliminare il gadget perché risultano ancora pezzi in affidamento.")
+
     gadget_name = gadget.name
     db.delete(gadget)
     db.commit()
@@ -401,9 +408,9 @@ def create_gadget_loan(
     db.add(loan)
     db.flush()
 
-    # Aggiorna giacenza aggregata gadget
+    # Aggiorna giacenza a magazzino (esclude le quantità in affidamento)
     total_stock = db.query(func.sum(GadgetVariantStock.quantity)).filter_by(gadget_id=gadget.id).scalar() or 0
-    gadget.stock_quantity = total_stock #- quantity
+    gadget.stock_quantity = total_stock
 
     db.commit()
 
@@ -483,14 +490,11 @@ def return_gadget_loan(
         loan.returned_date = datetime.utcnow()
     else:
         loan.status = "PARTIAL"
-    db.flush(loan)
-    # Aggiorna giacenza aggregata gadget
+    db.flush()
+    # Aggiorna giacenza a magazzino (esclude le quantità ancora in affidamento)
     if gadget:
         total_stock = db.query(func.sum(GadgetVariantStock.quantity)).filter_by(gadget_id=gadget.id).scalar() or 0
-        total_stock_in_loan = db.query(func.sum(GadgetLoan.quantity - GadgetLoan.returned_quantity))\
-            .filter_by(gadget_id=gadget.id).filter(GadgetLoan.status != "RETURNED").scalar() or 0
-        
-        gadget.stock_quantity = total_stock + total_stock_in_loan #+ returned_quantity
+        gadget.stock_quantity = total_stock
 
     db.commit()
 

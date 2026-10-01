@@ -162,7 +162,7 @@ const flattenedStocks = computed(() => {
     if (g.model) parts.push(`${t('gadgetStock.model')}: ${g.model}`)
     const variant_details = parts.join(' | ') || '-'
     const loanRemainingTotal = loans.value
-      .filter(l => l.gadget_id === g.id && l.status !== 'RETURNED')
+      .filter(l => l.gadget_id === g.id ) //&& l.status !== 'RETURNED'
       .reduce((sum, l) => sum + (l.remaining_quantity || 0), 0)
     return {
       id: g.id,
@@ -728,7 +728,7 @@ onMounted(() => {
             <template #body="slotProps">
               <div class="flex align-items-center gap-2">
                 <span :class="['font-bold', slotProps.data.total_stock < 1 ? 'text-red-500' : 'text-primary']">{{ slotProps.data.total_stock }} {{ t('gadgetStock.pcs') }}</span>
-                <span v-if="slotProps.data.loan_remaining_total > 0" class="badge border-round px-2 py-1 text-xs bg-purple-100 text-purple-800 font-bold white-space-nowrap" :title="'Affidati attivi: ' + slotProps.data.loan_remaining_total + ' pz'">🤝 {{ slotProps.data.loan_remaining_total }} {{ t('gadgetStock.pcs') }}</span>
+                <span v-if="slotProps.data.loan_remaining_total > 0" class="badge border-round px-2 py-1 text-xs bg-purple-100 text-purple-800 font-bold white-space-nowrap" :title="'Affidati: ' + slotProps.data.loan_remaining_total + ' pz'">+{{ slotProps.data.loan_remaining_total }} {{ t('gadgetStock.pcs') }}</span>
               </div>
             </template>
           </Column>

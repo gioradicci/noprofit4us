@@ -437,6 +437,7 @@ onMounted(() => {
       <Column field="stock_quantity" :header="t('gadgets.table.totalStock')" sortable>
         <template #body="slotProps">
           <span :class="['font-bold', (slotProps.data.stock_quantity || 0) < 1 ? 'text-red-500' : 'text-900']">{{ slotProps.data.stock_quantity || 0 }} {{ t('gadgets.table.pcs') }}</span>
+          <span v-if="slotProps.data.loan_remaining_total > 0" class="badge border-round px-2 py-1 text-xs bg-purple-100 text-purple-800 font-bold white-space-nowrap" :title="'Affidati: ' + slotProps.data.loan_remaining_total + ' pz'">+{{ slotProps.data.loan_remaining_total }} {{ t('gadgetStock.pcs') }}</span>
         </template>
       </Column>
       <Column v-if="canManageGadgets" :header="t('common.actions')">

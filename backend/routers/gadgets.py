@@ -1,5 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException, UploadFile, File
 from fastapi.responses import StreamingResponse
+from sqlalchemy import func
 from sqlalchemy.orm import Session
 from pydantic import BaseModel
 from typing import Optional, List
@@ -197,9 +198,18 @@ def get_gadgets(db: Session = Depends(get_db)):
  #   if current_user.role != "ADMIN" and current_user.status == "INCOMPLETE":
  #       raise HTTPException(status_code=403, detail="Active profile required")
 
+    #Query sum by Load Gadget.id
+    gadgets_loans_qty = db.query(GadgetLoan.gadget_id, func.sum(GadgetLoan.quantity - GadgetLoan.returned_quantity)).group_by(GadgetLoan.gadget_id).all()
+    gadgets_loans_qty = [q for q in gadgets_loans_qty if q[1]>0 ]
+
+    #Get Gadgets
     gadgets = db.query(Gadget).order_by(Gadget.id.desc()).all()
+
     result = []
     for g in gadgets:
+        #Find by gadget_id and summaryze loan quantity
+        qry_remaining = next((sub[1] for sub in gadgets_loans_qty if sub[0] ==  g.id ), 0)
+        
         g_data = {
             "id": g.id,
             "name": g.name,
@@ -215,6 +225,7 @@ def get_gadgets(db: Session = Depends(get_db)):
             "sku": g.sku,
             "is_not_for_sale": g.is_not_for_sale,
             "stock_quantity": g.stock_quantity,
+            "loan_remaining_total" : qry_remaining,
             "stocks": []
         }
         for s in g.stocks:
