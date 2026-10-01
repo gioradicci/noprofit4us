@@ -833,28 +833,12 @@ onMounted(() => {
               @click="showOnlyActiveLoans = !showOnlyActiveLoans" 
             />
             <Button 
-              :label="t('gadgetStock.newLoan')" 
+              :titlelabel="t('gadgetStock.newLoan')" 
               icon="pi pi-plus" 
               severity="help" 
               outlined 
               size="small" 
               @click="openMovementModal('LOAN')" 
-            />
-            <Button
-              :label="t('gadgetStock.quickReturn')"
-              icon="pi pi-replay"
-              severity="success"
-              outlined
-              size="small"
-              @click="openMovementModal('LOAN_RETURN')"
-            />
-            <Button
-              :label="t('gadgetStock.quickDeliver')"
-              icon="pi pi-send"
-              severity="primary"
-              outlined
-              size="small"
-              @click="openMovementModal('LOAN_DELIVERY')"
             />
           </div>
         </div>
@@ -880,17 +864,17 @@ onMounted(() => {
               <small v-if="slotProps.data.gadget_sku" class="text-color-secondary font-normal">[SKU: {{ slotProps.data.gadget_sku }}]</small>
             </template>
           </Column>
+          <Column field="from_warehouse_name" header="Magazzino Origine" sortable>
+            <template #body="slotProps">
+              <span class="text-sm text-color-secondary">{{ slotProps.data.from_warehouse_name || '-' }}</span>
+            </template>
+          </Column>
           <Column field="assigned_to_name" :header="t('gadgetStock.assignee')" sortable class="font-semibold">
             <template #body="slotProps">
               <div class="flex align-items-center gap-2">
                 <i class="pi pi-user text-purple-600 text-sm"></i>
                 <span>{{ slotProps.data.assigned_to_name }}</span>
               </div>
-            </template>
-          </Column>
-          <Column field="from_warehouse_name" header="Magazzino Origine" sortable>
-            <template #body="slotProps">
-              <span class="text-sm text-color-secondary">{{ slotProps.data.from_warehouse_name || '-' }}</span>
             </template>
           </Column>
           <Column field="remaining_quantity" header="In Carico" sortable>
@@ -954,16 +938,18 @@ onMounted(() => {
           </Column>
           <Column header="Azioni" class="text-right" style="min-width: 190px">
             <template #body="slotProps">
-              <div v-if="slotProps.data.remaining_quantity > 0" class="flex gap-2 justify-content-end">
+              <div v-if="slotProps.data.remaining_quantity > 0" class="flex gap-2 justify-content-start">
                 <Button
-                  :label="t('gadgetStock.deliverBtn')"
-                  icon="pi pi-send"
-                  severity="primary"
+                  :title="t('gadgetStock.deliverBtn')"
+                  class="p-button-rounded"
+                  icon="pi pi-truck"
+                  severity="info"
                   size="small"
                   @click="openMovementModal('LOAN_DELIVERY', slotProps.data.id)"
                 />
                 <Button
-                  :label="t('gadgetStock.returnBtn')"
+                  :title="t('gadgetStock.returnBtn')"
+                  class="p-button-rounded"
                   icon="pi pi-replay"
                   severity="success"
                   size="small"

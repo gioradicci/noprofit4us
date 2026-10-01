@@ -582,7 +582,7 @@ def deliver_gadget_loan(
         quantity=delivered_quantity,
         movement_type="LOAN_DELIVERY",
         performed_by=performed_by,
-        notes=f"Consegna definitiva a {assignee} di materiale in affidamento" + (f": {notes}" if notes else "")
+        notes=f"Consegna definitiva di {assignee} per materiale in affidamento" + (f": {notes}" if notes else "")
     )
     db.add(movement)
 
