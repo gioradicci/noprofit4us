@@ -196,14 +196,15 @@ def upload_image(
     return {"image_path": public_url}
 
 
-#Rendiamo la pagina dei gadget visibile a tutti anche senza autenticazione
-@router.get("/")
-#def get_gadgets(current_user=Depends(get_current_user), db: Session = Depends(get_db)):
-def get_gadgets(db: Session = Depends(get_db)):
- #   if current_user.role != "ADMIN" and current_user.status == "INCOMPLETE":
- #       raise HTTPException(status_code=403, detail="Active profile required")
+def build_gadgets_inventory(db: Session) -> List[dict]:
+    """Costruisce i dati dei gadget con le giacenze per magazzino.
 
-    #Query sum by Load Gadget.id
+    Le quantità di ``GadgetVariantStock`` non includono i pezzi affidati:
+    l'affidamento (LOAN) scala subito la giacenza e i rientri (LOAN_RETURN)
+    la ripristinano, quindi le movimentazioni sono già riflesse. Qui si
+    aggiunge solo il totale ancora in carico agli assegnatari, utile per
+    riconciliare giacenza fisica e affidamenti aperti.
+    """
     # Un affidamento è considerato APERTO quando il residuo in carico è > 0, ossia
     # remaining = quantity - returned_quantity - delivered_quantity (stessa logica di
     # _refresh_loan_status in gadget_service.py). In questo modo restano esclusi gli
@@ -219,16 +220,16 @@ def get_gadgets(db: Session = Depends(get_db)):
     ).filter(
         loan_remaining_expr > 0
     ).group_by(GadgetLoan.gadget_id).all()
-    gadgets_loans_qty = [q for q in gadgets_loans_qty if q[1]>0 ]
+    gadgets_loans_qty = [q for q in gadgets_loans_qty if q[1] > 0]
 
-    #Get Gadgets
+    # Get Gadgets
     gadgets = db.query(Gadget).order_by(Gadget.id.desc()).all()
 
     result = []
     for g in gadgets:
-        #Find by gadget_id and summaryze loan quantity
-        qry_remaining = next((sub[1] for sub in gadgets_loans_qty if sub[0] ==  g.id ), 0)
-        
+        # Find by gadget_id and summarize loan quantity
+        qry_remaining = next((sub[1] for sub in gadgets_loans_qty if sub[0] == g.id), 0)
+
         g_data = {
             "id": g.id,
             "name": g.name,
@@ -244,7 +245,7 @@ def get_gadgets(db: Session = Depends(get_db)):
             "sku": g.sku,
             "is_not_for_sale": g.is_not_for_sale,
             "stock_quantity": g.stock_quantity,
-            "loan_remaining_total" : qry_remaining,
+            "loan_remaining_total": qry_remaining,
             "stocks": []
         }
         for s in g.stocks:
@@ -256,6 +257,16 @@ def get_gadgets(db: Session = Depends(get_db)):
             })
         result.append(g_data)
     return result
+
+
+#Rendiamo la pagina dei gadget visibile a tutti anche senza autenticazione
+@router.get("/")
+#def get_gadgets(current_user=Depends(get_current_user), db: Session = Depends(get_db)):
+def get_gadgets(db: Session = Depends(get_db)):
+ #   if current_user.role != "ADMIN" and current_user.status == "INCOMPLETE":
+ #       raise HTTPException(status_code=403, detail="Active profile required")
+
+    return build_gadgets_inventory(db)
 
 
 @router.post("/{id}/lock")
@@ -604,22 +615,27 @@ def export_inventory(
     if current_user.role == "SECRETARY" and not has_active_membership(current_user, db):
         raise HTTPException(status_code=403, detail="Active membership required")
 
+    # Ogni magazzino attivo diventa una colonna
     warehouses = db.query(Warehouse).filter(Warehouse.is_active == True).order_by(Warehouse.name).all()
-    gadgets = db.query(Gadget).order_by(Gadget.name).all()
+
+    # Stessi dati della get_gadgets: le giacenze per magazzino sono già al netto
+    # degli affidamenti e tengono conto delle relative movimentazioni.
+    gadgets_data = build_gadgets_inventory(db)
+    gadgets_data.sort(key=lambda g: (g["name"] or "").lower())
 
     wb = openpyxl.Workbook()
     ws = wb.active
     ws.title = "Inventario"
 
     headers_row = [
-        "Gadget", "Categoria", "SKU", "Taglia", "Colore", "Modello", "Magazzino", "Quantita"
-    ]
+        "Gadget", "Categoria", "SKU", "Taglia", "Colore", "Modello",
+        "In affidamento attivo"] + [w.name for w in warehouses] + ["Totale"]
     ws.append(headers_row)
 
     # Style header row
     header_fill = PatternFill(start_color="1F4E78", end_color="1F4E78", fill_type="solid")
     header_font = Font(name="Calibri", size=11, bold=True, color="FFFFFF")
-    header_alignment = Alignment(horizontal="center", vertical="center")
+    header_alignment = Alignment(horizontal="center", vertical="center", wrap_text=True)
 
     for col_idx in range(1, len(headers_row) + 1):
         cell = ws.cell(row=1, column=col_idx)
@@ -627,24 +643,33 @@ def export_inventory(
         cell.font = header_font
         cell.alignment = header_alignment
 
-    for g in gadgets:
+    for g in gadgets_data:
+        # Mappa warehouse_id -> quantità per la riga corrente
+        stock_by_warehouse = {s["warehouse_id"]: (s["quantity"] or 0) for s in g["stocks"]}
+
+        row = [
+            g["name"],
+            g["category"],
+            g["sku"] or "",
+            g["size"] or "",
+            g["color"] or "",
+            g["model"] or "",
+        ]
+
+        row.append(g["loan_remaining_total"] or 0)
+
+        total = 0
         for w in warehouses:
-            stock_qty = 0
-            for s in g.stocks:
-                if s.warehouse_id == w.id:
-                    stock_qty = s.quantity
-                    break
-            
-            ws.append([
-                g.name,
-                g.category,
-                g.sku or "",
-                g.size or "",
-                g.color or "",
-                g.model or "",
-                w.name,
-                stock_qty
-            ])
+            qty = stock_by_warehouse.get(w.id, 0)
+            row.append(qty)
+            total += qty
+
+
+        row.append(total + (g["loan_remaining_total"] or 0))
+        ws.append(row)
+
+    # Blocca la riga di intestazione e le colonne identificative del gadget
+    ws.freeze_panes = "B2"
 
     # Auto-adjust column widths
     for col in ws.columns:
