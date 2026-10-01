@@ -98,6 +98,11 @@ class LoanReturn(BaseModel):
     notes: Optional[str] = None
 
 
+class LoanDeliver(BaseModel):
+    delivered_quantity: int
+    notes: Optional[str] = None
+
+
 class WarehouseCreate(BaseModel):
     name: str
     code: str
@@ -199,7 +204,21 @@ def get_gadgets(db: Session = Depends(get_db)):
  #       raise HTTPException(status_code=403, detail="Active profile required")
 
     #Query sum by Load Gadget.id
-    gadgets_loans_qty = db.query(GadgetLoan.gadget_id, func.sum(GadgetLoan.quantity - GadgetLoan.returned_quantity)).group_by(GadgetLoan.gadget_id).all()
+    # Un affidamento è considerato APERTO quando il residuo in carico è > 0, ossia
+    # remaining = quantity - returned_quantity - delivered_quantity (stessa logica di
+    # _refresh_loan_status in gadget_service.py). In questo modo restano esclusi gli
+    # affidamenti chiusi (RETURNED/DELIVERED/COMPLETED) senza dipendere dalla stringa di stato.
+    loan_remaining_expr = (
+        GadgetLoan.quantity
+        - GadgetLoan.returned_quantity
+        - func.coalesce(GadgetLoan.delivered_quantity, 0)
+    )
+    gadgets_loans_qty = db.query(
+        GadgetLoan.gadget_id,
+        func.sum(loan_remaining_expr)
+    ).filter(
+        loan_remaining_expr > 0
+    ).group_by(GadgetLoan.gadget_id).all()
     gadgets_loans_qty = [q for q in gadgets_loans_qty if q[1]>0 ]
 
     #Get Gadgets
@@ -693,9 +712,9 @@ def get_loans(
     result = []
     today = date.today()
     for l in loans:
-        remaining = l.quantity - l.returned_quantity
+        remaining = l.quantity - l.returned_quantity - (l.delivered_quantity or 0)
         is_overdue = False
-        if l.status != "RETURNED" and l.expected_return_date:
+        if remaining > 0 and l.expected_return_date:
             exp_date = l.expected_return_date.date() if isinstance(l.expected_return_date, datetime) else l.expected_return_date
             if exp_date < today:
                 is_overdue = True
@@ -712,6 +731,7 @@ def get_loans(
             "assigned_to_name": l.assigned_to_name,
             "quantity": l.quantity,
             "returned_quantity": l.returned_quantity,
+            "delivered_quantity": l.delivered_quantity or 0,
             "remaining_quantity": remaining,
             "status": l.status,
             "loan_date": l.loan_date.isoformat() if l.loan_date else None,
@@ -774,6 +794,28 @@ def return_loan(
         loan_id=loan_id,
         returned_quantity=payload.returned_quantity,
         to_warehouse_id=payload.to_warehouse_id,
+        performed_by=current_user.id,
+        notes=payload.notes
+    )
+    return {"status": "success", "loan_id": loan.id, "new_status": loan.status}
+
+
+@router.post("/loans/{loan_id}/deliver")
+def deliver_loan(
+    loan_id: int,
+    payload: LoanDeliver,
+    current_user=Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    if current_user.role not in ["ADMIN", "SECRETARY"]:
+        raise HTTPException(status_code=403, detail="Not authorized")
+    if current_user.role == "SECRETARY" and not has_active_membership(current_user, db):
+        raise HTTPException(status_code=403, detail="Active membership required")
+
+    loan = gadget_service.deliver_gadget_loan(
+        db=db,
+        loan_id=loan_id,
+        delivered_quantity=payload.delivered_quantity,
         performed_by=current_user.id,
         notes=payload.notes
     )

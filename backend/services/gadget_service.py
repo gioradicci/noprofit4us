@@ -7,6 +7,41 @@ from database.models.user import User
 from services.audit_service import log_action
 from datetime import datetime, timedelta
 
+
+def _loan_remaining(loan: GadgetLoan) -> int:
+    """Pezzi ancora in carico all'assegnatario (né rientrati né consegnati definitivamente)."""
+    return loan.quantity - loan.returned_quantity - (loan.delivered_quantity or 0)
+
+
+def _refresh_loan_status(loan: GadgetLoan) -> str:
+    """Ricalcola lo stato dell'affidamento in base a rientri e consegne definitive.
+
+    Stati possibili:
+      - ACTIVE: nessun rientro/consegna, tutto ancora in carico
+      - PARTIAL: definizione parziale (alcuni rientrati e/o consegnati, residuo > 0)
+      - RETURNED: tutto rientrato a magazzino
+      - DELIVERED: tutto consegnato definitivamente all'assegnatario
+      - COMPLETED: definito in parte con rientro e in parte con consegna
+    """
+    delivered = loan.delivered_quantity or 0
+    remaining = loan.quantity - loan.returned_quantity - delivered
+
+    if remaining > 0:
+        loan.status = "PARTIAL" if (loan.returned_quantity + delivered) > 0 else "ACTIVE"
+    else:
+        if delivered and loan.returned_quantity:
+            loan.status = "COMPLETED"
+        elif delivered:
+            loan.status = "DELIVERED"
+        else:
+            loan.status = "RETURNED"
+        if not loan.returned_date:
+            loan.returned_date = datetime.utcnow()
+
+    loan.updated_at = datetime.utcnow()
+    return loan.status
+
+
 def acquire_lock(db: Session, gadget_id: int, user_id: int) -> bool:
     gadget = db.query(Gadget).get(gadget_id)
     if not gadget:
@@ -100,9 +135,10 @@ def delete_gadget(db: Session, gadget_id: int, performed_by: int) -> bool:
     if (gadget.stock_quantity or 0) > 0:
         raise HTTPException(status_code=400, detail="Impossibile eliminare il gadget perché ci sono ancora pezzi in magazzino.")
 
-    active_loans = db.query(func.sum(GadgetLoan.quantity - GadgetLoan.returned_quantity)).filter(
-        GadgetLoan.gadget_id == gadget_id,
-        GadgetLoan.status != "RETURNED"
+    active_loans = db.query(func.sum(
+        GadgetLoan.quantity - GadgetLoan.returned_quantity - func.coalesce(GadgetLoan.delivered_quantity, 0)
+    )).filter(
+        GadgetLoan.gadget_id == gadget_id
     ).scalar() or 0
     if active_loans > 0:
         raise HTTPException(status_code=400, detail="Impossibile eliminare il gadget perché risultano ancora pezzi in affidamento.")
@@ -399,6 +435,7 @@ def create_gadget_loan(
         assigned_to_name=assignee_display,
         quantity=quantity,
         returned_quantity=0,
+        delivered_quantity=0,
         status="ACTIVE",
         loan_date=datetime.utcnow(),
         expected_return_date=expected_return_date,
@@ -439,10 +476,9 @@ def return_gadget_loan(
     if not loan:
         raise HTTPException(status_code=404, detail="Affidamento non trovato")
 
-    if loan.status == "RETURNED":
-        raise HTTPException(status_code=400, detail="Questo affidamento è già stato completamente riconsegnato")
-
-    remaining = loan.quantity - loan.returned_quantity
+    remaining = _loan_remaining(loan)
+    if remaining <= 0:
+        raise HTTPException(status_code=400, detail="Questo affidamento è già stato completamente definito")
 
     if returned_quantity <= 0:
         raise HTTPException(status_code=400, detail="La quantità da restituire deve essere maggiore di zero")
@@ -483,13 +519,7 @@ def return_gadget_loan(
 
     # 2. Aggiorna lo stato del loan
     loan.returned_quantity += returned_quantity
-    loan.updated_at = datetime.utcnow()
-
-    if loan.returned_quantity >= loan.quantity:
-        loan.status = "RETURNED"
-        loan.returned_date = datetime.utcnow()
-    else:
-        loan.status = "PARTIAL"
+    _refresh_loan_status(loan)
     db.flush()
     # Aggiorna giacenza a magazzino (esclude le quantità ancora in affidamento)
     if gadget:
@@ -505,6 +535,71 @@ def return_gadget_loan(
         entity_id=loan.id,
         performed_by=performed_by,
         details=f"Riconsegna affidamento #{loan.id}: {returned_quantity} rientrati in {wh_to.name}."
+    )
+    db.commit()
+    db.refresh(loan)
+    return loan
+
+
+def deliver_gadget_loan(
+    db: Session,
+    loan_id: int,
+    delivered_quantity: int,
+    performed_by: int,
+    notes: Optional[str] = None
+) -> GadgetLoan:
+    """Registra la consegna definitiva a un assegnatario di materiale ancora in affidamento.
+
+    Simile una DELIVERY, ma la merce non proviene dal magazzino (era già
+    stata scaricata al momento dell'affidamento): va quindi a ridurre il residuo in
+    carico dell'affidamento e a tracciare il movimento con tipo ``LOAN_DELIVERY``.
+    """
+    loan = db.query(GadgetLoan).get(loan_id)
+    if not loan:
+        raise HTTPException(status_code=404, detail="Affidamento non trovato")
+
+    remaining = _loan_remaining(loan)
+    if remaining <= 0:
+        raise HTTPException(status_code=400, detail="Questo affidamento è già stato completamente definito")
+
+    if delivered_quantity <= 0:
+        raise HTTPException(status_code=400, detail="La quantità da consegnare deve essere maggiore di zero")
+
+    if delivered_quantity > remaining:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Quantità da consegnare ({delivered_quantity}) superiore al residuo in carico ({remaining})"
+        )
+
+    gadget = db.query(Gadget).get(loan.gadget_id)
+    assignee = loan.assigned_to_name or "Assegnatario"
+
+    # Registra il movimento: la merce esce dall'affidamento ed è conseguente all'assegnatario.
+    movement = StockMovement(
+        gadget_id=loan.gadget_id,
+        from_warehouse_id=loan.from_warehouse_id,
+        to_warehouse_id=None,
+        quantity=delivered_quantity,
+        movement_type="LOAN_DELIVERY",
+        performed_by=performed_by,
+        notes=f"Consegna definitiva a {assignee} di materiale in affidamento" + (f": {notes}" if notes else "")
+    )
+    db.add(movement)
+
+    # Aggiorna l'affidamento e lo stato
+    loan.delivered_quantity = (loan.delivered_quantity or 0) + delivered_quantity
+    _refresh_loan_status(loan)
+    db.flush()
+
+    db.commit()
+
+    log_action(
+        db=db,
+        action_type="GADGET_LOAN_DELIVER",
+        entity_type="GADGET_LOAN",
+        entity_id=loan.id,
+        performed_by=performed_by,
+        details=f"Consegna definitiva affidamento #{loan.id}: {delivered_quantity}x {gadget.name if gadget else ''} a {assignee}."
     )
     db.commit()
     db.refresh(loan)
