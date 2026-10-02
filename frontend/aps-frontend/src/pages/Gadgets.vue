@@ -380,7 +380,7 @@ onMounted(() => {
 
   <!-- Lista Gadget -->
   <div class="card p-4 shadow-2 border-round surface-card">
-    <DataTable :value="visibleGadgets" :loading="loading" paginator :rows="10" scrollable>
+    <DataTable :value="visibleGadgets" :loading="loading" paginator :rows="10" scrollable scrollHeight="600px">
       <template #empty>
         <div class="text-center py-4">
           <i class="pi pi-box text-4xl text-300 mb-2"></i>

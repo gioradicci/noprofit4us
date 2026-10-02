@@ -775,7 +775,7 @@ onMounted(() => {
     <div class="col-12 mb-5">
       <div class="card p-4 shadow-2 border-round surface-card">
         <h3 class="text-xl font-bold mb-4 text-900">Giacenze per Gadget</h3>
-        <DataTable :value="flattenedStocks" v-model:filters="filters" filterDisplay="row" :loading="loading" paginator :rows="10" scrollable responsiveLayout="scroll">
+        <DataTable :value="flattenedStocks" v-model:filters="filters" scrollHeight="500px" filterDisplay="row" :loading="loading" paginator :rows="10" scrollable responsiveLayout="scroll">
           <template #empty>
             <div class="text-center py-4">
               <i class="pi pi-info-circle text-3xl text-400 mb-2"></i>
@@ -873,7 +873,7 @@ onMounted(() => {
           </div>
         </div>
 
-        <DataTable :value="activeLoansList" :loading="loading" paginator :rows="5" responsiveLayout="scroll">
+        <DataTable :value="activeLoansList" :loading="loading" scrollable scrollHeight="500px" paginator :rows="7" responsiveLayout="scroll">
           <template #empty>
             <div class="text-center py-4">
               <i class="pi pi-check-circle text-3xl text-green-500 mb-2"></i>
@@ -1000,7 +1000,7 @@ onMounted(() => {
     <div class="col-12">
       <div class="card p-4 shadow-2 border-round surface-card">
         <h3 class="text-xl font-bold mb-4 text-900">{{ t('gadgetStock.movementHistory') }}</h3>
-        <DataTable :value="movements" v-model:filters="movementFilters" filterDisplay="row" :loading="loading" paginator :rows="10" responsiveLayout="scroll">
+        <DataTable :value="movements" scrollable scrollHeight="500px" v-model:filters="movementFilters" filterDisplay="row" :loading="loading" paginator :rows="10" responsiveLayout="scroll">
           <template #empty>
             <div class="text-center py-4">
               <i class="pi pi-history text-3xl text-400 mb-2"></i>
