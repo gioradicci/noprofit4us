@@ -421,6 +421,7 @@
     }
   },
   "gadgetStock": {
+    "economic_stock_value" : "Valore economico del magazzino",
     "title": "Gestione Magazzino",
     "subtitle": "Movimentazione dei gadget, tracciamento stock e storico delle operazioni",
     "exportInventory": "Esporta Inventario",

@@ -628,7 +628,7 @@ def export_inventory(
     ws.title = "Inventario"
 
     headers_row = [
-        "Gadget", "Categoria", "SKU", "Taglia", "Colore", "Modello",
+        "Gadget", "Categoria", "SKU", "Taglia", "Colore", "Modello", "Offerta min. Euro",
         "In affidamento attivo"] + [w.name for w in warehouses] + ["Totale"]
     ws.append(headers_row)
 
@@ -654,6 +654,7 @@ def export_inventory(
             g["size"] or "",
             g["color"] or "",
             g["model"] or "",
+            g["min_donation"]
         ]
 
         row.append(g["loan_remaining_total"] or 0)

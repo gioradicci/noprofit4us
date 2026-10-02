@@ -706,12 +706,24 @@ async function exportInventory() {
   }
 }
 
+// Somma delle min_donation di tutti i gadget vendibili.
+// DEVE essere un computed: `gadgets.value` è vuoto al setup e si popola
+// solo dopo loadData() in onMounted, quindi un valore calcolato "una volta sola"
+// resterebbe sempre 0.
+const total_gadget_value = computed(() =>
+  gadgets.value
+    .filter(g => !g.is_not_for_sale)
+    .reduce((sum, g) => sum + (Number(g.min_donation * (g.stock_quantity+g.loan_remaining_total) ) || 0), 0)
+)
+
 onMounted(() => {
   loadData()
 })
 </script>
 
 <template>
+<div> <span class="text-muted-color text-sm">{{t('gadgetStock.economic_stock_value')}}: €{{total_gadget_value}}</span></div>
+
 <div class="stock-container py-5 px-3">
   <!-- Header -->
   <div class="flex flex-column sm:flex-row justify-content-between align-items-start sm:align-items-center gap-3 mb-5">

@@ -421,6 +421,7 @@
     }
   },
   "gadgetStock": {
+    "economic_stock_value" : "Economic value of inventory",
     "title": "Warehouse Management",
     "subtitle": "Track gadget movements, stock levels and operation history",
     "exportInventory": "Export Inventory",
