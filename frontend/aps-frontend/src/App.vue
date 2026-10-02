@@ -1,10 +1,12 @@
 <script setup>
 import { API_URL } from './config.js'
-import { computed, onMounted } from 'vue'
+import { computed, onMounted, ref } from 'vue'
 import Button from 'primevue/button'
 import Avatar from 'primevue/avatar'
 import Badge from 'primevue/badge'
 import Menubar from 'primevue/menubar'
+import Dialog from 'primevue/dialog'
+import ManualeUtente from './pages/manuale_utente.md'
 import { useI18n } from 'vue-i18n'
 import { useUser } from './composables/useUser'
 
@@ -21,6 +23,7 @@ const {
   initAuth,
   logout: doLogout
 } = useUser()
+const showManual = ref(false)
 
 function changeLanguage(lang) {
   locale.value = lang
@@ -96,6 +99,7 @@ onMounted(async () => {
 
     <template #end>
       <div class="flex align-items-center gap-1 sm:gap-2 flex-shrink-0">
+        <Button icon="pi pi-book" class="p-button-text p-ml-2" @click="showManual = true" />
         <div class="flex gap-1 mr-1 sm:mr-3 border-round p-1 flex-shrink-0" style="background-color: var(--code-bg); border: 1px solid var(--border);">
           <Button 
             label="IT" 
@@ -132,6 +136,19 @@ onMounted(async () => {
       </div>
     </template>
   </Menubar>
+
+  <Dialog
+    v-model:visible="showManual"
+    modal
+    scrollable
+    maximizable
+    :header="t('nav.manualTitle')"
+    :style="{ width: '80vw', height: '80vh' }"
+  >
+    <div class="manual-body">
+      <ManualeUtente />
+    </div>
+  </Dialog>
 
   <main class="content">
     <router-view />
@@ -174,5 +191,104 @@ font-weight: 600;
 :deep(.p-menubar-end) {
   margin-left: auto;
   min-width: 0;
+}
+
+/* Contenuto del manuale renderizzato da unplugin-vue-markdown */
+.manual-body {
+  text-align: left;
+  padding: 0.25rem 0.75rem 1rem;
+}
+
+.manual-body :deep(h1) {
+  font-size: 1.6rem;
+  margin: 0.5rem 0 1rem;
+  color: var(--text-h);
+}
+
+.manual-body :deep(h2) {
+  font-size: 1.25rem;
+  margin: 1.5rem 0 0.5rem;
+  padding-bottom: 0.25rem;
+  border-bottom: 1px solid var(--border);
+  color: var(--text-h);
+}
+
+.manual-body :deep(h3) {
+  font-size: 1.05rem;
+  margin: 1.25rem 0 0.5rem;
+  color: var(--text-h);
+}
+
+.manual-body :deep(h4) {
+  font-size: 0.95rem;
+  margin: 1rem 0 0.5rem;
+  color: var(--text-h);
+}
+
+.manual-body :deep(p) {
+  margin: 0.5rem 0;
+  line-height: 1.6;
+}
+
+.manual-body :deep(ul),
+.manual-body :deep(ol) {
+  margin: 0.5rem 0;
+  padding-left: 1.5rem;
+}
+
+.manual-body :deep(li) {
+  margin: 0.2rem 0;
+}
+
+.manual-body :deep(code) {
+  background: var(--code-bg);
+  padding: 0.1rem 0.35rem;
+  border-radius: 4px;
+  font-family: var(--mono);
+  font-size: 0.85em;
+}
+
+.manual-body :deep(table) {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 0.75rem 0;
+  font-size: 0.85rem;
+}
+
+.manual-body :deep(th),
+.manual-body :deep(td) {
+  border: 1px solid var(--border);
+  padding: 0.4rem 0.6rem;
+  text-align: left;
+  vertical-align: top;
+}
+
+.manual-body :deep(th) {
+  background: var(--code-bg);
+  color: var(--text-h);
+}
+
+.manual-body :deep(blockquote) {
+  margin: 0.75rem 0;
+  padding: 0.5rem 0.85rem;
+  border-left: 4px solid var(--accent-border);
+  background: var(--accent-bg);
+  border-radius: 0 6px 6px 0;
+}
+
+.manual-body :deep(img) {
+  max-width: 100%;
+  height: auto;
+  border-radius: 6px;
+}
+
+.manual-body :deep(hr) {
+  border: none;
+  border-top: 1px solid var(--border);
+  margin: 1.25rem 0;
+}
+
+.manual-body :deep(a) {
+  color: var(--accent);
 }
 </style>

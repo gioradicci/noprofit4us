@@ -46,8 +46,9 @@ Il modulo **Gadget** è il cuore dell’applicazione: qui si definiscono tutti g
 
 Le operazioni sono pensate per essere intuitive, ma richiedono attenzione a certi dettagli (es. lo stato *“Non in vendita”*). Di seguito trovi una guida completa.
 
-Ci si accede dal menu laterale ![menu laterale](2_Menu_Gadget.png 'Menu Gadget')
+Ci si accede dal menu laterale
 
+<img src="/2_Menu_Gadget.png" alt="Alt Text" width="160">
 
 ---
 
@@ -58,7 +59,7 @@ La pagina **Gadgets** (accessibile dal menu laterale → **Gadget**) elenca tutt
 #### 2.1.1 Come inserire un nuovo gadget
 
 1. **Accedi al menu “Gadget”.**
-2. In alto a destra trovi il pulsante **«Nuovo Gadget»** (icona `+`). Cliccalo.
+2. In alto a destra trovi il pulsante **«Nuovo Gadget»** (icona `+ Nuovo Gadget`). Cliccalo.
 3. Si apre una **finestra di dialogo** con il form di creazione.
 4. **Compila i campi**:
    - **Non in vendita** (checkbox). *Spunta questa opzione solo se il gadget non sarà proposto al pubblico* (es. gadget di uso interno, materiale promozionale interno). Quando è attiva, il gadget è invisibile agli utenti non autenticati e **non può essere consegnato** tramite le operazioni di *Delivery* o *Loan Delivery*.
@@ -73,6 +74,9 @@ La pagina **Gadgets** (accessibile dal menu laterale → **Gadget**) elenca tutt
 6. Clicca **«Crea Gadget»**. Viene mostrato un breve messaggio di conferma (toast) e il nuovo gadget compare immediatamente nella tabella.
 
 #### 2.1.2 Come modificare un gadget esistente
+Le azioni Modifica, Clona, Cancella per ciascun gadget sono indicate da queste icone:  
+<img src="/21_Edit_Gadget.png" alt="Alt Text" width="100">
+
 
 1. Nella tabella individua il gadget da modificare.
 2. Nella colonna **Azioni** (a destra) clicca sull’icona **✏️ (Modifica)**.
@@ -95,7 +99,7 @@ La pagina **Gadgets** (accessibile dal menu laterale → **Gadget**) elenca tutt
 1. Nella riga del gadget, clicca l’icona **🗑️ (Elimina)**.
 2. Si aprirà una **finestra di conferma**.
 3. Se il gadget ha ancora **stock > 0**, l’app mostrerà il messaggio *“Impossibile eliminare il gadget «Nome» perché ha ancora stock associato”* e l’operazione sarà bloccata.
-4. Per eliminare, devi prima **azzerare lo stock** (es. effettuando un movimento di tipo *Delivery* o *Transfer* verso un magazzino di scarto). Solo allora potrai confermare l’eliminazione.
+4. Per eliminare, devi prima **azzerare lo stock** (es. effettuando un movimento di tipo *Delivery*). Solo allora potrai confermare l’eliminazione.
 
 #### 2.1.5 Tabella catalogo gadget – cosa mostra e come usarla
 
@@ -158,7 +162,7 @@ Questa è la tabella centrale dove vengono visualizzate le giacenze per ogni gad
 
 #### 2.2.3 Come registrare un movimento di magazzino
 
-1. In alto a destra, clicca **«Registra Movimento»** (icona `+`).
+1. In alto a destra, clicca **«Registra Movimento»** (icona `+Registra Movimento`).
 2. Si apre il **dialog di movimento**. Il primo campo è **Tipo Movimento** (dropdown) – scegli tra i 6 tipi.
 3. A seconda del tipo, compaiono i campi specifici (vedi tabella sotto). Compila tutti i campi obbligatori.
 4. Quando tutti i controlli sono superati, il pulsante **«Registra»** (o "Conferma Riconsegna" / "Conferma Consegna" per i tipi *LOAN_RETURN* e *LOAN_DELIVERY*) diventa cliccabile.
@@ -258,7 +262,7 @@ Pagamenti a 10 righe, ordinabile per nome o codice.
 ### 2.3.3 Controlli di validazione sui magazzini
 - **Nome e Codice obbligatori** – il pulsante di salvataggio è disabilitato se vuoti.
 - **Codice unico** – il backend restituisce errore se il codice è già usato.
-- **Disattivazione** – un magazzino disattivo non può più ricevere nuovi pezzi, ma resta visibile come origine finché contiene stock.
+- **Disattivazione** – un magazzino disattivo non può più ricevere nuovi pezzi, ma resta visibile come origine finché contiene stock. Non può essere disattivato se ha merci in stock.
 
 ---
 

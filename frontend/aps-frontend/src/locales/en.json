@@ -15,6 +15,8 @@
     "register": "Register",
     "logout": "Logout",
     "language": "Language",
+    "manual": "Manual",
+    "manualTitle": "User Manual",
     "admin": "Administration"
   },
   "home": {
