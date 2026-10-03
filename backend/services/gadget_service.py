@@ -62,14 +62,14 @@ def acquire_lock(db: Session, gadget_id: int, user_id: int) -> bool:
         # Refresh existing lock
         lock.user_id = user_id
         lock.locked_at = now
-        lock.expires_at = now + timedelta(minutes=3)
+        lock.expires_at = now + timedelta(minutes=2)
     else:
         # Create new lock
         lock = GadgetLock(
             gadget_id=gadget_id,
             user_id=user_id,
             locked_at=now,
-            expires_at=now + timedelta(minutes=3)
+            expires_at=now + timedelta(minutes=2)
         )
         db.add(lock)
         

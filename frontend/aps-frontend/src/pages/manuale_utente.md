@@ -20,7 +20,7 @@
     - [2.2.4 I sei tipi di movimento: scopo e funzionamento passo‑passo](#224-i-sei-tipi-di-movimento--scopo-e-funzionamento-passo‑passo)
       - [🟢 RESTOCK — Rifornimento](#️-restock--rifornimento)
       - [🔵 TRANSFER — Trasferimento](#️-transfer--trasferimento)
-      - [🟠 DELIVERY — Consegna definitiva a socio](#️-delivery--consegna-definitiva-a-socio)
+      - [🟠 DELIVERY — Consegna definitiva a socio o altra persona](#️-delivery--consegna-definitiva-a-socio)
       - [🟣 LOAN — Affidamento temporaneo](#️-loan--affidamento-temporaneo)
       - [🟢 LOAN_RETURN — Riconsegna di un affidamento](#️-loan_return--riconsegna-di-un-affidamento)
       - [🔵 LOAN_DELIVERY — Consegna definitiva da un affidamento](#️-loan_delivery--consegna-definitiva-da-un-affidamento)
@@ -69,7 +69,7 @@ La pagina **Gadgets** (accessibile dal menu laterale → **Gadget**) elenca tutt
    - **Descrizione** – opzionale, fornisci dettagli aggiuntivi.
    - **SKU** – codice unico. Se lasciato vuoto, il sistema lo **genererà automaticamente** al salvataggio usando il pattern `CAT‑TAG‑COLORE‑MODEL‑NNNN`.
    - **Taglia, Colore, Modello, Tipo variante** – campi opzionali per specificare le varianti del prodotto.
-   - **Immagine** – clicca su **«Carica immagine»** e seleziona una foto dal tuo computer. Il componente di upload ridimensiona l’immagine a 400×400 px e la salva sul server.
+   - **Immagine** – clicca su **«Carica immagine»** e seleziona una foto dal tuo computer. Il componente di upload ridimensiona l’immagine a 320x480 px e la salva sul server.
 5. Una volta compilati **tutti i campi obbligatori** (Nome, Categoria, Donazione minima), il pulsante **«Crea Gadget»** diventa attivo.
 6. Clicca **«Crea Gadget»**. Viene mostrato un breve messaggio di conferma (toast) e il nuovo gadget compare immediatamente nella tabella.
 
@@ -89,7 +89,7 @@ Le azioni Modifica, Clona, Cancella per ciascun gadget sono indicate da queste i
 #### 2.1.3 Come clonare un gadget
 
 1. Trova il gadget nella tabella.
-2. Clicca sull’icona **📋 (Clona)** nella colonna Azioni.
+2. Clicca sull’icona **📑 (Clona)** nella colonna Azioni.
 3. Si apre il **form di creazione** con tutti i campi **pre‑riempiti** con i valori del gadget originale, **eccetto lo SKU** (che rimane vuoto).
 4. Modifica i campi che devono differire (es. cambia la taglia o il colore).
 5. Clicca **«Crea Gadget»**. Otterrai una **nuova voce** con un nuovo ID, mantenendo intatto l’originale.
@@ -105,24 +105,24 @@ Le azioni Modifica, Clona, Cancella per ciascun gadget sono indicate da queste i
 
 | Colonna | Significato | Note operative |
 |---|---|---|
-| **Immagine** | Miniatura 40 × 60 px. Cliccandola si apre l’anteprima a schermo intero. | Colonna *frozen* (bloccata) a sinistra. |
-| **SKU** | Codice univoco. | Ordinabile, *frozen*. |
+| **Immagine** | Miniatura 40 × 60 px. Cliccandola si apre l’anteprima a schermo intero. | Colonna *bloccata* a sinistra. |
+| **SKU** | Codice univoco. | Ordinabile, Colonna *bloccata* a sinistra. |
 | **Nome** | Nome dell’articolo. | Ordinabile, filtro testuale. |
 | **Categoria** | Badge con la categoria. | Filtrabile, ordinabile. |
 | **Non in vendita** | Badge arancione visibile solo a Admin/Segreteria. | Usato per distinguere i gadget di uso interno. |
 | **Dettagli** | Concatenazione di Taglia, Colore, Modello e Tipo variante (`Taglia: M | Colore: Blu | Modello: Uomo`). | Filtrabile. |
 | **Donazione min.** | Importo minimo (es. `10,00 €`). | Ordinabile. |
-| **Stock totale** | Quantità effettiva in tutti i magazzini. Se 0, il valore è rosso. Se ci sono pezzi in *affidamento*, appare un badge viola con `+N pz`. | Ordinabile. |
-| **Azioni** | Pulsanti **Modifica**, **Clona**, **Elimina** (solo per ruoli abilitati). | |
+| **Stock totale** | Quantità effettiva in tutti i magazzini. Se 0, il valore è rosso. Se ci sono pezzi in *affidamento*, appare un **badge viola** con `+N pz`. | Ordinabile. |
+| **Azioni** | Pulsanti **Modifica**, **Clona**, **Elimina** (solo per utenti con ruoli SECRETARY/ADMIN abilitati). | |
 
-*Funzionalità*: paginazione a 10 righe, ordinamento cliccando sull’intestazione, scroll orizzontale per visualizzare le colonne frozen.
+*Funzionalità*: paginazione a 10 righe, ordinamento cliccando sull’intestazione, scroll orizzontale per visualizzare le colonne *bloccate*.
 
 #### 2.1.6 Controlli e regole di validazione
 
 - **Obbligatorietà**: Nome, Categoria e Donazione minima sono obbligatori; il pulsante di salvataggio è disabilitato finché non sono compilati.
 - **Donazione minima**: accetta solo valori ≥ 0, con due decimali.
 - **SKU**: se lasciato vuoto, è generato automaticamente al salvataggio.
-- **Lock di modifica**: impedisce la concorrenza; al tentativo di apertura il backend restituisce `423 Locked` se già occupato.
+- **Lock di modifica**: impedisce la concorrenza; al tentativo di apertura il backend restituisce alert: `Questo articolo è attualmente in modifica da parte di "utente".` se già occupato.
 - **Eliminazione con stock**: è bloccata finché `stock_quantity > 0`.
 - **Visibilità pubblico**: gadget marcati *“Non in vendita”* non sono mostrati a utenti non autenticati.
 
@@ -139,9 +139,11 @@ Nella parte superiore trovi quattro **KPI** (Indicatori Chiave di Prestazione):
 1. **Totale Pezzi a Stock** – somma di tutti i pezzi fisicamente presenti nei magazzini.
 2. **Affidamenti Attivi** – totale di pezzi attualmente affidati a soci/volontari.
 3. **Movimenti Registrati** – numero totale di operazioni di stock effettuate.
-4. **Magazzini Attivi** – numero di magazzini configurati (solo quelli con `is_active = true`).
+4. **Magazzini Attivi** – numero di magazzini configurati (solo quelli con 
+<img src="/221_MagazzinoAttivo.png" alt="Alt Text" width="120">
+).
 
-Sopra i KPI, a destra, compare il **Valore economico dello stock** (solo gadget vendibili) calcolato come `donazione_minima × (stock + pezzi in affidamento)`.
+Sopra i KPI, a destra, compare il **Valore economico dello stock** (solo gadget vendibili) calcolato come `donazione_minima × (pezzi in stock nei magazzini + pezzi in affidamento)`.
 
 #### 2.2.2 Tabella giacenze per gadget
 
@@ -176,12 +178,10 @@ Questa è la tabella centrale dove vengono visualizzate le giacenze per ogni gad
 |---|---|---|
 | **🟢 RESTOCK** | Inserire nuovi pezzi (acquisto, donazione) in un magazzino. | • Seleziona **Gadget**.<br>• Seleziona **Magazzino destinazione** (solo magazzini attivi).<br>• Inserisci **Quantità** (≥ 1). |
 | **🔵 TRANSFER** | Spostare pezzi da un magazzino a un altro. | • Seleziona **Gadget**.<br>• Scegli **Magazzino origine** (solo quelli con stock > 0).<br>• Scegli **Magazzino destinazione** (attivo, diverso da origine).<br>• Inserisci **Quantità** (≤ stock disponibile). |
-| **🟠 DELIVERY** | Consegna definitiva a un socio (esce dallo stock). | • Seleziona **Gadget**.<br>• Scegli **Magazzino origine** (solo con stock > 0).<br>• Inserisci **Quantità**.<br>• **Nota**: gadget “Non in vendita” non appare nella lista. |
+| **🟠 DELIVERY** | Consegna definitiva a un socio o altra persona (esce dallo stock). | • Seleziona **Gadget**.<br>• Scegli **Magazzino origine** (solo con stock > 0).<br>• Inserisci **Quantità**.<br>• **Nota**: gadget “Non in vendita” non appare nella lista. |
 | **🟣 LOAN** | Affidare temporaneamente dei pezzi a un socio/volontario. | • Seleziona **Gadget**.<br>• Scegli **Magazzino origine**.<br>• Inserisci **Quantità**.<br>• **Assegnatario**: scegli un socio registrato **oppure** digita un nome manuale. (uno dei due è obbligatorio).<br>• (Facoltativo) **Data di rientro prevista**.<br>• Aggiungi **Note** se necessario. |
-| **🟢 LOAN_RETURN** | Registrare la **riconsegna** (parziale o totale) di pezzi affidati. | • Seleziona l’**Affidamento** (solo quelli attivi con residuo > 0).<br>• Il sistema mostra un riepilogo (gadget, assegnatario, residuo).
-> • Inserisci **Quantità da restituire** (≤ residuo).<br>• Seleziona **Magazzino di rientro** (attivo).<br>• Aggiungi note opzionali. |
-| **🔵 LOAN_DELIVERY** | Concludere l’affidamento consegnando definitivamente i pezzi al socio. | • Seleziona l’**Affidamento** (solo quelli **non “Non in vendita”** e con residuo > 0).<br>• Inserisci **Quantità da consegnare** (≤ residuo).<br>• Aggiungi note opzionali.
-> • Conferma: la quantità viene sottratta dal residuo dell’affidamento; lo stock **non** viene incrementato (i pezzi lasciano il magazzino e rimangono al socio). |
+| **🟢 LOAN_RETURN** | Registrare la **riconsegna** (parziale o totale) di pezzi affidati. | • Seleziona l’**Affidamento** (solo quelli attivi con residuo > 0).<br>• Il sistema mostra un riepilogo (gadget, assegnatario, residuo). • Inserisci **Quantità da restituire** (≤ residuo).<br>• Seleziona **Magazzino di rientro** (attivo).<br>• Aggiungi note opzionali. |
+| **🔵 LOAN_DELIVERY** | Concludere l’affidamento consegnando definitivamente i pezzi al socio. | • Seleziona l’**Affidamento** (solo quelli **non “Non in vendita”** e con residuo > 0).<br>• Inserisci **Quantità da consegnare** (≤ residuo).<br>• Aggiungi note opzionali.<br>• Conferma: la quantità viene sottratta dal residuo dell’affidamento; lo stock **non** viene incrementato (i pezzi lasciano il magazzino e rimangono al socio). |
 
 **Flusso tipico di un affidamento**:
 1. **Loan** – Si riduce lo stock e si crea un record di affidamento (stato *ACTIVE*). 
@@ -203,7 +203,7 @@ Nella sezione **Affidamenti** (sotto la tabella giacenze) trovi una lista dei pr
 | **Data Consegna** | Data di creazione dell’affidamento. |
 | **Rientro Previsto** | Data di scadenza. Se scaduta e lo stato è ancora *ACTIVE* o *PARTIAL*, appare un badge rosso **SCADUTO**. |
 | **Note** | Testo libero. |
-| **Azioni** | • **🔄 Riconsegna** (mostra il dialog *Loan Return*).<br>• **🚚 Consegna definitiva** (mostra il dialog *Loan Delivery*). Queste azioni sono disabilitate per gli affidamenti di gadget **Non in vendita**. |
+| **Azioni** | • **🔄 Riconsegna** (mostra il dialog *Loan Return*).<br>• **🚚 Consegna definitiva** (mostra il dialog *Loan Delivery*). Queste azioni sono disabilitate per gli affidamenti di gadget **non in vendita**. |
 
 **Operazioni tipiche**:
 - *Riconsegna*: l’utente inserisce la quantità restituita e il magazzino di rientro; il sistema aggiorna lo stock e lo stato dell’affidamento.

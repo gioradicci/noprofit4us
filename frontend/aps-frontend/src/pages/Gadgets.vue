@@ -107,18 +107,19 @@ async function acquireLock(id) {
       headers: { Authorization: `Bearer ${token}` }
     })
     if (!res.ok) {
+      console.error(res.status)
       if (res.status === 423) {
         const errorData = await res.json()
-        toast.add({ severity: 'error', summary: t('gadgets.lock.denied'), detail: errorData.detail || t('gadgets.lock.inUse'), life: 5000 })
+        toast.add({ severity: 'error', summary: t('gadgets.lock.denied'), detail: errorData.detail || t('gadgets.lock.inUse'), life: 5000 ,position:'bottom-center' })
       } else {
-        toast.add({ severity: 'error', summary: t('common.error'), detail: t('gadgets.lock.failed'), life: 3000 })
+        toast.add({ severity: 'error', summary: t('common.error'), detail: t('gadgets.lock.failed'), life: 5000 })
       }
       return false
     }
     return true
   } catch (err) {
     console.error(err)
-    toast.add({ severity: 'error', summary: t('common.error'), detail: t('gadgets.errors.connectionFailed'), life: 3000 })
+    toast.add({ severity: 'error', summary: t('common.error'), detail: t('gadgets.errors.connectionFailed'), life: 5000, position:'center' })
     return false
   }
 }

@@ -25,6 +25,16 @@ const {
 } = useUser()
 const showManual = ref(false)
 
+/**
+ * Esporta il manuale in PDF sfruttando il dialogo di stampa nativo del browser
+ * ("Salva come PDF"). Nessuna dipendenza aggiuntiva: il Markdown è già
+ * compilato in DOM all'avvio, quindi è sufficiente stampare il contenuto
+ * del <Dialog>. Gli stili di stampa dedicati isolano solo il manuale.
+ */
+function printManual() {
+  window.print()
+}
+
 function changeLanguage(lang) {
   locale.value = lang
   localStorage.setItem('lang', lang)
@@ -148,6 +158,17 @@ onMounted(async () => {
     <div class="manual-body">
       <ManualeUtente />
     </div>
+    <template #footer>
+      <div class="flex justify-content-end w-full">
+        <Button
+          :label="t('nav.printManual')"
+          icon="pi pi-print"
+          severity="secondary"
+          outlined
+          @click="printManual"
+        />
+      </div>
+    </template>
   </Dialog>
 
   <main class="content">
@@ -290,5 +311,109 @@ font-weight: 600;
 
 .manual-body :deep(a) {
   color: var(--accent);
+}
+</style>
+
+<!--
+  Stili di stampa (non-scoped): vengono usati da window.print() per esportare
+  il solo manuale in PDF tramite il dialogo nativo "Salva come PDF".
+  Il <Dialog> di PrimeVue è teleportato direttamente in <body>, perciò serve
+  neutralizzare il mask modale e nascondere tutto il resto dell'interfaccia.
+-->
+<style>
+@media print {
+  @page {
+    margin: 12mm;
+  }
+
+  html,
+  body {
+    height: auto !important;
+    overflow: visible !important;
+    background: #fff !important;
+  }
+
+  /* Nasconde tutto ciò che non è il dialog del manuale (app, toast, ecc.) */
+  body > *:not(.p-dialog-mask):not(.p-dialog) {
+    display: none !important;
+  }
+
+  /* Riporta il mask modale a un normale flusso di documento */
+  .p-dialog-mask {
+    position: static !important;
+    inset: auto !important;
+    display: block !important;
+    width: auto !important;
+    height: auto !important;
+    padding: 0 !important;
+    background: transparent !important;
+    overflow: visible !important;
+  }
+
+  /* Il dialog occupa tutta la larghezza pagina, senza chrome */
+  .p-dialog {
+    position: static !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    height: auto !important;
+    max-height: none !important;
+    margin: 0 !important;
+    border: none !important;
+    border-radius: 0 !important;
+    box-shadow: none !important;
+  }
+
+  .p-dialog-header,
+  .p-dialog-footer {
+    display: none !important;
+  }
+
+  /* Il contenuto scrollabile deve espandersi su tutte le pagine */
+  .p-dialog-content {
+    overflow: visible !important;
+    max-height: none !important;
+    height: auto !important;
+    padding: 0 !important;
+  }
+
+  /* Impaginazione del manuale */
+  .manual-body {
+    padding: 0 !important;
+  }
+
+  .manual-body h1,
+  .manual-body h2,
+  .manual-body h3,
+  .manual-body h4 {
+    break-after: avoid;
+    page-break-after: avoid;
+  }
+
+  .manual-body img,
+  .manual-body blockquote {
+    break-inside: avoid;
+    page-break-inside: avoid;
+    max-width: 100% !important;
+  }
+
+  .manual-body table {
+    break-inside: auto;
+    page-break-inside: auto;
+    font-size: 0.75rem;
+  }
+
+  .manual-body thead {
+    display: table-header-group;
+  }
+
+  .manual-body tr {
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+
+  .manual-body a {
+    color: inherit !important;
+    text-decoration: none !important;
+  }
 }
 </style>
