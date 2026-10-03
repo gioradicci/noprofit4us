@@ -1,6 +1,6 @@
 <script setup>
 import { API_URL } from './config.js'
-import { computed, onMounted, ref } from 'vue'
+import { computed, nextTick, onMounted, ref, watch } from 'vue'
 import Button from 'primevue/button'
 import Avatar from 'primevue/avatar'
 import Badge from 'primevue/badge'
@@ -24,6 +24,102 @@ const {
   logout: doLogout
 } = useUser()
 const showManual = ref(false)
+const manualRef = ref(null)
+
+/**
+ * Normalizza il testo di un nodo per confronti tolleranti: rimuove emoji,
+ * punteggiatura e spazi multipli, lasciando solo lettere e numeri.
+ */
+function normalizeText(node) {
+  return (node?.textContent || '')
+    .toLowerCase()
+    .replace(/[^\p{L}\p{N}]+/gu, ' ')
+    .trim()
+}
+
+/**
+ * Genera uno slug stabile a partire dal testo di un titolo, usato come `id`
+ * per rendere i titoli del manuale raggiungibili anche con link nativi.
+ */
+function slugifyHeading(text) {
+  const slug = (text || '')
+    .trim()
+    .toLowerCase()
+    .replace(/\s+/g, '-')
+    .replace(/[^\p{L}\p{N}\-_]+/gu, '')
+    .replace(/-+/g, '-')
+    .replace(/^-|-$/g, '')
+  return slug || 'section'
+}
+
+/**
+ * Assegna un `id` univoco a tutti i titoli del manuale renderizzato.
+ * markdown-it (usato da unplugin-vue-markdown) non genera ancore per i
+ * titoli, quindi senza questo passaggio i link del Sommario non hanno
+ * alcun bersaglio su cui navigare.
+ */
+function prepareManualAnchors() {
+  const root = manualRef.value
+  if (!root) return
+  const used = new Set()
+  root.querySelectorAll('h1, h2, h3, h4, h5, h6').forEach((heading) => {
+    if (heading.id) {
+      used.add(heading.id)
+      return
+    }
+    const base = slugifyHeading(heading.textContent)
+    let unique = base
+    let counter = 1
+    while (used.has(unique)) {
+      unique = `${base}-${counter++}`
+    }
+    used.add(unique)
+    heading.id = unique
+  })
+}
+
+/**
+ * Individua il titolo di destinazione di un link interno al manuale.
+ * Prova prima con l'`id` ricavato dal fragment dell'href, poi — per gestire
+ * gli slug "sporchi" del Sommario (emoji, trattini lunghi) — confronta il
+ * testo del link con il testo dei titoli.
+ */
+function resolveAnchorTarget(link) {
+  const root = manualRef.value
+  if (!root) return null
+
+  const href = link.getAttribute('href') || ''
+  const fragment = href.startsWith('#') ? decodeURIComponent(href.slice(1)) : ''
+  if (fragment) {
+    const byId = root.querySelector(`[id="${CSS.escape(fragment)}"]`)
+    if (byId) return byId
+  }
+
+  const label = normalizeText(link)
+  if (!label) return null
+  const headings = root.querySelectorAll('h1, h2, h3, h4, h5, h6')
+  for (const heading of headings) {
+    if (normalizeText(heading) === label) return heading
+  }
+  return null
+}
+
+/**
+ * Intercetta i click sui link interni (#...) del manuale: evita che il router
+ * cambi solo la URL e scorre realmente il contenitore scrollabile del Dialog
+ * fino al titolo scelto.
+ */
+function onManualClick(event) {
+  const target = event.target
+  if (!(target instanceof Element)) return
+  const link = target.closest('a[href^="#"]')
+  if (!link || !manualRef.value?.contains(link)) return
+
+  event.preventDefault()
+  const heading = resolveAnchorTarget(link)
+  if (!heading) return
+  heading.scrollIntoView({ behavior: 'smooth', block: 'start' })
+}
 
 /**
  * Esporta il manuale in PDF sfruttando il dialogo di stampa nativo del browser
@@ -75,6 +171,18 @@ onMounted(async () => {
   fetch(API_URL + "/wakeup").catch(e => console.log("Wakeup ping failed:", e))
   await initAuth()
 })
+
+// Il manuale è compilato in un componente markdown: prepara le ancore ogni
+// volta che il Dialog viene aperto, dopo che il DOM è stato aggiornato.
+watch(showManual, async (visible) => {
+  if (visible) {
+    await nextTick()
+    prepareManualAnchors()
+  }
+})
+
+
+
 </script>
 
 <template>
@@ -155,7 +263,7 @@ onMounted(async () => {
     :header="t('nav.manualTitle')"
     :style="{ width: '80vw', height: '80vh' }"
   >
-    <div class="manual-body">
+    <div ref="manualRef" class="manual-body" @click="onManualClick">
       <ManualeUtente />
     </div>
     <template #footer>

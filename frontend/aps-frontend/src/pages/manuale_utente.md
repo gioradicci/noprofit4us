@@ -32,6 +32,8 @@
     - [2.3.2 Tabella magazzini – cosa mostra e come usarla](#232-tabella-magazzini--cosa-mostra-e-come-usarla)
     - [2.3.3 Controlli di validazione sui magazzini](#233-controlli-di-validazione-sui-magazzini)
 
+
+<div style="page-break-before:always;"></div>
 ---
 
 ## Capitolo 1 — Processo di Iscrizione
@@ -39,6 +41,7 @@
 > **Nota:** Questo capitolo verrà completato in una fase successiva. Per ora è lasciato come placeholder.
 
 ---
+<div style="page-break-before:always;"></div>
 
 ## Capitolo 2 — Gestione Gadget
 
@@ -125,6 +128,8 @@ Le azioni Modifica, Clona, Cancella per ciascun gadget sono indicate da queste i
 - **Lock di modifica**: impedisce la concorrenza; al tentativo di apertura il backend restituisce alert: `Questo articolo è attualmente in modifica da parte di "utente".` se già occupato.
 - **Eliminazione con stock**: è bloccata finché `stock_quantity > 0`.
 - **Visibilità pubblico**: gadget marcati *“Non in vendita”* non sono mostrati a utenti non autenticati.
+
+<div style="page-break-before:always;"></div>
 
 ---
 
