@@ -217,7 +217,9 @@ watch(showManual, async (visible) => {
 
     <template #end>
       <div class="flex align-items-center gap-1 sm:gap-2 flex-shrink-0">
-        <Button icon="pi pi-book" class="p-button-text p-ml-2" @click="showManual = true" />
+        <template v-if="isAuthenticated">
+          <Button icon="pi pi-book" class="p-button-text p-ml-2" @click="showManual = true" />
+        </template>
         <div class="flex gap-1 mr-1 sm:mr-3 border-round p-1 flex-shrink-0" style="background-color: var(--code-bg); border: 1px solid var(--border);">
           <Button 
             label="IT" 
