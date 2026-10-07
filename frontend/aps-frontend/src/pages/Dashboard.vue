@@ -161,10 +161,14 @@ const showRenewConfirmDialog = (id_user_to_accept) => {
   })
 }
 
-const showRejectConfirmDialog = (id_user_to_reject) => {
+const showRejectConfirmDialog = (id_user_to_reject, isRenewal = false) => {
   confirm.require({
-    message: t('dashboard.confirmMessages.reject'),
-    header: t('dashboard.confirmMessages.rejectHeader'),
+    message: isRenewal
+      ? t('dashboard.confirmMessages.rejectRenewal')
+      : t('dashboard.confirmMessages.reject'),
+    header: isRenewal
+      ? t('dashboard.confirmMessages.rejectRenewalHeader')
+      : t('dashboard.confirmMessages.rejectHeader'),
     acceptLabel: t('dashboard.confirmMessages.rejectAccept'),
     icon: 'pi pi-exclamation-triangle',
     rejectLabel: t('dashboard.confirmMessages.cancel'),
@@ -329,20 +333,20 @@ async function rejectUser(id) {
             </div>
           </Button>
           <Button class="multiline-btn"
-            v-if="slotProps.data.status === 'PENDING' && canApprove()"
-            :label="t('dashboard.buttons.reject')"
-            severity="danger"
-            @click="showRejectConfirmDialog(slotProps.data.id)">
-            <div class="flex flex-column align-items-center">
-              <span>{{ t('dashboard.buttons.reject') }}</span>
-            </div>
-          </Button>
-          <Button class="multiline-btn"
             v-if="slotProps.data.membership_status === 'RENEWAL_PENDING' && canApprove()"
             severity="warning"
             @click="showRenewConfirmDialog(slotProps.data.id)">
             <div class="flex flex-column align-items-center">
               <span>{{ t('dashboard.buttons.approveRenewal') }}</span>
+            </div>
+          </Button>
+          <Button class="multiline-btn"
+            v-if="(slotProps.data.status === 'PENDING' || slotProps.data.membership_status === 'RENEWAL_PENDING') && canApprove()"
+            :label="t('dashboard.buttons.reject')"
+            severity="danger"
+            @click="showRejectConfirmDialog(slotProps.data.id, slotProps.data.status !== 'PENDING')">
+            <div class="flex flex-column align-items-center">
+              <span>{{ t('dashboard.buttons.reject') }}</span>
             </div>
           </Button>
         </div>

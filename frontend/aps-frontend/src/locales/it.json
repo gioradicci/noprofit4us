@@ -116,6 +116,7 @@
       "inactive": "Socio non attivo",
       "expiring": "In scadenza",
       "active": "Socio attivo",
+      "future": "Anno {year}",
       "member": "Socio",
       "ordinary": "Ordinario",
       "cardNumber": "Tessera N.",
@@ -305,6 +306,8 @@
       "renewAccept": "Il socio ha pagato, accetta il rinnovo",
       "reject": "Vuoi rifiutare la richiesta di iscrizione del socio?",
       "rejectHeader": "Rifiuta iscrizione socio",
+      "rejectRenewal": "Vuoi rifiutare la richiesta di rinnovo del socio per l'anno successivo?",
+      "rejectRenewalHeader": "Rifiuta rinnovo socio",
       "rejectAccept": "Rifiuta iscrizione",
       "cancel": "Annulla"
     },

@@ -49,7 +49,9 @@ async function registerWithEmail() {
   authLoading.value = false
 }
 
-const mese_inizio_rinnovo_anticipato = 10
+// Early-renewal window opens on 16 September (first day of the European
+// Mobility Week) - stored as month/day (1-based).
+const inizio_rinnovo_anticipato = { month: 9, day: 16 }
 
 function formatDate(dateStr) {
   if (!dateStr) return '-'
@@ -108,32 +110,86 @@ async function requestRenewal() {
   }
 }
 
-function memberNoActive() {
-  let retVal = (!backendUser.value.end_date || new Date(backendUser.value.end_date) < new Date());
-  return retVal
-};
+// Memberships currently relevant for the member (current year + next year).
+// From January the previous year's expired card is automatically hidden.
+const visibleMemberships = computed(() => {
+  const list = backendUser.value?.memberships
+  const currentYear = new Date().getFullYear()
 
-function memberExpiring() {
-  if (memberNoActive()) return false;
-  if (!backendUser.value || !backendUser.value.end_date) return false;
-  
-  const today = new Date();
-  const endDate = new Date(backendUser.value.end_date);
-  
-  if (endDate.getFullYear() === today.getFullYear() && today.getMonth() >= mese_inizio_rinnovo_anticipato) {
-    return true;
+  if (list && list.length) {
+    return list
+      .filter(m => !m.reference_year || m.reference_year >= currentYear)
+      .slice()
+      .sort((a, b) => (a.reference_year || 0) - (b.reference_year || 0))
   }
-  return false;
+
+  // Fallback for legacy payloads exposing only the flattened membership
+  if (backendUser.value?.end_date) {
+    const endDate = new Date(backendUser.value.end_date)
+    return [{
+      id: 'legacy',
+      reference_year: backendUser.value.reference_year || endDate.getFullYear(),
+      start_date: backendUser.value.start_date,
+      end_date: backendUser.value.end_date,
+      card_number: backendUser.value.membership_number,
+      is_paid: backendUser.value.is_paid,
+      is_active: endDate >= new Date(),
+      is_future: false,
+      is_expired: endDate < new Date()
+    }]
+  }
+
+  return []
+})
+
+const hasFutureMembership = computed(() =>
+  visibleMemberships.value.some(m => m.is_future)
+)
+
+const hasActiveMembership = computed(() =>
+  visibleMemberships.value.some(m => m.is_active)
+)
+
+function isEarlyRenewalWindow() {
+  const today = new Date()
+  const month = today.getMonth() + 1
+  const day = today.getDate()
+  return month > inizio_rinnovo_anticipato.month ||
+    (month === inizio_rinnovo_anticipato.month && day >= inizio_rinnovo_anticipato.day)
 }
 
-function getRenewalYear() {
-  if (!backendUser.value || !backendUser.value.end_date) return new Date().getFullYear();
-  const endDate = new Date(backendUser.value.end_date);
-  const today = new Date();
-  if (endDate < today) {
-    return today.getFullYear();
+// 'active' | 'expiring' | 'future' | 'inactive'
+function cardState(m) {
+  if (m.is_future) return 'future'
+  if (m.is_active) {
+    // Show the renewal prompt only when the next-year card is missing
+    if (!hasFutureMembership.value && isEarlyRenewalWindow()) return 'expiring'
+    return 'active'
   }
-  return endDate.getFullYear() + 1;
+  return 'inactive'
+}
+
+function cardClass(m) {
+  const state = cardState(m)
+  if (state === 'expiring') return 'membership-card_expiring'
+  if (state === 'inactive') return 'membership-card_inactive'
+  // Both the current-year card and the next-year card are shown in orange
+  return 'membership-card'
+}
+
+const needsRenewal = computed(() => {
+  if (!backendUser.value) return false
+  if (backendUser.value.is_renewal_pending) return false
+  if (hasFutureMembership.value) return false
+  return !hasActiveMembership.value || isEarlyRenewalWindow()
+})
+
+function getRenewalYear() {
+  if (backendUser.value?.pending_renewal_year) return backendUser.value.pending_renewal_year
+  const future = visibleMemberships.value.find(m => m.is_future)
+  if (future?.reference_year) return future.reference_year
+  const currentYear = new Date().getFullYear()
+  return hasActiveMembership.value ? currentYear + 1 : currentYear
 }
 
 function getRoleIcon() {
@@ -314,20 +370,24 @@ function getRoleIcon() {
     <div v-else-if="backendUser?.status === 'APPROVED'" class="flex flex-column align-items-center py-4">
       
       <div class="max-w-28rem w-full">
-        <!-- Tessera Socio Digitale -->
-        <div class="p-4 text-white border-round-2xl shadow-4 relative overflow-hidden mb-4"
-          :class="[ memberNoActive() ? 'membership-card_inactive' : (memberExpiring() ? 'membership-card_expiring' : 'membership-card') ]"
+        <!-- Tessere Socio Digitali: una per anno (corrente + eventuale anno successivo) -->
+        <div
+          v-for="m in visibleMemberships"
+          :key="m.id"
+          class="p-4 text-white border-round-2xl shadow-4 relative overflow-hidden mb-4"
+          :class="cardClass(m)"
         >
           <div class="card-glow"></div>
-          
+
           <div class="flex justify-content-between align-items-center mb-5">
             <div class="flex align-items-center gap-2">
               <i :class="['pi', getRoleIcon(), 'text-2xl']"></i>
-              <span class="font-bold tracking-wider text-xs uppercase">{{ t('home.membershipCard.title') }}</span>
+              <span class="font-bold tracking-wider text-xs uppercase">{{ t('home.membershipCard.title') }} {{ m.reference_year }}</span>
             </div>
-            <span v-if="memberNoActive()" class="bg-blue-500 text-white text-xxs px-2.5 py-1 font-bold border-round-lg uppercase shadow-1">{{ t('home.membershipCard.inactive') }}</span>
-            <span v-else-if="memberExpiring()" class="bg-blue-500 text-white text-xxs px-2.5 py-1 font-bold border-round-lg uppercase shadow-1">{{ t('home.membershipCard.expiring') }}</span>
-            <span v-else class="bg-blue-500 text-white text-xxs px-2.5 py-1 font-bold border-round-lg uppercase shadow-1">{{ t('home.membershipCard.active') }}</span>
+            <span v-if="cardState(m) === 'expiring'" class="bg-blue-500 text-white text-xxs px-2.5 py-1 font-bold border-round-lg uppercase shadow-1">{{ t('home.membershipCard.expiring') }}</span>
+            <span v-else-if="cardState(m) === 'future'" class="bg-blue-500 text-white text-xxs px-2.5 py-1 font-bold border-round-lg uppercase shadow-1">{{ t('home.membershipCard.future', { year: m.reference_year }) }}</span>
+            <span v-else-if="cardState(m) === 'active'" class="bg-blue-500 text-white text-xxs px-2.5 py-1 font-bold border-round-lg uppercase shadow-1">{{ t('home.membershipCard.active') }}</span>
+            <span v-else class="bg-blue-500 text-white text-xxs px-2.5 py-1 font-bold border-round-lg uppercase shadow-1">{{ t('home.membershipCard.inactive') }}</span>
           </div>
 
           <div class="mb-5">
@@ -338,11 +398,11 @@ function getRoleIcon() {
           <div class="flex justify-content-between border-top-1 border-white-alpha-20 pt-3">
             <div class="flex flex-column text-left">
               <span class="text-xxs text-white-alpha-50 uppercase">{{ t('home.membershipCard.cardNumber') }}</span>
-              <span class="text-lg font-bold text-white">{{ backendUser.membership_number }}</span>
+              <span class="text-lg font-bold text-white">{{ m.card_number ?? '-' }}</span>
             </div>
             <div class="flex flex-column text-right">
               <span class="text-xxs text-white-alpha-50 uppercase">{{ t('home.membershipCard.validUntil') }}</span>
-              <span class="text-lg font-bold text-white">{{ formatDate(backendUser.end_date) }}</span>
+              <span class="text-lg font-bold text-white">{{ formatDate(m.end_date) }}</span>
             </div>
           </div>
         </div>
@@ -356,9 +416,9 @@ function getRoleIcon() {
           </div>
 
           <!-- RENEW REQUEST FORM -->
-          <div v-else-if="!backendUser.end_date || new Date(backendUser.end_date) < new Date() || memberExpiring()" class="card p-4 shadow-2 border-round-xl surface-card text-left mt-4 border-top-3 border-orange-500">
+          <div v-else-if="needsRenewal" class="card p-4 shadow-2 border-round-xl surface-card text-left mt-4 border-top-3 border-orange-500">
             <h4 class="font-bold text-base mb-3 text-color uppercase tracking-wide">
-              {{ memberExpiring() ? t('home.renewal.earlyRenewalTitle') : t('home.renewal.renewalTitle') }}
+              {{ isEarlyRenewalWindow() ? t('home.renewal.earlyRenewalTitle') : t('home.renewal.renewalTitle') }}
             </h4>
             <p class="text-sm text-color-secondary mb-3">{{ t('home.renewal.renewalDesc') }}</p>
             <div class="flex flex-column gap-3">

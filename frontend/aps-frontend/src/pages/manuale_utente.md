@@ -4,7 +4,7 @@
 
 ## Sommario
 
-- [Capitolo 1 — Processo di Iscrizione](#capitolo-1--processo-di-iscrizione)
+- [Capitolo 1 — Processo di Iscrizione/Rinnovo](#capitolo-1--processo-di-iscrizione-rinnovo)
 - [Capitolo 2 — Gestione Gadget](#capitolo-2--gestione-gadget)
   - [2.1 Catalogo Gadget](#21-catalogo-gadget)
     - [2.1.1 Come inserire un nuovo gadget](#211-come-inserire-un-nuovo-gadget)
@@ -36,10 +36,111 @@
 <div style="page-break-before:always;"></div>
 ---
 
-## Capitolo 1 — Processo di Iscrizione
+# Capitolo 1 — Processo di Iscrizione/Rinnovo
 
-> **Nota:** Questo capitolo verrà completato in una fase successiva. Per ora è lasciato come placeholder.
+Il percorso di **iscrizione** di un nuovo socio e quello di **rinnovo** per i soci esistenti è suddiviso in quattro fasi chiave, ognuna gestita sia dal frontend (`Home.vue`) che dal backend (`member_service`, `membership_service`, `user_service`).
 
+---
+
+### 1️⃣ Registrazione sul sito
+
+1. **Apri la pagina di login** (Home). Se non sei ancora autenticato, il banner di benvenuto mostra il form di accesso/registrazione.
+2. **Clicca su “Nuovo Utente”** per attivare la modalità registrazione.
+3. **Compila email e password** e premi il pulsante **«Registrati»**.
+4. Viene inviato un link di conferma all’indirizzo email fornito (vedi `registerWithEmail` in `Home.vue`).
+5. Dopo il click sul link, l’utente ritorna al sito con lo status **`INCOMPLETE`** (vedi caso 2). Il backend crea l’oggetto `User` con `status = 'INCOMPLETE'`.
+
+---
+
+### 2️⃣ Compilazione dati anagrafici
+
+1. Dopo il login, il caso **`INCOMPLETE`** mostra una card con un pulsante **«Inizia la procedura di iscrizione»** (`/wizard`).
+2. Il wizard raccoglie i dati personali, il tipo di socio (`ORDINARIO` o `SOSTENITORE`) e il metodo di pagamento.
+3. Al salvataggio, il backend setta `User.status = 'PENDING'` e registra il metodo di pagamento.
+4. La UI passa al caso **`PENDING`** (sezione “🔵 CASO 3: PENDING”).
+
+---
+
+### 3️⃣ Richiesta di approvazione (flusso amministrativo)
+
+1. Un amministratore/tesoriere visualizza la lista degli utenti `PENDING` e **clika “Approva”**.
+2. Il backend chiama `approve_user(user, db, performed_by)` (vedi `user_service.py`).
+   - **Step 1**: `get_or_create_member(user, db)` crea o recupera il record `Member` (file `member_service.py`).
+   - **Step 2**: `create_membership(member, user, db)` genera una o due tessere (`Membership`) tramite `membership_service.py`.
+   - **Step 3**: L’amministratore può **approvare** o **rifiutare** la richiesta.
+  - **Approvazione**: imposta `User.status = 'APPROVED'` e registra l’azione in `audit_service`.
+  - **Rifiuto**: imposta `User.status = 'REJECTED'`, registra l’azione e avvia il rimborso della quota pagata.
+3. Dopo il commit, il socio vede il nuovo stato **`APPROVED`** o **`REJECTED`** nella Home (sezione “🏆 CASO 4: APPROVATO” oppure “🔴 CASO 3.5: REJECTED”).
+4. Le tessere vengono mostrate con il componente `membership-card`. La logica di visualizzazione è in `Home.vue` (variabile `visibleMemberships`).
+
+---
+
+### 4️⃣ Rinnovo della tessera
+
+1. **Finestra di rinnovo**: quando il socio ha una tessera attiva ma non è presente una tessera per l’anno successivo, il bottone **«Richiedi Rinnovo»** appare (variabile `needsRenewal`).
+2. L’utente sceglie **Tipo Socio** e **Metodo di Pagamento** tramite i componenti `<Select>` (vedi righe 424‑433).
+3. Premendo **«Richiedi Rinnovo»** viene chiamato `requestRenewal()` (righe 89‑110) che invia una `POST /users/me/request-renew` con il payload `{ payment_method, member_type }`.
+4. Il backend crea una **richiesta di rinnovo pendente** (`User.is_renewal_pending = true`). La UI mostra il messaggio “Rinnovo in corso” (blocco `backendUser.is_renewal_pending`).
+5. L’amministratore approva la richiesta nello stesso modo della fase 3. Durante la creazione della tessera, `create_membership` imposta `is_renewal=True` per la nuova tessera e genera anche, se siamo dopo novembre, la tessera dell’anno successivo (già pagata ma non ancora valida).
+
+---
+
+### Diagramma di flusso semplificato
+
+<div style="text-align: center; margin: 1.5rem 0;">
+  <img src="/diagramma_flusso_iscrizione.svg" alt="Diagramma di flusso semplificato" style="max-width: 450px; width: 100%; height: auto;" />
+</div>
+
+
+<div style="display: none;">
+
+```mermaid
+flowchart TD
+		A[Registrazione] --> B[Compilazione dati profilo]
+		B --> C1[Socio effettua la richiesta di iscrizione]
+		C1 -->D[Richiesta approvazione]
+		D --> E{Tesoriere approva richiesta?}
+		E --> |NO|Z[Rinnovo negato]
+		E --> |SI|F[Creazione Member/Membership]
+		F --> G[Generazione tessera iscrizione scadenza 31/12/Y]
+		G --> H1[User.status = APPROVED & ruolo=MEMBER]
+		H1 --> I[Visualizzazione tessera/e]
+		I --> J{Oggi >= 16 settembre YY ? Permetti rinnovo}
+		J -->|No| O[Non permettere cambio condizioni pagamento e inserimento richiesta]
+		J -->|SI| K[Abilita cambio condizioni pagamento e permetti inserimento richiesta di rinnovo su frontend]
+		K --> K2[Socio effettua la richiesta di rinnovo con nuove condizioni di pagamento]
+		K2 --> K4{Tesoriere approva rinnovo?}
+		K4 --> |NO|Z[Rinnovo negato]
+		K4 -->|SI|I
+
+```
+
+</div>
+
+---
+
+### Controlli e regole di validazione (backend)
+
+- **`User.status`** deve essere `PAID` prima di chiamare `approve_user` (lancio HTTP 400 se non soddisfatto).
+- **`Member`** ha un `membership_number` generato sequenzialmente (`generate_membership_number`).
+- **`Membership.card_number`** è unico per anno (`generate_card_number_for_year`).
+- **Rinnovo anticipato** è consentito solo a partire dal 16 settembre (`isEarlyRenewalWindow`).
+- **`is_renewal`** è impostato a `True` per la tessera corrente se il rinnovo è stato richiesto, o a `True` per la tessera dell’anno successivo se è già stata emessa.
+
+---
+
+### Cosa vedere nella Home
+
+| Stato UI | Descrizione | Azione disponibile |
+|---|---|---|
+| `INCOMPLETE` | Socio appena registrato, dati mancanti | **Avvia wizard** → completa profilo |
+| `PENDING` | Richiesta approvazione in sospeso | Nessuna azione (attende admin) |
+| `APPROVED` | Tessere attive visualizzate | **Rinnova** (se `needsRenewal`) |
+| `REJECTED` | Iscrizione rifiutata | Contatta amministratore |
+
+---
+
+Con queste istruzioni il socio può capire **passo‑passo** come avviene l’iscrizione, la verifica da parte dell’amministratore e il meccanismo di rinnovo, così come è implementato nel codice.
 ---
 <div style="page-break-before:always;"></div>
 

@@ -22,8 +22,7 @@ from services.user_service import approve_user
 from services.audit_service import log_action
 
 from domain.services.membership_domain import (
-    calculate_membership_period,
-    calculate_reference_year
+    calculate_membership_periods
 )
 
 #router = APIRouter(prefix="/users")
@@ -95,48 +94,97 @@ def serialize_user(user: User, db: Session) -> dict:
     user_dict["reference_year"] = None
     user_dict["is_renewal_pending"] = False
     user_dict["has_active_membership"] = False
+    user_dict["memberships"] = []
+
+    today = date.today()
 
     # Fetch member details if present
     member = db.query(Member).filter_by(user_id=user.id).first()
     if member:
-        memberships = db.query(Membership).filter_by(member_id=member.id).order_by(Membership.end_date.desc()).all()
-        if memberships:
-            active_membership = next((m for m in memberships if m.is_paid and m.end_date >= date.today()), None)
-            pending_renewal = next((m for m in memberships if not m.is_paid and m.is_renewal), None)
+        memberships = db.query(Membership).filter_by(member_id=member.id).order_by(
+            Membership.reference_year.asc(), Membership.end_date.asc()
+        ).all()
 
-            if active_membership:
-                user_dict["has_active_membership"] = True
+        # Only the memberships relevant for the current calendar year and the
+        # future are exposed (from January the previous year's expired card
+        # disappears, leaving only the current-year one).
+        visible_memberships = [
+            m for m in memberships
+            if m.reference_year and m.reference_year >= today.year
+        ]
+        user_dict["memberships"] = [serialize_membership(m) for m in visible_memberships]
 
-            membership = active_membership if active_membership else memberships[0]
+        # Currently active card (paid and within its validity range)
+        active_membership = next(
+            (m for m in memberships
+             if m.is_paid and m.start_date and m.end_date and m.start_date <= today <= m.end_date),
+            None
+        )
+        # Next-year card, already paid but not yet started
+        future_membership = next(
+            (m for m in memberships if m.is_paid and m.start_date and m.start_date > today),
+            None
+        )
+        # Card of the current calendar year, whatever its payment state
+        current_year_membership = next(
+            (m for m in memberships if m.reference_year == today.year),
+            None
+        )
+        pending_renewal = next((m for m in memberships if not m.is_paid and m.is_renewal), None)
 
-            user_dict["membership_number"] = membership.card_number
-            user_dict["start_date"] = membership.start_date.isoformat() if membership.start_date else None
-            user_dict["end_date"] = membership.end_date.isoformat() if membership.end_date else None
-            user_dict["is_paid"] = membership.is_paid
-            user_dict["reference_year"] = membership.reference_year
-            
-            user_dict["is_renewal_pending"] = pending_renewal is not None
-            if pending_renewal:
-                user_dict["pending_renewal_year"] = pending_renewal.reference_year
+        if active_membership:
+            user_dict["has_active_membership"] = True
+
+        # Legacy single-membership fields, still used by other views (e.g. Wizard)
+        primary_membership = (
+            active_membership
+            or future_membership
+            or current_year_membership
+            or (memberships[-1] if memberships else None)
+        )
+
+        if primary_membership:
+            user_dict["membership_number"] = primary_membership.card_number
+            user_dict["start_date"] = primary_membership.start_date.isoformat() if primary_membership.start_date else None
+            user_dict["end_date"] = primary_membership.end_date.isoformat() if primary_membership.end_date else None
+            user_dict["is_paid"] = primary_membership.is_paid
+            user_dict["reference_year"] = primary_membership.reference_year
         else:
             user_dict["membership_number"] = member.membership_number
+
+        user_dict["is_renewal_pending"] = pending_renewal is not None
+        if pending_renewal:
+            user_dict["pending_renewal_year"] = pending_renewal.reference_year
 
     return user_dict
 
 
 def serialize_membership(membership: Membership) -> dict:
+    today = date.today()
+    start_date = membership.start_date
+    end_date = membership.end_date
+
+    is_active = bool(
+        membership.is_paid and start_date and end_date and start_date <= today <= end_date
+    )
+    is_future = bool(membership.is_paid and start_date and start_date > today)
+    is_expired = bool(end_date and end_date < today)
+
     return {
         "id": membership.id,
         "member_id": membership.member_id,
-        "start_date": membership.start_date.isoformat() if membership.start_date else None,
-        "end_date": membership.end_date.isoformat() if membership.end_date else None,
+        "start_date": start_date.isoformat() if start_date else None,
+        "end_date": end_date.isoformat() if end_date else None,
         "reference_year": membership.reference_year,
         "card_number": membership.card_number,
         "amount": membership.amount,
         "payment_method": membership.payment_method,
         "is_paid": membership.is_paid,
         "payment_date": membership.payment_date.isoformat() if membership.payment_date else None,
-        "is_renewal": membership.is_renewal
+        "is_renewal": membership.is_renewal,
+        "is_active": is_active,
+        "is_future": is_future,
+        "is_expired": is_expired
     }
 
 
@@ -250,40 +298,55 @@ def request_renew(
     db.commit()
 
     today = date.today()
-    if latest_membership and latest_membership.end_date >= today:
-        ref_year = latest_membership.end_date.year + 1
-        start = date(ref_year, 1, 1)
-        end = date(ref_year, 12, 31)
-    else:
-        start, end = calculate_membership_period(today)
-        ref_year = calculate_reference_year(today)
 
-    new_membership = Membership(
-        member_id=member.id,
-        start_date=start,
-        end_date=end,
-        reference_year=ref_year,
-        card_number=None, # Non ancora assegnato
-        amount=30 if payload.member_type == "SOSTENITORE" else 10,
-        payment_method=payload.payment_method,
-        is_paid=False,
-        is_renewal=True
-    )
-    db.add(new_membership)
+    # Reference years already present for this member (avoid issuing duplicates)
+    existing_years = {
+        m.reference_year
+        for m in db.query(Membership).filter_by(member_id=member.id).all()
+        if m.reference_year
+    }
+
+    # From November the member renews for the current AND the next year.
+    periods = [
+        (start, end, ref_year)
+        for (start, end, ref_year) in calculate_membership_periods(today)
+        if ref_year not in existing_years
+    ]
+
+    if not periods:
+        raise HTTPException(status_code=400, detail="Membership for the current period already exists")
+
+    new_memberships = []
+    for (start, end, ref_year) in periods:
+        new_membership = Membership(
+            member_id=member.id,
+            start_date=start,
+            end_date=end,
+            reference_year=ref_year,
+            card_number=None,  # Non ancora assegnato
+            amount=30 if payload.member_type == "SOSTENITORE" else 10,
+            payment_method=payload.payment_method,
+            is_paid=False,
+            is_renewal=True
+        )
+        db.add(new_membership)
+        new_memberships.append(new_membership)
+
     db.commit()
-    db.refresh(new_membership)
 
-    log_action(
-        db=db,
-        action_type="SUBMIT_CANDIDACY",
-        entity_type="MEMBERSHIP",
-        entity_id=new_membership.id,
-        performed_by=current_user.id,
-        details=f"User submitted renewal candidacy for year {ref_year}"
-    )
+    for new_membership in new_memberships:
+        db.refresh(new_membership)
+        log_action(
+            db=db,
+            action_type="SUBMIT_CANDIDACY",
+            entity_type="MEMBERSHIP",
+            entity_id=new_membership.id,
+            performed_by=current_user.id,
+            details=f"User submitted renewal candidacy for year {new_membership.reference_year}"
+        )
     db.commit()
 
-    return serialize_membership(new_membership)
+    return [serialize_membership(m) for m in new_memberships]
 @router.get("/dashboard")
 def dashboard(
     current_user=Depends(get_current_user),
@@ -452,13 +515,52 @@ def reject_user(
     if not target:
         raise HTTPException(status_code=404, detail="User not found")
 
-    if target.status != "PENDING":
-        raise HTTPException(status_code=400, detail="Already processed")
+    # 1. Rejection of a first enrollment (the user is still pending)
+    if target.status == "PENDING":
+        target.status = "REJECTED"
 
-    target.status = "REJECTED"
+        log_action(
+            db=db,
+            action_type="REJECT_MEMBERSHIP",
+            entity_type="USER",
+            entity_id=target.id,
+            performed_by=user.id,
+            details=f"Treasurer/Admin rejected enrollment for user {target.id}"
+        )
+        db.commit()
+        return {"status": "rejected"}
+
+    # 2. Rejection of a renewal: an already-approved member may not be accepted
+    #    for the next year, so the pending renewal request is removed.
+    member = db.query(Member).filter(Member.user_id == target.id).first()
+    if not member:
+        raise HTTPException(status_code=404, detail="Member not found")
+
+    pending_memberships = db.query(Membership).filter(
+        Membership.member_id == member.id,
+        Membership.is_paid == False,
+        Membership.is_renewal == True
+    ).order_by(Membership.reference_year.asc()).all()
+
+    if not pending_memberships:
+        raise HTTPException(status_code=400, detail="No pending renewal to reject")
+
+    rejected_ids = [m.id for m in pending_memberships]
+
+    for pending_membership in pending_memberships:
+        log_action(
+            db=db,
+            action_type="REJECT_RENEWAL",
+            entity_type="MEMBERSHIP",
+            entity_id=pending_membership.id,
+            performed_by=user.id,
+            details=f"Treasurer/Admin rejected renewal for member {member.id}, membership ID {pending_membership.id}"
+        )
+        db.delete(pending_membership)
+
     db.commit()
 
-    return {"status": "rejected"}
+    return {"status": "renewal_rejected", "rejected_memberships": rejected_ids}
 
 
 # CONFERMA RINNOVO (APPROVA LA MEMBERSHIP PENDENTE)
@@ -476,33 +578,39 @@ def renew_member(
     if not member:
         raise HTTPException(status_code=404, detail="Member not found")
 
-    pending_membership = db.query(Membership).filter(
+    # A renewal may consist of more than one pending membership (e.g. a lapsed
+    # member renewing from November gets both the current and the next year).
+    pending_memberships = db.query(Membership).filter(
         Membership.member_id == member.id,
         Membership.is_paid == False,
         Membership.is_renewal == True
-    ).order_by(Membership.id.desc()).first()
+    ).order_by(Membership.reference_year.asc()).all()
 
-    if not pending_membership:
+    if not pending_memberships:
         raise HTTPException(status_code=404, detail="No pending renewal request found")
-        
+
     from services.membership_service import generate_card_number_for_year
-    pending_membership.is_paid = True
-    pending_membership.payment_date = date.today()
-    pending_membership.card_number = generate_card_number_for_year(db, pending_membership.reference_year)
-    
-    log_action(
-        db=db,
-        action_type="APPROVE_RENEWAL",
-        entity_type="MEMBERSHIP",
-        entity_id=pending_membership.id,
-        performed_by=user.id,
-        details=f"Admin/Treasurer approved renewal for member {member.id}, membership ID {pending_membership.id}"
-    )
+
+    for pending_membership in pending_memberships:
+        pending_membership.is_paid = True
+        pending_membership.payment_date = date.today()
+        pending_membership.card_number = generate_card_number_for_year(db, pending_membership.reference_year)
+
+        log_action(
+            db=db,
+            action_type="APPROVE_RENEWAL",
+            entity_type="MEMBERSHIP",
+            entity_id=pending_membership.id,
+            performed_by=user.id,
+            details=f"Admin/Treasurer approved renewal for member {member.id}, membership ID {pending_membership.id}"
+        )
 
     db.commit()
-    db.refresh(pending_membership)
 
-    return serialize_membership(pending_membership)
+    for pending_membership in pending_memberships:
+        db.refresh(pending_membership)
+
+    return [serialize_membership(m) for m in pending_memberships]
 
 
 # DETTAGLIO UTENTE (self o admin/treasurer)

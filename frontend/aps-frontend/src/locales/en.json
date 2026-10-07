@@ -116,6 +116,7 @@
       "inactive": "Inactive member",
       "expiring": "Expiring",
       "active": "Active member",
+      "future": "Year {year}",
       "member": "Member",
       "ordinary": "Ordinary",
       "cardNumber": "Card N.",
@@ -305,6 +306,8 @@
       "renewAccept": "Member has paid, accept renewal",
       "reject": "Do you want to reject the member registration request?",
       "rejectHeader": "Reject member registration",
+      "rejectRenewal": "Do you want to reject the member's renewal request for the next year?",
+      "rejectRenewalHeader": "Reject member renewal",
       "rejectAccept": "Reject registration",
       "cancel": "Cancel"
     },
