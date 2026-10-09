@@ -5,6 +5,12 @@
 ## Sommario
 
 - [Capitolo 1 — Processo di Iscrizione/Rinnovo](#capitolo-1--processo-di-iscrizione-rinnovo)
+  - [Diagramma Registrazione](#diagramma-registrazione)
+  - [1.1 Registrazione sul sito](#11-registrazione-sul-sito)
+  - [1.2 Compilazione dati anagrafici](#12-compilazione-dati-anagrafici)
+  - [1.3 Richiesta di approvazione](#13-richiesta-di-approvazione-flusso-amministrativo)
+  - [1.4 Rinnovo della tessera](#14-rinnovo-della-tessera)
+  - [Diagramma rinnovo della tessera](#diagramma-rinnovo-della-tessera)
 - [Capitolo 2 — Gestione Gadget](#capitolo-2--gestione-gadget)
   - [2.1 Catalogo Gadget](#21-catalogo-gadget)
     - [2.1.1 Come inserire un nuovo gadget](#211-come-inserire-un-nuovo-gadget)
@@ -38,57 +44,22 @@
 
 # Capitolo 1 — Processo di Iscrizione/Rinnovo
 
-Il percorso di **iscrizione** di un nuovo socio e quello di **rinnovo** per i soci esistenti è suddiviso in quattro fasi chiave, ognuna gestita sia dal frontend (`Home.vue`) che dal backend (`member_service`, `membership_service`, `user_service`).
+Il percorso di **iscrizione** di un nuovo socio e quello di **rinnovo** per i soci esistenti è schematizzato in questo workflow:
+Dopo la registrazione, un utente entra a sistema con profilo incompleto, una volta pagata la quota come socio ordinario o sostenitore, compilati i dati personali e aver pagato, presenta la richiesta di iscrizione. Il processo di accettazione della richiesta produce la generazione della tessera numerata per il socio a cui verrà assegnato il ruolo di membro. 
 
----
+Da gennaio fino alla data di inizio della Settimana Europea Mobilità, 16 settembre di ogni anno, il socio può aggiornare i dati anagrafici del suo profilo ma non cambiare la modalità di pagamento. Dal 16 settembre il socio ha sbloccata la possibilità di inserire la richiesta di rinnovo per l'anno successivo. 
 
-### 1️⃣ Registrazione sul sito
+Una volta accettata dalla tesoreria sulla sua home compariranno la tessera dell'anno corrente attiva e quella dell'anno successivo che cambierà colorazione a partire da gennaio dell'anno nuovo.
 
-1. **Apri la pagina di login** (Home). Se non sei ancora autenticato, il banner di benvenuto mostra il form di accesso/registrazione.
-2. **Clicca su “Nuovo Utente”** per attivare la modalità registrazione.
-3. **Compila email e password** e premi il pulsante **«Registrati»**.
-4. Viene inviato un link di conferma all’indirizzo email fornito (vedi `registerWithEmail` in `Home.vue`).
-5. Dopo il click sul link, l’utente ritorna al sito con lo status **`INCOMPLETE`** (vedi caso 2). Il backend crea l’oggetto `User` con `status = 'INCOMPLETE'`.
+A un membro dell'associazione possono essere assegnati i ruoli di segreteria per la gestione dei gadget e magazzino o il ruolo di tesoriere che permette di gestire il flusso di accettazione e generazione delle tessere dei soci. Il ruolo admin serve a gestire i ruoli degli altri utenti e può svolgere anche le attività del ruolo segretario e tesoriere.
 
----
+Con queste istruzioni il socio può capire **passo‑passo** come avviene l’iscrizione, la verifica da parte dell’amministratore e il meccanismo di rinnovo, così come è implementato nel codice.
 
-### 2️⃣ Compilazione dati anagrafici
-
-1. Dopo il login, il caso **`INCOMPLETE`** mostra una card con un pulsante **«Inizia la procedura di iscrizione»** (`/wizard`).
-2. Il wizard raccoglie i dati personali, il tipo di socio (`ORDINARIO` o `SOSTENITORE`) e il metodo di pagamento.
-3. Al salvataggio, il backend setta `User.status = 'PENDING'` e registra il metodo di pagamento.
-4. La UI passa al caso **`PENDING`** (sezione “🔵 CASO 3: PENDING”).
-
----
-
-### 3️⃣ Richiesta di approvazione (flusso amministrativo)
-
-1. Un amministratore/tesoriere visualizza la lista degli utenti `PENDING` e **clika “Approva”**.
-2. Il backend chiama `approve_user(user, db, performed_by)` (vedi `user_service.py`).
-   - **Step 1**: `get_or_create_member(user, db)` crea o recupera il record `Member` (file `member_service.py`).
-   - **Step 2**: `create_membership(member, user, db)` genera una o due tessere (`Membership`) tramite `membership_service.py`.
-   - **Step 3**: L’amministratore può **approvare** o **rifiutare** la richiesta.
-  - **Approvazione**: imposta `User.status = 'APPROVED'` e registra l’azione in `audit_service`.
-  - **Rifiuto**: imposta `User.status = 'REJECTED'`, registra l’azione e avvia il rimborso della quota pagata.
-3. Dopo il commit, il socio vede il nuovo stato **`APPROVED`** o **`REJECTED`** nella Home (sezione “🏆 CASO 4: APPROVATO” oppure “🔴 CASO 3.5: REJECTED”).
-4. Le tessere vengono mostrate con il componente `membership-card`. La logica di visualizzazione è in `Home.vue` (variabile `visibleMemberships`).
-
----
-
-### 4️⃣ Rinnovo della tessera
-
-1. **Finestra di rinnovo**: quando il socio ha una tessera attiva ma non è presente una tessera per l’anno successivo, il bottone **«Richiedi Rinnovo»** appare (variabile `needsRenewal`).
-2. L’utente sceglie **Tipo Socio** e **Metodo di Pagamento** tramite i componenti `<Select>` (vedi righe 424‑433).
-3. Premendo **«Richiedi Rinnovo»** viene chiamato `requestRenewal()` (righe 89‑110) che invia una `POST /users/me/request-renew` con il payload `{ payment_method, member_type }`.
-4. Il backend crea una **richiesta di rinnovo pendente** (`User.is_renewal_pending = true`). La UI mostra il messaggio “Rinnovo in corso” (blocco `backendUser.is_renewal_pending`).
-5. L’amministratore approva la richiesta nello stesso modo della fase 3. Durante la creazione della tessera, `create_membership` imposta `is_renewal=True` per la nuova tessera e genera anche, se siamo dopo novembre, la tessera dell’anno successivo (già pagata ma non ancora valida).
-
----
-
-### Diagramma di flusso semplificato
+### Diagramma registrazione
 
 <div style="text-align: center; margin: 1.5rem 0;">
-  <img src="/diagramma_flusso_iscrizione.svg" alt="Diagramma di flusso semplificato" style="max-width: 450px; width: 100%; height: auto;" />
+  <img src="/Registrazione.svg" alt="Diagramma registrazione" 
+  style="max-height: 1000px;  width: 600px;" />
 </div>
 
 
@@ -96,36 +67,132 @@ Il percorso di **iscrizione** di un nuovo socio e quello di **rinnovo** per i so
 
 ```mermaid
 flowchart TD
-		A[Registrazione] --> B[Compilazione dati profilo]
+    A0[PROCESSO 
+RICHIESTA ISCRIZIONE]
+    A1{Nuovo 
+socio?}
+    A1 --> |SI|A3
+    A1 --> |NO|A2
+        A2[Login] --> H1[Mostra Home utente]
+		A3[Registrati] --> B[Compilazione dati profilo]
 		B --> C1[Socio effettua la richiesta di iscrizione]
-		C1 -->D[Richiesta approvazione]
-		D --> E{Tesoriere approva richiesta?}
-		E --> |NO|Z[Rinnovo negato]
+		C1 -->D[Approvazione richiesta]
+		D --> D1[User.status = PENDING & ruolo=USER]
+        D1 --> E{Tesoriere approva
+ richiesta?}
+		E --> |NO|Y[Rinnovo negato]
 		E --> |SI|F[Creazione Member/Membership]
 		F --> G[Generazione tessera iscrizione scadenza 31/12/Y]
-		G --> H1[User.status = APPROVED & ruolo=MEMBER]
-		H1 --> I[Visualizzazione tessera/e]
-		I --> J{Oggi >= 16 settembre YY ? Permetti rinnovo}
-		J -->|No| O[Non permettere cambio condizioni pagamento e inserimento richiesta]
-		J -->|SI| K[Abilita cambio condizioni pagamento e permetti inserimento richiesta di rinnovo su frontend]
-		K --> K2[Socio effettua la richiesta di rinnovo con nuove condizioni di pagamento]
-		K2 --> K4{Tesoriere approva rinnovo?}
-		K4 --> |NO|Z[Rinnovo negato]
-		K4 -->|SI|I
+		G --> H[User.status = APPROVED & ruolo=MEMBER]
+        H --> I[Tessera attiva fino 
+al 31/12/Y - Possibile richiedere rinnovo dal 16/09/Y settimana SEM]
 
 ```
 
 </div>
+---
+
+### 1.1 Registrazione sul sito
+
+1. **Apri la pagina di login** (Home). Se non sei ancora autenticato, il banner di benvenuto mostra il form di accesso/registrazione.
+2. **Clicca su “Nuovo Utente”** per attivare la modalità registrazione.
+3. **Compila email e password** e premi il pulsante **«Registrati»**.
+4. Viene inviato un link di conferma all’indirizzo email fornito.
+5. Dopo il click sul link, l’utente ritorna al sito con lo status **`INCOMPLETE`** (vedi caso 2).
+6. Dal 16 settembre il socio otterrà iscrizione per l'anno Y e l'anno successivo Y+1
 
 ---
 
-### Controlli e regole di validazione (backend)
+### 1.2 Compilazione dati anagrafici
 
-- **`User.status`** deve essere `PAID` prima di chiamare `approve_user` (lancio HTTP 400 se non soddisfatto).
-- **`Member`** ha un `membership_number` generato sequenzialmente (`generate_membership_number`).
-- **`Membership.card_number`** è unico per anno (`generate_card_number_for_year`).
-- **Rinnovo anticipato** è consentito solo a partire dal 16 settembre (`isEarlyRenewalWindow`).
-- **`is_renewal`** è impostato a `True` per la tessera corrente se il rinnovo è stato richiesto, o a `True` per la tessera dell’anno successivo se è già stata emessa.
+1. Dopo il login, il caso **`INCOMPLETE`** mostra una card con un pulsante **«Inizia la procedura di iscrizione»** .
+2. Il wizard raccoglie i dati personali, il tipo di socio (`ORDINARIO` o `SOSTENITORE`) e il metodo di pagamento.
+3. Al salvataggio, lo status dell'utente sarà `'PENDING'` e sarà registrato il metodo di pagamento.
+
+---
+
+### 1.3 Richiesta di approvazione (flusso amministrativo)
+
+1. Un amministratore/tesoriere visualizza sulla sua interfacci di amministrazione la lista degli utenti `PENDING` e  può **“Approvare”** o **Rifutare”** la richiesta.
+2. Il socio vede il nuovo stato **`APPROVED`** o **`REJECTED`** nella Home (APPROVATO oppure RIFIUTATO).
+3. Nel caso di rifiuto il tesoriere **`DEVE`** scrivere mail al socio per la restituzione della quota versata e avviare la procedura di rimborso.
+---
+
+
+### 1.4 Rinnovo della tessera
+
+1. Dal 16 settembre quando il socio può richiedere rinnovo tramite **«Richiedi Rinnovo»** .
+2. L’utente aggiorna **Tipo Socio** e **Metodo di Pagamento**  e presenta la richiesta.
+3. La sua richiesta rimane `PENDING` fino ad accettazione o rifiuto del tesoriere
+4. Una volta accettata la sua richiesta 
+
+---
+
+### Diagramma rinnovo della tessera
+
+<div style="text-align: center; margin: 1.5rem 0;">
+  <img src="/Rinnovo.svg" alt="Diagramma rinnovo della tessera" 
+  style="max-height: 800px;  width: 600px;" />
+</div>
+
+
+<div style="display: none;">
+
+```mermaid
+flowchart TD
+    A0[PROCESSO 
+RICHIESTA ISCRIZIONE]
+    A1{Nuovo 
+socio?}
+    A1 --> |SI|A3
+    A1 --> |NO|A2
+        A2[Login] --> H1[Mostra Home utente]
+		A3[Registrati] --> B[Compilazione dati profilo]
+		B --> C1[Socio effettua la richiesta di iscrizione]
+		C1 -->D[Approvazione richiesta]
+		D --> D1[User.status = PENDING & ruolo=USER]
+        D1 --> E{Tesoriere approva
+ richiesta?}
+		E --> |NO|Y[Rinnovo negato]
+		E --> |SI|F[Creazione Member/Membership]
+		F --> G[Generazione tessera iscrizione scadenza 31/12/Y]
+		G --> H[User.status = APPROVED & ruolo=MEMBER]
+        H --> I[Tessera attiva fino 
+al 31/12/Y - Possibile richiedere rinnovo dal 16/09/Y settimana SEM]
+
+```
+
+```mermaid
+flowchart TD
+  A[PROCESSO
+  RINNOVO ISCRIZIONE]
+  H2[Dal 16 settembre 
+  è possibile presentare richiesta di rinnovo] --> H3
+  H3{Iscrizione 
+  socio attiva?}
+  H3-->|NO|H4
+  H4[Consenti al socio presentazione richiesta rinnovo]-->H5
+  H5[Socio presenta richiesta con aggiornamento 
+  dati e condizioni di pagamento, richiesta PENDING] -->H6
+  H6{Richiesta fatta dal 16 settembre  ?}
+  H6 -->|SI|H7
+  H6 -->|NO|I1
+  H7{1 Tesoriere approva la richiesta ?}
+  I1{Tesoriere approva la richiesta ?}
+  I1 --> |SI|G10  
+  I1 --> |NO|G11  
+  H7 -->|SI|H8[Vengono create 
+  2 tessere quella dell'anno Y 
+  e dell'anno Y+1]
+  H7 -->|NO|G9 
+  H9[Creata tessera anno Y+1] 
+  G9[Iscrizione rifiutata]
+  G11[Iscrizione rifiutata]
+ G10[Viene creata la tessera anno Y]
+
+```
+
+</div>
 
 ---
 
@@ -138,9 +205,6 @@ flowchart TD
 | `APPROVED` | Tessere attive visualizzate | **Rinnova** (se `needsRenewal`) |
 | `REJECTED` | Iscrizione rifiutata | Contatta amministratore |
 
----
-
-Con queste istruzioni il socio può capire **passo‑passo** come avviene l’iscrizione, la verifica da parte dell’amministratore e il meccanismo di rinnovo, così come è implementato nel codice.
 ---
 <div style="page-break-before:always;"></div>
 
