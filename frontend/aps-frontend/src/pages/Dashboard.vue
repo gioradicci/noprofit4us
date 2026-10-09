@@ -327,7 +327,7 @@ async function rejectUser(id) {
     <Column field="membership_end" :header="t('dashboard.table.expiry')" sortable>
       <template #body="slotProps">{{ formatDate(slotProps.data.membership_end) }}</template>
     </Column>
-    <Column :header="t('dashboard.table.actions') ">
+    <Column :header="t('dashboard.table.actions')">
       <template #body="slotProps">
         <div class="flex gap-2">
           <Button class="multiline-btn"
@@ -335,7 +335,7 @@ async function rejectUser(id) {
             :label="t('dashboard.buttons.approvePayment')"
             severity="success"
             @click="showConfirmDialog(slotProps.data.id)">
-            <div class="flex flex-column align-items-center">
+            <div class="flex flex-column align-items-center " >
               <span>{{ t('dashboard.buttons.approvePayment') }}</span>
             </div>
           </Button>
