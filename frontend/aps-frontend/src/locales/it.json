@@ -286,7 +286,7 @@
       "approveRenewal": "Conferma Pagamento e Rinnova"
     },
     "table": {
-      "cardNumber": "#tessera",
+      "cardNumber": "# Tessera",
       "firstName": "Nome",
       "lastName": "Cognome",
       "searchFirstName": "Cerca nome",
@@ -295,7 +295,8 @@
       "membership": "Membership",
       "expiry": "Scadenza",
       "actions": "Azioni",
-      "filter": "Filtra"
+      "filter": "Filtra",
+      "email": "Email"
     },
     "confirmMessages": {
       "approve": "Vuoi confermare il pagamento e accettare l'iscrizione del socio?",
@@ -427,7 +428,7 @@
     }
   },
   "gadgetStock": {
-    "economic_stock_value" : "Valore economico del magazzino",
+    "economic_stock_value": "Valore economico del magazzino",
     "title": "Gestione Magazzino",
     "subtitle": "Movimentazione dei gadget, tracciamento stock e storico delle operazioni",
     "exportInventory": "Esporta Inventario",

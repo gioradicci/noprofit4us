@@ -286,7 +286,7 @@
       "approveRenewal": "Confirm Payment & Renew"
     },
     "table": {
-      "cardNumber": "#card",
+      "cardNumber": "# Card",
       "firstName": "First Name",
       "lastName": "Last Name",
       "searchFirstName": "Search first name",
@@ -295,7 +295,8 @@
       "membership": "Membership",
       "expiry": "Expiry",
       "actions": "Actions",
-      "filter": "Filter"
+      "filter": "Filter",
+      "email": "Email"
     },
     "confirmMessages": {
       "approve": "Do you want to confirm the payment and accept the member registration?",
@@ -427,7 +428,7 @@
     }
   },
   "gadgetStock": {
-    "economic_stock_value" : "Economic value of inventory",
+    "economic_stock_value": "Economic value of inventory",
     "title": "Warehouse Management",
     "subtitle": "Track gadget movements, stock levels and operation history",
     "exportInventory": "Export Inventory",

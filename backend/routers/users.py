@@ -409,7 +409,8 @@ def dashboard(
             "last_name": u.last_name,
             "status": u.status,
             "membership_status": membership_status,
-            "membership_end": membership_end
+            "membership_end": membership_end,
+            "email": u.email
         })
 
     return result

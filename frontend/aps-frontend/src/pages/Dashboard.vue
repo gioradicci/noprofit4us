@@ -10,6 +10,7 @@ import { useToast } from 'primevue/usetoast'
 const { t } = useI18n()
 const toast = useToast()
 const filters = ref({
+  email: { value: null, matchMode: FilterMatchMode.CONTAINS },
   card_number: { value: null, matchMode: FilterMatchMode.CONTAINS },
   last_name: { value: null, matchMode: FilterMatchMode.CONTAINS },
   first_name: { value: null, matchMode: FilterMatchMode.CONTAINS },
@@ -282,10 +283,16 @@ async function rejectUser(id) {
     :globalFilterFields="['first_name', 'last_name']"
     paginator
     :rows="10"
+    scrollable 
     responsiveLayout="scroll"
     size="small"
-    class="text-sm equal-cols"
+    class="text-sm"
   >
+    <Column field="email" :header="t('dashboard.table.email')" frozen sortable filter filterField="email" :showFilterMenu="false" :showClearButton="true">
+      <template #filter="{ filterModel, filterCallback }">
+        <InputText v-model="filterModel.value" @input="filterCallback()" :placeholder="t('dashboard.table.email')" class="w-full" />
+      </template>
+    </Column>
     <Column field="card_number" :header="t('dashboard.table.cardNumber')" sortable filter filterField="card_number" :showFilterMenu="false" :showClearButton="true">
       <template #filter="{ filterModel, filterCallback }">
         <InputText v-model="filterModel.value" @input="filterCallback()" :placeholder="t('dashboard.table.cardNumber')" class="w-full" />
@@ -320,7 +327,7 @@ async function rejectUser(id) {
     <Column field="membership_end" :header="t('dashboard.table.expiry')" sortable>
       <template #body="slotProps">{{ formatDate(slotProps.data.membership_end) }}</template>
     </Column>
-    <Column :header="t('dashboard.table.actions')">
+    <Column :header="t('dashboard.table.actions') ">
       <template #body="slotProps">
         <div class="flex gap-2">
           <Button class="multiline-btn"
