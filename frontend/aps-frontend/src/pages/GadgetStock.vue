@@ -51,6 +51,7 @@ const filters = ref({
 const movementFilters = ref({
   movement_type: { value: null, matchMode: FilterMatchMode.EQUALS },
   gadget_name: { value: null, matchMode: FilterMatchMode.CONTAINS },
+  gadget_sku: { value: null, matchMode: FilterMatchMode.CONTAINS },
   notes: { value: null, matchMode: FilterMatchMode.CONTAINS },
   performed_by_display: { value: null, matchMode: FilterMatchMode.CONTAINS }
 })
@@ -1043,7 +1044,11 @@ onMounted(() => {
               <InputText v-model="filterModel.value" @input="filterCallback()" :placeholder="t('gadgetStock.searchGadget')" class="w-full" />
             </template>
           </Column>
-          <Column field="gadget_sku" :header="t('gadgetStock.sku')"></Column>
+          <Column field="gadget_sku" :header="t('gadgetStock.sku')" sortable filter filterField="gadget_sku" :showFilterMenu="false" :showClearButton="false">
+            <template #filter="{ filterModel, filterCallback }">
+              <InputText v-model="filterModel.value" @input="filterCallback()" :placeholder="t('gadgetStock.searchSku')" class="w-full" />
+            </template>
+          </Column>
           <Column :header="t('gadgetStock.path')">
             <template #body="slotProps">
               <span class="text-sm" v-if="slotProps.data.movement_type === 'LOAN'">
