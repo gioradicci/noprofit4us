@@ -398,7 +398,10 @@
       "totalStock": "Totale Giacenza",
       "notForSale": "Non in Vendita",
       "notForSaleShort": "Uso interno",
-      "pcs": "pz"
+      "pcs": "pz",
+      "searchSku": "Cerca SKU...",
+      "searchName": "Cerca nome...",
+      "searchCategory": "Cerca categoria..."
     },
     "variantAdded": "Variante Aggiunta",
     "variantAddedDesc": "Variante aggiunta alla lista temporanea",

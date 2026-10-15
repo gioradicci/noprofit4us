@@ -398,7 +398,10 @@
       "totalStock": "Total Stock",
       "notForSale": "Not for Sale",
       "notForSaleShort": "Internal use",
-      "pcs": "pcs"
+      "pcs": "pcs",
+      "searchSku": "Search SKU...",
+      "searchName": "Search name...",
+      "searchCategory": "Search category..."
     },
     "variantAdded": "Variant Added",
     "variantAddedDesc": "Variant added to temporary list",

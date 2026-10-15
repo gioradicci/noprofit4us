@@ -6,6 +6,7 @@ import { useToast } from 'primevue/usetoast'
 import { useConfirm } from 'primevue/useconfirm'
 import { useI18n } from 'vue-i18n'
 import { useUser } from '../composables/useUser'
+import { FilterMatchMode } from '@primevue/core/api'
 import ImageUpload from '../components/ImageUpload.vue'
 
 import InputText from 'primevue/inputtext'
@@ -28,6 +29,13 @@ const loading = ref(false)
 const showCreateDialog = ref(false)
 const isEditMode = ref(false)
 let heartbeatInterval = null
+
+// Filtri per colonna della tabella (SKU, Nome, Categoria)
+const filters = ref({
+  sku: { value: null, matchMode: FilterMatchMode.CONTAINS },
+  name: { value: null, matchMode: FilterMatchMode.CONTAINS },
+  category: { value: null, matchMode: FilterMatchMode.CONTAINS }
+})
 
 const newGadget = ref({
   id: null,
@@ -381,7 +389,7 @@ onMounted(() => {
 
   <!-- Lista Gadget -->
   <div class="card p-4 shadow-2 border-round surface-card">
-    <DataTable :value="visibleGadgets" :loading="loading" paginator :rows="10" scrollable scrollHeight="600px">
+    <DataTable :value="visibleGadgets" v-model:filters="filters" filterDisplay="row" :loading="loading" paginator :rows="10" scrollable scrollHeight="600px">
       <template #empty>
         <div class="text-center py-4">
           <i class="pi pi-box text-4xl text-300 mb-2"></i>
@@ -408,11 +416,22 @@ onMounted(() => {
           </div>
         </template>
       </Column>
-      <Column field="sku" header="SKU" sortable frozen alignFrozen="left" class="font-medium text-sm"></Column>
-      <Column field="name" :header="t('gadgets.table.name')" sortable class="font-bold"></Column>
-      <Column field="category" :header="t('gadgets.table.category')" sortable>
+      <Column field="sku" header="SKU" sortable frozen alignFrozen="left" class="font-medium text-sm" filter filterField="sku" :showFilterMenu="false" :showClearButton="true">
+        <template #filter="{ filterModel, filterCallback }">
+          <InputText v-model="filterModel.value" @input="filterCallback()" :placeholder="t('gadgets.table.searchSku')" class="w-full" />
+        </template>
+      </Column>
+      <Column field="name" :header="t('gadgets.table.name')" sortable class="font-bold" filter filterField="name" :showFilterMenu="false" :showClearButton="true">
+        <template #filter="{ filterModel, filterCallback }">
+          <InputText v-model="filterModel.value" @input="filterCallback()" :placeholder="t('gadgets.table.searchName')" class="w-full" />
+        </template>
+      </Column>
+      <Column field="category" :header="t('gadgets.table.category')" sortable filter filterField="category" :showFilterMenu="false" :showClearButton="true">
         <template #body="slotProps">
           <span class="badge border-round px-2 py-1 text-xs bg-cyan-100 text-cyan-800">{{ slotProps.data.category }}</span>
+        </template>
+        <template #filter="{ filterModel, filterCallback }">
+          <InputText v-model="filterModel.value" @input="filterCallback()" :placeholder="t('gadgets.table.searchCategory')" class="w-full" />
         </template>
       </Column>
       <Column v-if="isAdminOrSecretary" field="is_not_for_sale" :header="t('gadgets.table.notForSale')" sortable>
