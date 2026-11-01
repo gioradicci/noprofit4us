@@ -1,4 +1,4 @@
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, joinedload
 from sqlalchemy import func
 from fastapi import HTTPException
 from typing import Optional
@@ -421,19 +421,7 @@ def create_gadget_loan(
     # Scala dal magazzino
     stock_from.quantity -= quantity
 
-    # Registra movimento
-    movement = StockMovement(
-        gadget_id=gadget_id,
-        from_warehouse_id=from_warehouse_id,
-        to_warehouse_id=None,
-        quantity=quantity,
-        movement_type="LOAN",
-        performed_by=performed_by,
-        notes=f"Affidamento temporaneo a {assignee_display}" + (f": {notes}" if notes else "")
-    )
-    db.add(movement)
-
-    # Crea affidamento
+    # Crea affidamento: il flush assegna l'id necessario a collegare il movimento.
     loan = GadgetLoan(
         gadget_id=gadget_id,
         from_warehouse_id=from_warehouse_id,
@@ -450,6 +438,19 @@ def create_gadget_loan(
     )
     db.add(loan)
     db.flush()
+
+    # Registra movimento collegato all'affidamento
+    movement = StockMovement(
+        gadget_id=gadget_id,
+        from_warehouse_id=from_warehouse_id,
+        to_warehouse_id=None,
+        quantity=quantity,
+        movement_type="LOAN",
+        loan_id=loan.id,
+        performed_by=performed_by,
+        notes=f"Affidamento temporaneo a {assignee_display}" + (f": {notes}" if notes else "")
+    )
+    db.add(movement)
 
     # Aggiorna giacenza a magazzino (esclude le quantità in affidamento)
     total_stock = db.query(func.sum(GadgetVariantStock.quantity)).filter_by(gadget_id=gadget.id).scalar() or 0
@@ -518,6 +519,7 @@ def return_gadget_loan(
         to_warehouse_id=to_warehouse_id,
         quantity=returned_quantity,
         movement_type="LOAN_RETURN",
+        loan_id=loan.id,
         performed_by=performed_by,
         notes=f"Rientro da affidamento di {assignee} in {wh_to.name}" + (f": {notes}" if notes else "")
     )
@@ -594,6 +596,7 @@ def deliver_gadget_loan(
         to_warehouse_id=None,
         quantity=delivered_quantity,
         movement_type="LOAN_DELIVERY",
+        loan_id=loan.id,
         performed_by=performed_by,
         notes=f"Consegna definitiva di {assignee} per materiale in affidamento" + (f": {notes}" if notes else "")
     )
@@ -619,3 +622,335 @@ def deliver_gadget_loan(
     return loan
 
 
+# ---------------------------------------------------------------------------
+# Timeline movimentazioni per singolo gadget
+# ---------------------------------------------------------------------------
+
+def _serialize_warehouse(warehouse) -> Optional[dict]:
+    if not warehouse:
+        return None
+    return {
+        "id": warehouse.id,
+        "name": warehouse.name,
+        "code": warehouse.code,
+    }
+
+
+def _serialize_user(user) -> Optional[dict]:
+    if not user:
+        return None
+    full_name = f"{user.first_name or ''} {user.last_name or ''}".strip()
+    return {
+        "id": user.id,
+        "name": full_name or None,
+        "email": user.email,
+    }
+
+
+def _movement_balance_delta(movement_type: str, quantity: int) -> int:
+    """Variazione della giacenza fisica di magazzino prodotta dal movimento.
+
+    - RESTOCK: entra in magazzino (+)
+    - DELIVERY: esce definitivamente (-)
+    - LOAN: esce dal magazzino verso l'assegnatario (-)
+    - LOAN_RETURN: rientra in magazzino (+)
+    - TRANSFER: spostamento interno, saldo totale invariato (0)
+    - LOAN_DELIVERY: la merce era già uscita al momento del LOAN (0)
+    """
+    if movement_type == "RESTOCK":
+        return quantity
+    if movement_type in ("DELIVERY", "LOAN"):
+        return -quantity
+    if movement_type == "LOAN_RETURN":
+        return quantity
+    return 0
+
+
+def _serialize_loan(loan: GadgetLoan) -> dict:
+    remaining = _loan_remaining(loan)
+    return {
+        "id": loan.id,
+        "assigned_to_user_id": loan.assigned_to_user_id,
+        "assigned_to_name": loan.assigned_to_name,
+        "quantity": loan.quantity,
+        "returned_quantity": loan.returned_quantity or 0,
+        "delivered_quantity": loan.delivered_quantity or 0,
+        "remaining_quantity": remaining,
+        "status": loan.status,
+        "loan_date": loan.loan_date.isoformat() if loan.loan_date else None,
+        "expected_return_date": loan.expected_return_date.isoformat() if loan.expected_return_date else None,
+        "returned_date": loan.returned_date.isoformat() if loan.returned_date else None,
+        "from_warehouse": _serialize_warehouse(loan.from_warehouse),
+        "notes": loan.notes,
+        "is_open": remaining > 0,
+    }
+
+
+def _serialize_movement_event(movement: StockMovement, loan_link_source: Optional[str] = None) -> dict:
+    return {
+        "id": f"movement-{movement.id}",
+        "movement_id": movement.id,
+        "movement_type": movement.movement_type,
+        "timestamp": movement.timestamp.isoformat() if movement.timestamp else None,
+        "quantity": movement.quantity,
+        "delta": _movement_balance_delta(movement.movement_type, movement.quantity),
+        "balance_after": None,
+        "from_warehouse": _serialize_warehouse(movement.from_warehouse),
+        "to_warehouse": _serialize_warehouse(movement.to_warehouse),
+        "notes": movement.notes,
+        "performer": _serialize_user(movement.performer),
+        "loan_id": movement.loan_id,
+        "loan_link_source": loan_link_source,
+        "loan": None,
+        "children": [],
+    }
+
+
+def _notes_mention_assignee(movement: StockMovement, loan: GadgetLoan) -> bool:
+    """Fallback per i movimenti storici: l'assegnatario è citato nelle note."""
+    name = (loan.assigned_to_name or "").strip().lower()
+    if not name or name == "non specificato":
+        return True
+    notes = (movement.notes or "").lower()
+    return name in notes
+
+
+def _heuristic_capacity_available(movement: StockMovement, loan: GadgetLoan, used: dict) -> bool:
+    if movement.movement_type == "LOAN_RETURN":
+        capacity = loan.returned_quantity or 0
+    elif movement.movement_type == "LOAN_DELIVERY":
+        capacity = loan.delivered_quantity or 0
+    else:
+        return True
+    key = (loan.id, movement.movement_type)
+    return used.get(key, 0) + movement.quantity <= capacity
+
+
+def _match_legacy_loan(
+    movement: StockMovement,
+    candidate_loans: list,
+    used: Optional[dict] = None
+    ) -> Optional[GadgetLoan]:
+    """Ricostruisce il legame per i movimenti privi di loan_id.
+
+    Usa nome assegnatario nelle note, data dell'affidamento e, per i LOAN,
+    la quantità. È solo un fallback: i nuovi movimenti hanno sempre loan_id.
+    """
+    used = used or {}
+    candidates = []
+    for loan in candidate_loans:
+        if loan.loan_date and movement.timestamp and loan.loan_date > movement.timestamp:
+            continue
+        if not _notes_mention_assignee(movement, loan):
+            continue
+        if movement.movement_type == "LOAN" and loan.quantity != movement.quantity:
+            continue
+        if movement.movement_type in ("LOAN_RETURN", "LOAN_DELIVERY"):
+            if not _heuristic_capacity_available(movement, loan, used):
+                continue
+        candidates.append(loan)
+
+    if not candidates:
+        return None
+
+    if movement.movement_type == "LOAN":
+        reference = movement.timestamp or datetime.utcnow()
+        candidates.sort(
+            key=lambda loan: (
+                abs(((loan.loan_date or reference) - reference).total_seconds()),
+                loan.id,
+            )
+        )
+    else:
+        candidates.sort(key=lambda loan: (loan.loan_date or datetime.min, loan.id))
+    return candidates[0]
+
+
+def get_gadget_timeline(db: Session, gadget_id: int) -> dict:
+    """Timeline cronologica delle movimentazioni di un gadget.
+
+    Restituisce gli eventi in ordine crescente (dal primo restock in poi), con
+    il saldo di magazzino dopo ogni evento. I movimenti LOAN diventano rami
+    annidati che contengono le relative LOAN_RETURN / LOAN_DELIVERY.
+    """
+    gadget = (
+        db.query(Gadget)
+        .options(joinedload(Gadget.stocks).joinedload(GadgetVariantStock.warehouse))
+        .filter(Gadget.id == gadget_id)
+        .first()
+    )
+    if not gadget:
+        raise HTTPException(status_code=404, detail="Gadget not found")
+
+    movements = (
+        db.query(StockMovement)
+        .options(
+            joinedload(StockMovement.from_warehouse),
+            joinedload(StockMovement.to_warehouse),
+            joinedload(StockMovement.performer),
+        )
+        .filter(StockMovement.gadget_id == gadget_id)
+        .order_by(StockMovement.timestamp.asc(), StockMovement.id.asc())
+        .all()
+    )
+
+    loans = (
+        db.query(GadgetLoan)
+        .options(
+            joinedload(GadgetLoan.from_warehouse),
+            joinedload(GadgetLoan.assigned_user),
+        )
+        .filter(GadgetLoan.gadget_id == gadget_id)
+        .order_by(GadgetLoan.loan_date.asc(), GadgetLoan.id.asc())
+        .all()
+    )
+
+    loans_by_id = {loan.id: loan for loan in loans}
+    branch_events = {}
+    standalone_events = []
+    linked_loan_ids = set()
+    heuristic_used = {}
+
+    for movement in movements:
+        if movement.movement_type == "LOAN":
+            loan = None
+            source = "none"
+            if movement.loan_id and movement.loan_id in loans_by_id:
+                loan = loans_by_id[movement.loan_id]
+                source = "exact"
+            else:
+                loan = _match_legacy_loan(
+                    movement,
+                    [candidate for candidate in loans if candidate.id not in linked_loan_ids],
+                    heuristic_used,
+                )
+                source = "heuristic" if loan else "none"
+
+            event = _serialize_movement_event(movement, source)
+            if loan:
+                event["loan_id"] = loan.id
+                event["loan"] = _serialize_loan(loan)
+                branch_events[loan.id] = event
+                linked_loan_ids.add(loan.id)
+            else:
+                standalone_events.append(event)
+            continue
+
+        if movement.movement_type in ("LOAN_RETURN", "LOAN_DELIVERY"):
+            loan = None
+            source = "none"
+            if movement.loan_id and movement.loan_id in branch_events:
+                loan = loans_by_id.get(movement.loan_id)
+                source = "exact"
+            else:
+                loan = _match_legacy_loan(movement, loans, heuristic_used)
+                source = "heuristic" if loan else "none"
+
+            event = _serialize_movement_event(movement, source)
+            if loan and loan.id in branch_events:
+                event["loan_id"] = loan.id
+                branch_events[loan.id]["children"].append(event)
+                key = (loan.id, movement.movement_type)
+                heuristic_used[key] = heuristic_used.get(key, 0) + movement.quantity
+            else:
+                standalone_events.append(event)
+            continue
+
+        standalone_events.append(_serialize_movement_event(movement))
+
+    # Saldo progressivo calcolato su tutti i movimenti reali in ordine cronologico.
+    balance_by_movement_id = {}
+    running_balance = 0
+    for movement in movements:
+        running_balance += _movement_balance_delta(movement.movement_type, movement.quantity)
+        balance_by_movement_id[movement.id] = running_balance
+
+    def apply_balance(event: dict):
+        movement_id = event.get("movement_id")
+        if movement_id is not None:
+            event["balance_after"] = balance_by_movement_id.get(movement_id)
+        for child in event.get("children", []):
+            child["balance_after"] = balance_by_movement_id.get(child.get("movement_id"))
+
+    events = list(branch_events.values()) + standalone_events
+    for event in events:
+        apply_balance(event)
+
+    # I figli degli affidamenti restano annidati: la lista top-level contiene
+    # solo eventi radice, ordinati cronologicamente.
+    events.sort(key=lambda event: (event.get("timestamp") or "", event.get("movement_id") or 0))
+    for index, event in enumerate(events, start=1):
+        event["sequence"] = index
+
+    totals = {}
+    for movement in movements:
+        totals[movement.movement_type] = totals.get(movement.movement_type, 0) + movement.quantity
+
+    restocked = totals.get("RESTOCK", 0)
+    delivered = totals.get("DELIVERY", 0)
+    loaned = totals.get("LOAN", 0)
+    loan_returns = totals.get("LOAN_RETURN", 0)
+    loan_deliveries = totals.get("LOAN_DELIVERY", 0)
+
+    open_loans = [loan for loan in loans if _loan_remaining(loan) > 0]
+    gadget_stock = gadget.stock_quantity or 0
+
+    stock_by_warehouse = [
+        {
+            "warehouse_id": stock.warehouse_id,
+            "warehouse_name": stock.warehouse.name if stock.warehouse else None,
+            "warehouse_code": stock.warehouse.code if stock.warehouse else None,
+            "quantity": stock.quantity or 0,
+        }
+        for stock in gadget.stocks
+    ]
+    stock_by_warehouse.sort(key=lambda item: (item["warehouse_name"] or "").lower())
+
+    first_restock = next(
+        (movement for movement in movements if movement.movement_type == "RESTOCK"),
+        None,
+    )
+    first_event = movements[0] if movements else None
+    last_event = movements[-1] if movements else None
+
+    summary = {
+        "total_restocked": restocked,
+        "total_delivered": delivered,
+        "total_loaned": loaned,
+        "total_loan_returns": loan_returns,
+        "total_loan_deliveries": loan_deliveries,
+        "total_in": restocked + loan_returns,
+        "total_out": delivered + loaned + loan_deliveries,
+        "current_stock": running_balance,
+        "gadget_stock_quantity": gadget_stock,
+        "open_loans_remaining": sum(_loan_remaining(loan) for loan in open_loans),
+        "open_loans_count": len(open_loans),
+        "loans_count": len(loans),
+        "unlinked_loans_count": len([loan for loan in loans if loan.id not in linked_loan_ids]),
+        "movements_count": len(movements),
+        "first_restock_at": first_restock.timestamp.isoformat() if first_restock and first_restock.timestamp else None,
+        "first_event_at": first_event.timestamp.isoformat() if first_event and first_event.timestamp else None,
+        "last_event_at": last_event.timestamp.isoformat() if last_event and last_event.timestamp else None,
+        "is_reconciled": running_balance == gadget_stock,
+        "stock_by_warehouse": stock_by_warehouse,
+        "loans": [_serialize_loan(loan) for loan in loans],
+    }
+
+    return {
+        "gadget": {
+            "id": gadget.id,
+            "name": gadget.name,
+            "sku": gadget.sku,
+            "category": gadget.category,
+            "image_path": gadget.image_path,
+            "size": gadget.size,
+            "color": gadget.color,
+            "model": gadget.model,
+            "variant_type": gadget.variant_type,
+            "is_not_for_sale": gadget.is_not_for_sale,
+            "stock_quantity": gadget_stock,
+            "created_at": gadget.created_at.isoformat() if gadget.created_at else None,
+        },
+        "summary": summary,
+        "events": events,
+    }

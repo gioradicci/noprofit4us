@@ -428,6 +428,76 @@
       "variantCreateFailed": "Impossibile creare la variante con SKU: {sku}",
       "generic": "Si è verificato un errore",
       "deleteFailed": "Impossibile eliminare il gadget"
+    },
+    "timeline": {
+      "buttonTitle": "Analisi movimentazioni",
+      "title": "Storico movimentazioni",
+      "subtitle": "Dal primo rifornimento all'esaurimento delle scorte",
+      "loading": "Caricamento movimentazioni...",
+      "loadFailed": "Impossibile caricare le movimentazioni di questo articolo.",
+      "empty": "Nessuna movimentazione registrata per questo articolo.",
+      "retry": "Riprova",
+      "close": "Chiudi",
+      "legend": "Legenda",
+      "pcs": "pz",
+      "balanceAfter": "Saldo",
+      "noPerformer": "Operatore non disponibile",
+      "movementTypes": {
+        "restock": "Rifornimento",
+        "transfer": "Trasferimento",
+        "delivery": "Consegna / Scarico",
+        "loan": "Affidamento",
+        "loan_return": "Riconsegna",
+        "loan_delivery": "Consegna da affidamento",
+        "unknown": "Movimento"
+      },
+      "summary": {
+        "restocked": "Riforniti",
+        "delivered": "Consegnati",
+        "loaned": "Affidati",
+        "returned": "Rientrati",
+        "deliveredFromLoan": "Consegnati da affidamento",
+        "currentStock": "Giacenza attuale",
+        "inCustody": "Ancora in carico",
+        "openLoans": "Affidamenti aperti",
+        "firstRestock": "Primo rifornimento",
+        "movements": "Movimenti",
+        "gadgetStock": "Giacenza registrata"
+      },
+      "loanReference": "Affidamento #{id}",
+      "loanAssignedTo": "Affidato a",
+      "loanExpectedReturn": "Rientro previsto",
+      "loanRemaining": "Residuo in carico",
+      "openBranch": "Ramo aperto",
+      "openBranchHint": "Nessuna consegna definitiva: il materiale risulta ancora in carico all'assegnatario.",
+      "linkedHeuristicShort": "Collegamento stimato",
+      "linkedNoneShort": "Nessun affidamento collegato",
+      "unlinkedLoansWarning": "Attenzione: {count} affidamento/i non ha un movimento di apertura collegato.",
+      "reconciled": "Saldo coerente con la giacenza",
+      "notReconciled": "Il saldo dei movimenti non coincide con la giacenza registrata",
+      "status": {
+        "ACTIVE": "In corso",
+        "PARTIAL": "Parziale",
+        "RETURNED": "Riconsegnato",
+        "DELIVERED": "Consegnato",
+        "COMPLETED": "Definito"
+      },
+      "path": {
+        "external": "Esterno",
+        "warehouse": "Magazzino",
+        "assignee": "Assegnatario",
+        "member": "Socio"
+      },
+      "terminal": {
+        "exhaustedTitle": "Scorte esaurite",
+        "exhaustedDetail": "Tutte le unità sono uscite dal magazzino.",
+        "inCustodyTitle": "Magazzino vuoto, materiale in carico",
+        "inCustodyDetail": "Nessuna unità in magazzino: {count} pz restano in carico agli assegnatari.",
+        "remainingTitle": "Giacenza residua",
+        "remainingDetail": "Totale in magazzino: {count}",
+        "totalLoaned": "Totale affidati",
+        "stillInCircuit": "Totale ancora nel circuito"
+      }
     }
   },
   "gadgetStock": {

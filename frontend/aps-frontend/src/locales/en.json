@@ -428,6 +428,76 @@
       "variantCreateFailed": "Could not create variant with SKU: {sku}",
       "generic": "An error occurred",
       "deleteFailed": "Could not delete gadget"
+    },
+    "timeline": {
+      "buttonTitle": "Movement analysis",
+      "title": "Movement history",
+      "subtitle": "From the first restock to stock exhaustion",
+      "loading": "Loading movements...",
+      "loadFailed": "Unable to load the movements for this item.",
+      "empty": "No movements recorded for this item.",
+      "retry": "Retry",
+      "close": "Close",
+      "legend": "Legend",
+      "pcs": "pcs",
+      "balanceAfter": "Balance",
+      "noPerformer": "Operator unavailable",
+      "movementTypes": {
+        "restock": "Restock",
+        "transfer": "Transfer",
+        "delivery": "Delivery",
+        "loan": "Loan",
+        "loan_return": "Loan return",
+        "loan_delivery": "Loan delivery",
+        "unknown": "Movement"
+      },
+      "summary": {
+        "restocked": "Restocked",
+        "delivered": "Delivered",
+        "loaned": "On loan",
+        "returned": "Returned",
+        "deliveredFromLoan": "Delivered from loans",
+        "currentStock": "Current stock",
+        "inCustody": "Still on loan",
+        "openLoans": "Open loans",
+        "firstRestock": "First restock",
+        "movements": "Movements",
+        "gadgetStock": "Recorded stock"
+      },
+      "loanReference": "Loan #{id}",
+      "loanAssignedTo": "Assigned to",
+      "loanExpectedReturn": "Expected return",
+      "loanRemaining": "Remaining on loan",
+      "openBranch": "Open branch",
+      "openBranchHint": "No final delivery recorded: the material is still held by the assignee.",
+      "linkedHeuristicShort": "Estimated link",
+      "linkedNoneShort": "No linked loan",
+      "unlinkedLoansWarning": "Warning: {count} loan(s) have no linked opening movement.",
+      "reconciled": "Balance matches the recorded stock",
+      "notReconciled": "The movement balance does not match the recorded stock",
+      "status": {
+        "ACTIVE": "Active",
+        "PARTIAL": "Partial",
+        "RETURNED": "Returned",
+        "DELIVERED": "Delivered",
+        "COMPLETED": "Completed"
+      },
+      "path": {
+        "external": "External",
+        "warehouse": "Warehouse",
+        "assignee": "Assignee",
+        "member": "Member"
+      },
+      "terminal": {
+        "exhaustedTitle": "Stock exhausted",
+        "exhaustedDetail": "All units have left the warehouse.",
+        "inCustodyTitle": "Warehouse empty, material on loan",
+        "inCustodyDetail": "No units in the warehouse: {count} pcs are still held by assignees.",
+        "remainingTitle": "Remaining stock",
+        "remainingDetail": "Total on warehouses: {count} pcs",
+        "totalLoaned": "Total on loan",
+        "stillInCircuit": "Still in circulation"
+      }
     }
   },
   "gadgetStock": {

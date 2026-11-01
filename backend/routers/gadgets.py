@@ -577,12 +577,32 @@ def get_movements(current_user=Depends(get_current_user), db: Session = Depends(
             } if m.to_warehouse else None,
             "quantity": m.quantity,
             "movement_type": m.movement_type,
+            "loan_id": m.loan_id,
             "performed_by": m.performed_by,
             "performer": performer_info,
             "timestamp": m.timestamp.isoformat() if m.timestamp else None,
             "notes": m.notes
         })
     return result
+
+
+@router.get("/{gadget_id}/timeline")
+def get_gadget_timeline(
+    gadget_id: int,
+    current_user=Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """Timeline completa delle movimentazioni di un gadget.
+
+    Solo ADMIN/SECRETARY con tessera attiva: i dati contengono nominativi degli
+    assegnatari e lo storico completo di magazzino.
+    """
+    if current_user.role not in ["ADMIN", "SECRETARY"]:
+        raise HTTPException(status_code=403, detail="Not authorized")
+    if current_user.role == "SECRETARY" and not has_active_membership(current_user, db):
+        raise HTTPException(status_code=403, detail="Active membership required")
+
+    return gadget_service.get_gadget_timeline(db=db, gadget_id=gadget_id)
 
 
 @router.post("/movements")

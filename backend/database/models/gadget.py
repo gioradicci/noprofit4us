@@ -60,8 +60,13 @@ class StockMovement(Base):
     from_warehouse_id = Column(Integer, ForeignKey("warehouses.id"), nullable=True)  # Null if RESTOCK
     to_warehouse_id = Column(Integer, ForeignKey("warehouses.id"), nullable=True)    # Null if DELIVERY
 
+    # Affidamento collegato (valorizzato per LOAN, LOAN_RETURN e LOAN_DELIVERY).
+    # Nullable per compatibilità con i movimenti storici creati prima di questa colonna;
+    # in quel caso la timeline ricostruisce il legame con una euristica.
+    loan_id = Column(Integer, ForeignKey("gadget_loans.id", ondelete="SET NULL"), nullable=True, index=True)
+
     quantity = Column(Integer, nullable=False)
-    movement_type = Column(String, nullable=False)  # RESTOCK, TRANSFER, DELIVERY, LOAN, LOAN_RETURN
+    movement_type = Column(String, nullable=False)  # RESTOCK, TRANSFER, DELIVERY, LOAN, LOAN_RETURN, LOAN_DELIVERY
     
     performed_by = Column(Integer, ForeignKey("users.id"), nullable=False)  # User ID of Secretary/Admin
     timestamp = Column(DateTime, default=datetime.utcnow, nullable=False)
@@ -71,6 +76,7 @@ class StockMovement(Base):
     from_warehouse = relationship("Warehouse", foreign_keys=[from_warehouse_id])
     to_warehouse = relationship("Warehouse", foreign_keys=[to_warehouse_id])
     performer = relationship("User", foreign_keys=[performed_by])
+    loan = relationship("GadgetLoan", back_populates="movements", foreign_keys=[loan_id])
 
 
 class GadgetLock(Base):
@@ -109,4 +115,7 @@ class GadgetLoan(Base):
     from_warehouse = relationship("Warehouse", foreign_keys=[from_warehouse_id])
     assigned_user = relationship("User", foreign_keys=[assigned_to_user_id])
     performer = relationship("User", foreign_keys=[performed_by])
+    # Movimenti collegati (LOAN, LOAN_RETURN, LOAN_DELIVERY). Nessun cascade:
+    # la cancellazione dell'affidamento non deve cancellare lo storico dei movimenti.
+    movements = relationship("StockMovement", back_populates="loan", foreign_keys="StockMovement.loan_id")
 

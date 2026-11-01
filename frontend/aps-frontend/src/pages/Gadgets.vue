@@ -8,6 +8,7 @@ import { useI18n } from 'vue-i18n'
 import { useUser } from '../composables/useUser'
 import { FilterMatchMode } from '@primevue/core/api'
 import ImageUpload from '../components/ImageUpload.vue'
+import GadgetTimelineDialog from '../components/GadgetTimelineDialog.vue'
 
 import InputText from 'primevue/inputtext'
 import InputNumber from 'primevue/inputnumber'
@@ -28,6 +29,8 @@ const gadgets = ref([])
 const loading = ref(false)
 const showCreateDialog = ref(false)
 const isEditMode = ref(false)
+const showTimelineDialog = ref(false)
+const timelineGadget = ref(null)
 let heartbeatInterval = null
 
 // Filtri per colonna della tabella (SKU, Nome, Categoria)
@@ -199,6 +202,11 @@ function startClone(gadget) {
     is_not_for_sale: gadget.is_not_for_sale || false
   }
   showCreateDialog.value = true
+}
+
+function openTimeline(gadget) {
+  timelineGadget.value = gadget
+  showTimelineDialog.value = true
 }
 
 async function startEdit(gadget) {
@@ -463,6 +471,7 @@ onMounted(() => {
       <Column v-if="canManageGadgets" :header="t('common.actions')">
         <template #body="slotProps">
           <div class="flex gap-2">
+            <Button icon="pi pi-sitemap" severity="info" outlined size="small" class="p-button-rounded" :title="t('gadgets.timeline.buttonTitle')" @click="openTimeline(slotProps.data)" />
             <Button icon="pi pi-pencil" severity="secondary" outlined size="small" class="p-button-rounded" :title="t('common.edit')" @click="startEdit(slotProps.data)" />
             <Button icon="pi pi-copy" severity="secondary" outlined size="small" class="p-button-rounded" :title="t('common.clone')" @click="startClone(slotProps.data)" />
             <Button icon="pi pi-trash" severity="danger" outlined size="small" class="p-button-rounded" :title="t('common.delete')" @click="confirmDelete(slotProps.data.id, slotProps.data.name)" />
@@ -471,6 +480,8 @@ onMounted(() => {
       </Column>
     </DataTable>
   </div>
+
+  <GadgetTimelineDialog v-model:visible="showTimelineDialog" :gadget="timelineGadget" />
 </div>
 </template>
 
