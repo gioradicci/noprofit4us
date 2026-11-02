@@ -475,6 +475,8 @@
       "unlinkedLoansWarning": "Warning: {count} loan(s) have no linked opening movement.",
       "reconciled": "Balance matches the recorded stock",
       "notReconciled": "The movement balance does not match the recorded stock",
+      "transferHint": "Internal transfer between warehouses: total stock does not change",
+      "loanDeliveryHint": "Goods already left the warehouse when the loan was created",
       "status": {
         "ACTIVE": "Active",
         "PARTIAL": "Partial",

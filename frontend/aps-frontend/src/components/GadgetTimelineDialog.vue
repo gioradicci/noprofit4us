@@ -55,17 +55,40 @@ function movementLabel(type) {
   return translated === key ? t('gadgets.timeline.movementTypes.unknown') : translated
 }
 
-function signedDelta(event) {
-  const delta = Number(event?.delta || 0)
-  if (delta > 0) return `+${delta}`
-  return String(delta)
+// La chip quantità mostra i pezzi movimentati (event.quantity), non il delta
+// di saldo: per TRANSFER e LOAN_DELIVERY il saldo totale non cambia (delta 0)
+// ma i pezzi spostati sono comunque significativi.
+function quantityLabel(event) {
+  const quantity = Number(event?.quantity || 0)
+  switch (event?.movement_type) {
+    case 'RESTOCK':
+    case 'LOAN_RETURN':
+      return `+${quantity}`
+    case 'DELIVERY':
+    case 'LOAN':
+      return `-${quantity}`
+    default:
+      return String(quantity)
+  }
 }
 
-function deltaTone(event) {
-  const delta = Number(event?.delta || 0)
-  if (delta > 0) return 'delta-in'
-  if (delta < 0) return 'delta-out'
-  return 'delta-neutral'
+function quantityTone(event) {
+  switch (event?.movement_type) {
+    case 'RESTOCK':
+    case 'LOAN_RETURN':
+      return 'delta-in'
+    case 'DELIVERY':
+    case 'LOAN':
+      return 'delta-out'
+    default:
+      return 'delta-neutral'
+  }
+}
+
+function quantityHint(event) {
+  if (event?.movement_type === 'TRANSFER') return t('gadgets.timeline.transferHint')
+  if (event?.movement_type === 'LOAN_DELIVERY') return t('gadgets.timeline.loanDeliveryHint')
+  return null
 }
 
 function formatDateTime(value) {
@@ -341,8 +364,8 @@ watch(
               <span class="path-node">{{ eventSource(event) }}</span>
               <i class="pi pi-arrow-right text-xs mx-2 text-400"></i>
               <span class="path-node">{{ eventTarget(event) }}</span>
-              <span class="qty-chip ml-2" :class="deltaTone(event)">
-                {{ signedDelta(event) }} {{ t('gadgets.timeline.pcs') }}
+              <span class="qty-chip ml-2" :class="quantityTone(event)" :title="quantityHint(event) || undefined">
+                {{ quantityLabel(event) }} {{ t('gadgets.timeline.pcs') }}
               </span>
             </div>
 
@@ -406,8 +429,8 @@ watch(
                     <span class="path-node">{{ eventSource(child) }}</span>
                     <i class="pi pi-arrow-right text-xs mx-2 text-400"></i>
                     <span class="path-node">{{ eventTarget(child) }}</span>
-                    <span class="qty-chip ml-2" :class="deltaTone(child)">
-                      {{ signedDelta(child) }} {{ t('gadgets.timeline.pcs') }}
+                    <span class="qty-chip ml-2" :class="quantityTone(child)" :title="quantityHint(child) || undefined">
+                      {{ quantityLabel(child) }} {{ t('gadgets.timeline.pcs') }}
                     </span>
                   </div>
                   <p v-if="child.notes" class="event-notes">{{ child.notes }}</p>

@@ -475,6 +475,8 @@
       "unlinkedLoansWarning": "Attenzione: {count} affidamento/i non ha un movimento di apertura collegato.",
       "reconciled": "Saldo coerente con la giacenza",
       "notReconciled": "Il saldo dei movimenti non coincide con la giacenza registrata",
+      "transferHint": "Spostamento interno tra magazzini: il saldo totale non cambia",
+      "loanDeliveryHint": "Merce già uscita dal magazzino al momento dell'affidamento",
       "status": {
         "ACTIVE": "In corso",
         "PARTIAL": "Parziale",
